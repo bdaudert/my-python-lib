@@ -388,6 +388,7 @@ CLIM_SUM_MAPS_DAILY_THRESHES = {
 #FORM CHOICES/FORM related stuff
 ###################################
 ###################################
+#DELETE?
 SEARCH_AREA_FORM_TO_ACIS = {
     'station_id':'stnid',
     'station_ids':'stnids',
@@ -405,6 +406,7 @@ SEARCH_AREA_FORM_TO_ACIS = {
     'point':'loc',
 }
 
+#DELETE??
 STN_AREA_FORM_TO_PARAM = {
     'station_id':'sids',
     'station_ids':'sids',
@@ -425,6 +427,49 @@ STN_AREA_FORM_TO_PARAM = {
     'location':'loc',
     'point':'loc'
 }
+#NEW
+FORM_TO_PARAMS = {
+    'station_id':'sid',
+    'station_ids':'sids',
+    'sid':'sid',
+    'sids':'sids',
+    'climate_division':'climdiv',
+    'climdiv':'climdiv',
+    'county_warning_area':'cwa',
+    'cwa':'cwa',
+    'bounding_box':'bbox',
+    'bbox':'bbox',
+    'state':'state',
+    'states':'state',
+    'county':'county',
+    'basin':'basin',
+    'shape':'bbox',
+    'location':'loc',
+    'point':'loc'
+}
+
+PARAMS_TO_FORM= {
+    'climdiv':'climate_division',
+    'climate_division':'climate_division',
+    'cwa':'county_warning_area',
+    'county_warning_area':'county_warning_area',
+    'bbox':'bounding_box',
+    'bounding_box':'bounding_box',
+    'stnid':'station_id',
+    'station_id':'sid',
+    'stn_id': 'sid',
+    'stnids':'sids',
+    'station_ids':'sids',
+    'basin':'basin',
+    'county':'county',
+    'shape':'shape',
+    'point':'location',
+    'location':'location',
+    'loc':'location',
+    'state':'state',
+    'states':'states',
+}
+
 
 GRID_AREA_FORM_TO_PARAM = {
     #Note: gridACIS calls currently don't support cwa, climdiv, basin, county

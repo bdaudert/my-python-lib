@@ -24,18 +24,6 @@ import json
 #settings file
 #FIX ME:
 #Works for web server
-'''
-try:
-    #Settings
-    #from django.conf import settings
-    import my_acis.settings as settings
-except:
-    try:
-        import my_acis_settings as settings
-    except:
-        pass
-#from django.conf import settings
-'''
 try:
     import my_acis.settings as settings
 except ImportError:
@@ -53,7 +41,7 @@ def make_request(url,params) :
     except urllib2.HTTPError as error:
         #if error.code == 400 : print error.msg
         return None
-
+'''
 def MultiStnData(params):
     req = {}
     for url in settings.ACIS_SERVERS:
@@ -78,7 +66,7 @@ def StnData(params):
         except:
             continue
     return req
-
+'''
 def DataCall(acis_call, params):
     req = {}
     for url in settings.ACIS_SERVERS:
@@ -93,15 +81,18 @@ def DataCall(acis_call, params):
 
 
 def StnMeta(params):
-    #return make_request(settings.ACIS_BASE_URL+'StnMeta',params)
     return DataCall('StnMeta', params)
 
+def StnData(params):
+    return DataCall('StnData', params)
+
+def MultiStnData(params):
+    return DataCall('MultiStnData', params)
+
 def GridData(params):
-    #return make_request(settings.ACIS_BASE_URL+'GridData',params)
     return DataCall('GridData', params)
 
 def GridCalc(params):
-    #return make_request(settings.ACIS_BASE_URL+'GridCalc',params)
     return DataCall('GridCalc', params)
 
 def General(request_type, params):
@@ -121,13 +112,8 @@ def General(request_type, params):
     return req
 
 ###################################
-#Southwest CSC DATA PORTAL modules
+#SCENIC DATA REQUEST MODULES
 ###################################
-
-
-####################################
-#Functions
-#####################################
 def make_gen_call_by_state(search_area, state):
     '''
     Makes a General call to ACIS
@@ -450,12 +436,16 @@ def get_station_data(form_input, program):
     Keyword arguments:
     form_input -- parameter file for data request obtained from user of CSC pages
     program -- specifies program that is making the request.
+    Returns python dictionary with keys:
+        meta
+        data
     '''
     request = {'data':[]}
     s_date, e_date = WRCCUtils.start_end_date_to_eight(form_input)
     #Sanity check for valid date input:
     if (s_date.lower() == 'por' or e_date.lower() == 'por') and ('station_id' not in form_input.keys()):
-        resultsdict['error'] = 'Parameter error. Start/End date ="por" not supported for multi station call.'
+        error = 'Parameter error. Start/End date ="por" not supported for multi station call.'
+        resultsdict['error'] = error
         return resultsdict
 
     elements = WRCCUtils.get_element_list(form_input, program)
@@ -466,9 +456,11 @@ def get_station_data(form_input, program):
         el_strip, base_temp = WRCCUtils.get_el_and_base_temp(el)
         elems_list_short.append(el_strip)
         if el_strip in ['gdd', 'hdd', 'cdd'] and base_temp is not None:
-            elems_list.append(dict(vX=WRCCData.ACIS_ELEMENTS_DICT[el_strip]['vX'], base=int(base_temp), add='f,t'))
+            d = dict(vX=WRCCData.ACIS_ELEMENTS_DICT[el_strip]['vX'], base=int(base_temp), add='f,t')
+            elems_list.append(d)
         else:
-            elems_list.append(dict(vX=WRCCData.ACIS_ELEMENTS_DICT[el]['vX'],add='f,t'))
+            d = dict(vX=WRCCData.ACIS_ELEMENTS_DICT[el]['vX'],add='f,t')
+            elems_list.append(d)
     params = {
             'sdate':s_date,
             'edate':e_date,
@@ -478,13 +470,24 @@ def get_station_data(form_input, program):
     shape_type = None
     #Deal with POR input dates
     if 'station_id' in form_input.keys():
-        #params['sids'] = form_input['station_id']
-        [s_date, e_date] = WRCCUtils.find_valid_daterange(form_input['station_id'], start_date=s_date.lower(), end_date=e_date.lower(), el_list=elems_list_short, max_or_min='max')
+        sid = form_input['station_id']
+        s = s_date.lower()
+        e = e_date.lower()
+        l = elems_list_short
+        [s_date, e_date] = WRCCUtils.find_valid_daterange(sid, start_date=s, end_date=e, el_list=l, max_or_min='max')
         params['sdate'] = s_date; params['edate'] = e_date
         if not params['sdate'] or not params['edate']:
-            resultsdict['error'] = 'No start/end date could be found for this station in the metadata database.'
+            error = 'No start/end date could be found for this station in the metadata database.'
+            resultsdict['error'] = error
             return resultsdict
-    params[WRCCData.STN_AREA_FORM_TO_PARAM[form_input['select_stations_by']]] = form_input[form_input['select_stations_by']]
+    #Set area parameter
+    try:
+        key = WRCCData.STN_AREA_FORM_TO_PARAM[form_input['select_stations_by']]
+        val = form_input[form_input['select_stations_by']]
+    except:
+        key = WRCCData.STN_AREA_FORM_TO_PARAM[form_input['area_type']]
+        val = form_input[form_input['area_type']]
+    params[key] = val
     #Find bbox if custom shape and update params['bbox']
     if 'shape' in form_input.keys():
         shape_type,bbox = WRCCUtils.get_bbox(form_input['shape'])
@@ -512,11 +515,11 @@ def get_grid_data(form_input, program):
     Keyword arguments:
     form_input -- parameter file for data request obtained from user of CSC pages
     program -- specifies program that is making the request.
-
-    Returned is a resultsdictionary from ACIS with entries:
-    'lats'   -- lists of latitudes for grid points
-    'lons'   -- lists of longitudes for grid points
-    'data'   -- lists of grid data for each lat, lon
+    Returns python dictionary with keys:
+    meta
+    data or smry (if data_summary)
+    lats   -- lists of latitudes for grid points
+    lons   -- lists of longitudes for grid points
     '''
     #datalist[date_idx] = [[date1,lat1, lon1, elev1, el1_val1, el2_val1, ...],
     #[date2, lat2, ...], ...]
@@ -527,11 +530,23 @@ def get_grid_data(form_input, program):
         elements = [{'name':str(el),'smry':str(form_input['temporal_summary']),'smry_only':1} for el in el_list]
     else:
         elements = ','.join(el_list)
-    params = {'sdate': s_date, 'edate': e_date, 'grid': form_input['grid'], 'elems': elements, 'meta': 'll,elev'}
-    #Note: climdiv, cwa, cunty, basin get mapped to bbox as gridACIS currently
-    #does not support direct calls for these
-    params[WRCCData.GRID_AREA_FORM_TO_PARAM[form_input['select_grid_by']]] = form_input[form_input['select_grid_by']]
-    #Fidn bbox if custom shape
+    params = {
+        'sdate': s_date,
+        'edate': e_date,
+        'grid': form_input['grid'],
+        'elems': elements,
+        'meta': 'll,elev'
+    }
+    #Set area parameter
+    try:
+        key = WRCCData.GRID_AREA_FORM_TO_PARAM[form_input['select_grid_by']]
+        val = form_input[form_input['select_grid_by']]
+    except:
+        key = WRCCData.GRID_AREA_FORM_TO_PARAM[form_input['area_type']]
+        val = form_input[form_input['area_type']]
+    params[key] = val
+    #Override area parameter if needed
+    #Find bbox if custom shape
     if 'shape' in form_input.keys():
         #Need to find enclosing bbox
         shape_type,bbox = WRCCUtils.get_bbox(form_input['shape'])
@@ -541,15 +556,23 @@ def get_grid_data(form_input, program):
     #Note: gridACIS currently does not support direct calls for these options
     #FIX me : when gridACIS supports calls for climdiv, cwa, county, basin
     if form_input['select_grid_by'] in ['county_warning_area', 'climate_division', 'basin', 'county']:
-        bbox = get_acis_bbox_of_area(WRCCData.STN_AREA_FORM_TO_PARAM[form_input['select_grid_by']], form_input[form_input['select_grid_by']])
+        try:
+            a = WRCCData.STN_AREA_FORM_TO_PARAM[form_input['select_grid_by']]
+            v = form_input[form_input['select_grid_by']]
+        except:
+            a = WRCCData.STN_AREA_FORM_TO_PARAM[form_input['area_type']]
+            v = form_input[form_input['area_type']]
+        bbox = get_acis_bbox_of_area(a,v)
         params['bbox'] = bbox
     request = {}
     try:
         request = GridData(params)
     except Exception, e:
-        request['error'] = 'GridData request failed with ERROR: %s.' %(str(e))
+        error = 'GridData request failed with ERROR: %s.' %(str(e))
+        request['error'] = error
     if not request:
-        request = {'error':'GridData request did not return results. Please check your parameters.'}
+        error = 'No data found for these parameters.'
+        request['error'] = error
     return request
 
 #######################################

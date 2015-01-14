@@ -29,6 +29,180 @@ import WRCCClasses, AcisWS, WRCCData, WRCCUtils
 ####################################
 #FUNCTIONS
 #####################################
+####################################
+#CLEANED FUNCTIONS
+#####################################
+###################################
+#SCENIC MODULES
+###################################
+def get_data_type(form_input):
+    '''
+    Sets data type as station or grid
+    or stations or grids (if multi request)
+    according to form_input
+    Note that if data_type is in form_input, we
+    have either a multi request(station_ids/locations)
+    or an area request (cwa, county, climdiv,basin,shape)
+    '''
+    data_type = None
+    if 'data_type' in form_input.keys():
+        return str(form_input['data_type'])
+    if 'station_id' in form_input.keys():
+        return 'station'
+    if 'location' in form_input.keys():
+        return 'grid'
+    return data_type
+
+def set_acis_meta(data_type):
+    '''
+    Sets all meta string for data request
+    data_type = grid/station
+    meta string depends on data type
+    '''
+    if data_type == 'station':
+        return 'name,state,sids,ll,elev,uid,county,climdiv,valid_daterange'
+    if data_type == 'grid':
+        return 'll, elev'
+
+def set_single_els(form_input):
+    data_type = get_data_type(form_input)
+    acis_elems = []
+    for el in form_input['elements']:
+        el_strip, base_temp = WRCCUtils.get_el_and_base_temp(el)
+        l ={
+            'vX':WRCCData.ACIS_ELEMENTS_DICT[el_strip]['vX']
+        }
+        if el_strip in ['gdd', 'hdd', 'cdd'] and base_temp is not None:
+            l['base'] = int(base_temp)
+        #Add flags and time if data_type is station
+        if data_type == 'station':
+            l['add'] = 'f,t'
+        acis_elems.append(l)
+    return acis_elems
+
+def set_acis_params(form_input):
+    '''
+    Sets ACIS parameters according to:
+        area_type: station_id, location, county, state, etc.
+        data_type: station or grid
+        and request_type: single, multi or area
+    '''
+    #Find data_type variable
+    data_type = get_data_type(form_input)
+    if not data_type:
+        return {}
+    #Format dates
+    s_date, e_date = WRCCUtils.start_end_date_to_eight(form_input)
+    params = {
+            'sdate':s_date,
+            'edate':e_date
+    }
+    #Set area and element parameters
+    #Simple areas supported by both grid and station data
+    area_keys = ['station_id','station_ids','location','state','bounding_box',\
+        'county','county_warning_area','basin','climate_division','shape']
+    special_grid_keys = ['county','county_warning_area','basin','climate_division']
+    single_keys = ['station_id','location']
+    multi_keys = ['station_ids','locations']
+    special_keys = ['state','bounding_box','county','county_warning_area',\
+        'basin','climate_division','shape']
+    p_key = None
+    for area_key in area_keys:
+        if area_key not in form_input.keys():
+            continue
+        if area_key in form_input.keys():
+            p_key = WRCCData.FORM_TO_PARAMS[area_key]
+            params[p_key] = form_input[area_key]
+            break
+    if not p_key:
+        return {}
+    #Override area parameter if necessary
+    #Override with enclosing bbox if data_type == grid
+    if data_type == 'grid' and p_key in special_grid_keys:
+        del params[p_key]
+        bbox = AcisWS.get_acis_bbox_of_area(p_key,form_input[area_key])
+        params['bbox'] = bbox
+    #Special case shape
+    if area_key == 'shape':
+        del params[p_key]
+        #Need to find enclosing bbox
+        shape_type,bbox = get_bbox(form_input['shape'])
+        if shape_type == 'location':params['loc'] = form_input['shape']
+        else:params['bbox'] = bbox
+    #Set elements
+    params['elems'] = []
+    if area_key in single_keys:
+        params['elems'] = set_single_els(form_input)
+    elif area_key in multi_keys:
+        pass
+    elif area_key in special_keys:
+        pass
+    #Set meta according to data_type
+    params['meta'] = set_acis_meta(data_type)
+    #Set grid_params
+    if data_type =='grid':
+        params['grid'] = form_input['grid']
+    return params
+
+
+def make_data_request(form_input):
+    '''
+    Make ACIS request and return results as dictionary with keys:
+        errors: List of errors encountered during request call
+                    is empty for successful requests
+        meta: meta data list
+        data: data list (empty for summary requests)
+        smry: data summary list (empty for data requests)
+    '''
+    resultsdict = {
+        'errors':[],
+        'meta':[],
+        'data':[],
+        'smry':[]
+    }
+    data_type = get_data_type(form_input)
+    #Set request parameters
+    params = set_acis_params(form_input)
+    #Find correct data call functions
+    if not data_type:
+        error = 'Not a valid request. Could not find request type.'
+        resultsdict['errors'].append( error)
+        return resultsdict
+    if data_type == 'station':
+        if 'station_id' in form_input.keys():
+            request_data = getattr(AcisWS,'StnData')
+        else:
+            request_data = getattr(AcisWS,'MultiStnData')
+    if data_type == 'grid':
+        request_data = getattr(AcisWS,'GridData')
+    #Make data request
+    req = request_data(params)
+    print params
+    print req
+    '''
+    try:
+        req = request_data(params)
+    except Exception, e:
+        error = 'Data request failed with error: %s.' %str(e)
+        resultsdict['errors'].append( error)
+        return resultsdict
+    '''
+    #Check that data were obtainable
+    if not 'data' in req.keys() and not 'smry' in req.keys():
+        error = 'No data found for these parameters.'
+        resultsdict['errors'].append( error)
+        return resultsdict
+    #Write request data to resultsdict
+    if 'meta' in req.keys():
+        resultsdict['meta'] = req['meta']
+    if 'data' in req.keys() and req['data']:
+        resultsdict['data'] = req['data']
+    if 'smry' in req.keys() and req['smry']:
+        resultsdict['smry'] = req['smry']
+    return resultsdict
+####################################
+#NEED CLEANUP
+#####################################
 ##########################
 #DATE/TIME FUNCTIONS
 ##########################

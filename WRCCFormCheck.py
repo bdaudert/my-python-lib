@@ -100,7 +100,7 @@ def check_start_date(form):
 
     if len(date)!=8:
         if date.lower() == 'por':
-            return '%s is not a valid option for a multi-station request.' %form['start_date']
+            return '%s is not a valid option for a multi-station or grid request.' %form['start_date']
         else:
             return '%s is not a valid date.' %form['start_date']
     try:
@@ -168,7 +168,7 @@ def check_end_date(form):
         return err
     if len(date)!=8:
         if date.lower() == 'por':
-            return '%s is not a valid option for a multi-station request.' %form['end_date']
+            return '%s is not a valid option for a multi-station or grid request.' %form['end_date']
         else:
             return '%s is not a valid date.' %form['end_date']
     try:

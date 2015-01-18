@@ -33,9 +33,9 @@ import WRCCClasses, AcisWS, WRCCData, WRCCUtils
 #CLEANED FUNCTIONS
 #####################################
 ###################################
-#SCENIC MODULES
+#DATA MODULES
 ###################################
-def get_data_type(form_input):
+def get_data_type(form):
     '''
     Sets data type as station or grid
     or stations or grids (if multi request)
@@ -45,13 +45,45 @@ def get_data_type(form_input):
     or an area request (cwa, county, climdiv,basin,shape)
     '''
     data_type = None
-    if 'data_type' in form_input.keys():
-        return str(form_input['data_type'])
-    if 'station_id' in form_input.keys():
-        return 'station'
-    if 'location' in form_input.keys():
-        return 'grid'
+    if 'data_type' in form.keys():
+        return str(form['data_type'])
+    else:
+        if 'station_id' in form.keys() or 'station_id' in form.keys():
+            return 'station'
+        if 'location' in form.keys() or 'locations' in form.keys():
+            return 'grid'
     return data_type
+
+def get_meta_keys(form):
+    #Set meta keys according to data_type
+    if 'data_type' in form.keys():
+        if form['data_type'] == 'station':
+            meta_keys = ['name', 'state', 'sids', 'elev', 'll', 'valid_daterange']
+        else:
+            meta_keys = ['ll','elev']
+    else:
+        if 'station_id' in form.keys() or 'station_ids' in form.keys():
+            meta_keys = ['name', 'state', 'sids', 'elev', 'll', 'valid_daterange']
+        else:
+            meta_keys = ['ll','elev']
+    return meta_keys
+
+def convert_elements_to_list(elements):
+    el_list = []
+    if isinstance(elements, basestring):
+        el_list = elements.replace(' ','').rstrip(',').split(',')
+    elif isinstance(elements,list):
+        el_list = [str(el) for el in elements]
+    return el_list
+
+def convert_elements_to_string(elements):
+    el_str = ''
+    if isinstance(elements, basestring):
+        el_str = elements
+    elif isinstance(elements,list):
+        el_str = ','.join([str(el).rstrip(' ') for el in elements])
+    return el_str
+
 
 def set_acis_meta(data_type):
     '''
@@ -76,7 +108,12 @@ def set_single_els(form_input):
             l['base'] = int(base_temp)
         #Add flags and time if data_type is station
         if data_type == 'station':
-            l['add'] = 'f,t'
+            if form_input['show_flags'] == 'T' and form_input['show_observation_time'] =='F':
+                l['add'] = 'f'
+            if form_input['show_flags'] == 'F' and form_input['show_observation_time'] =='T':
+                l['add'] = 't'
+            if form_input['show_flags'] == 'T' and form_input['show_observation_time'] =='T':
+                l['add']= 'f,t'
         acis_elems.append(l)
     return acis_elems
 
@@ -177,8 +214,6 @@ def make_data_request(form_input):
         request_data = getattr(AcisWS,'GridData')
     #Make data request
     req = request_data(params)
-    print params
-    print req
     '''
     try:
         req = request_data(params)
@@ -200,6 +235,195 @@ def make_data_request(form_input):
     if 'smry' in req.keys() and req['smry']:
         resultsdict['smry'] = req['smry']
     return resultsdict
+
+###################################
+#DATA FORMATTING MODULES
+###################################
+def set_single_req_header(form):
+    el_list = form['elements']
+    if isinstance(form['elements'], basestring):
+        el_list = form['elements'].replace(' ','').split(',')
+    header = ['Date']
+    for el in el_list:
+        el_strip,base_temp = get_el_and_base_temp(el)
+        unit = WRCCData.UNITS_ENGLISH[el_strip]
+        if form['units'] == 'metric':
+            unit = WRCCData.UNITS_METRIC[el_strip]
+            if base_temp:
+                WRCCUtils.convert_to_metric(base_temp)
+        base_temp = ''
+        if base_temp:
+            base_temp = str(base_temp)
+        el_name = WRCCData.MICHELES_ELEMENT_NAMES[el_strip]
+        h = el_name + ' (' + unit + ')'
+        if base_temp:
+            h+=' Base: ' + base_temp
+        header+=[h]
+        if 'show_flags' in form.keys():
+            if form['show_flags'] == 'T':
+                header+=['F']
+        if 'show_observation_time' in form.keys():
+            if form['show_observation_time'] == 'T':
+                header+=['T']
+    return header
+
+def format_data_single_lister(req_data,form):
+    '''
+    req_data is result of a make_data_request callfor single point
+    This function formats the data for easy display on html pages
+    or download to file options
+    It also takes care of:
+        unicode to string formatting
+    '''
+    if not req_data['data']:
+        return []
+    header = set_single_req_header(form)
+    f_data = [header]
+    for date_idx,data in enumerate(req_data['data']):
+        date = [str(data[0])]
+        data = data[1:]
+        #Note: format is different if flags/obs are asked for
+        #Deal with non-flag/obs time requests first --> easy
+        date_data = []
+        for el_idx, el_data in enumerate(data):
+            if isinstance(el_data,basestring):
+                #Put each element in its own list so that
+                #format is the same as for flag/obs requests
+                try:
+                    date_data.append(round(float(el_data),2))
+                except:
+                    date_data.append(str(el_data))
+            else:
+                for d in el_data:
+                    if d =='':
+                        d=' '
+                    try:
+                        date_data.append(round(float(d),2))
+                    except:
+                        date_data.append(str(d))
+        f_data.append(date + date_data)
+    return f_data
+
+def metadict_to_display_list(metadata, key_order_list,form):
+    meta = [[WRCCData.DISPLAY_PARAMS[key]] for key in key_order_list]
+    for key, val in metadata.iteritems():
+        try:
+            idx = key_order_list.index(str(key))
+        except:
+            continue
+        if key == 'sids':
+            sid_list = []
+            for sid in val:
+                sid_l = sid.split()
+                sid_list.append(str(sid_l[0]) + '/' + WRCCData.NETWORK_CODES[str(sid_l[1])])
+            meta[idx].append(sid_list)
+        elif key == 'valid_daterange':
+            el_list_long = []
+            el_list = convert_elements_to_list(form['elements'])
+            for el_idx,el in enumerate(el_list):
+                #Get rid of unicode
+                vd = [str(metadata['valid_daterange'][el_idx][0]),str(metadata['valid_daterange'][el_idx][1])]
+                el_strip,base_temp = WRCCUtils.get_el_and_base_temp(el)
+                unit = WRCCData.UNITS_ENGLISH[el_strip]
+                if form['units'] == 'metric':
+                    unit = WRCCData.UNITS_METRIC[el_strip]
+                    base_temp = WRCCUtils.convert_to_metric(el_strip,base_temp)
+                if not base_temp:
+                    el_list_long.append(WRCCData.DISPLAY_PARAMS[el_strip] + ' (' + unit + ') ' + str(vd))
+                else:
+                    el_list_long.append(WRCCData.DISPLAY_PARAMS[el_strip] + ' (' + unit + '), Base: ' + str(base_temp) + ' ' + str(vd))
+            meta[idx].append(el_list_long)
+        else:
+            meta[idx].append([str(val)])
+    return meta
+
+
+def write_to_csv(response,results,form):
+    '''
+    Writes results to csv file
+    results has keys: meta, data
+    '''
+    meta = results['meta']
+    if 'smry' in results.keys():
+        data = results['smry']
+    else:
+        data = results['data']
+    #Set meta keys according to data_type
+    meta_keys = get_meta_keys(form)
+    #Set data type
+    data_type = get_data_type(form)
+    delim = WRCCData.DELIMITERS[form['delimiter']]
+    import csv
+    writer = csv.writer(response, delimiter=delim)
+    #Search params header:
+    row = ['*SearchArea',WRCCData.DISPLAY_PARAMS[form['area_type']],form[form['area_type']]]
+    writer.writerow(row)
+    if data_type == 'station':
+        row = ['*DataFlags','M=Missing', 'T=Trace', 'S=Subsequent', 'A=Accumulated']
+        writer.writerow(row)
+    #NOTE: row writer does not like delimiter characters in string,
+    #need to set space char to be used in header string
+    header_seperator = ': '
+    if delim == ':':
+        header_seperator = ' '
+    #Loop over data points
+    for p_idx, p_data in enumerate(data):
+        #NOTE: row writer does not like delimiter characters in string,
+        #need to set space char to be used in header string
+        #Write meta
+        meta_display_params = metadict_to_display_list(meta[p_idx], meta_keys, form)
+        for key_val in meta_display_params:
+            row = ['*' + key_val[0].replace(' ',''),' '.join(key_val[1])]
+            writer.writerow(row)
+        #Write data
+        writer.writerow(['*'])
+        for d_idx, date_data in enumerate(p_data):
+            if d_idx == 0:
+                #Data Header
+                date_data[0] = '*' + date_data[0]
+            row = date_data
+            writer.writerow(row)
+
+def write_to_excel(response,results,form):
+    '''
+    Writes results to excel file
+    results has keys: meta, data
+    '''
+    meta = results['meta']
+    if 'smry' in results.keys():
+        data = results['smry']
+    else:
+        data = results['data']
+    #Set meta keys according to data_type
+    meta_keys = get_meta_keys(form)
+    #Set data type
+    data_type = get_data_type(form)
+    delim = WRCCData.DELIMITERS[form['delimiter']]
+    from xlwt import Workbook
+    wb = Workbook()
+    #Loop over data points
+    for p_idx, p_data in enumerate(data):
+        #NOTE: row writer does not like delimiter characters in string,
+        #need to set space char to be used in header string
+        #Write meta
+        meta_display_params = metadict_to_display_list(meta[p_idx], meta_keys, form)
+        #New sheet for each point
+        ws = wb.add_sheet('Point' + str(p_idx))
+        for m_idx,key_val in enumerate(meta_display_params):
+            ws.write(0,m_idx,meta_display_params[m_idx][0])
+            ws.write(1,m_idx,' '.join(meta_display_params[m_idx][1]))
+        if data_type =='station':
+            ws.write(3,0,'DataFlags')
+            ws.write(3,1,'M=Missing')
+            ws.write(3,2,'T=Trace')
+            ws.write(3,3,'S=Subsequent')
+            ws.write(3,4,'A=Accumulated')
+        #Write data
+        for date_idx in range(len(p_data)):
+            for data_idx in range(len(p_data[date_idx])):
+                ws.write(date_idx + 5 ,data_idx,p_data[date_idx][data_idx])
+        #Save workbook
+        wb.save(response)
 ####################################
 #NEED CLEANUP
 #####################################
@@ -1876,6 +2100,7 @@ def format_station_meta(meta_data):
             meta[str(key)] = str(val)
     return meta
 
+#DELETE??? -- replaced by metadict_to_display_list
 def metadict_to_display(metadata, key_order_list):
     meta = [[WRCCData.DISPLAY_PARAMS[key]] for key in key_order_list]
     for key, val in metadata.iteritems():

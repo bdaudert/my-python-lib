@@ -427,6 +427,28 @@ STN_AREA_FORM_TO_PARAM = {
     'location':'loc',
     'point':'loc'
 }
+
+#NEW
+FORM_TO_META_PARAMS = {
+    'station_id':'sids',
+    'station_ids':'sids',
+    'station':'sids',
+    'grid':'sids',
+    'climate_division':'climdiv',
+    'climdiv':'climdiv',
+    'county_warning_area':'cwa',
+    'cwa':'cwa',
+    'bounding_box':'bbox',
+    'bbox':'bbox',
+    'state':'state',
+    'states':'state',
+    'county':'county',
+    'basin':'basin',
+    'shape':'bbox',
+    'location':'loc',
+    'point':'loc'
+}
+
 #NEW
 FORM_TO_PARAMS = {
     'station_id':'sid',
@@ -447,7 +469,7 @@ FORM_TO_PARAMS = {
     'location':'loc',
     'point':'loc'
 }
-
+#NEW
 PARAMS_TO_FORM= {
     'climdiv':'climate_division',
     'climate_division':'climate_division',

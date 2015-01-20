@@ -725,8 +725,12 @@ def format_soddyrec_results_txt(results, wrapper,data_params):
                     if k == 3:
                         row+=' %3s' %results[0][el_idx][doy][k]
                     else:
-                        #row+='%6s' %results[0][el_idx][doy][k]
-                        row+='%5s' %results[0][el_idx][doy][k]
+                        if k == 2 and el == 'pcpn':
+                            #extra space between mint year and pcpn avgt
+                            row+='%6s' %results[0][el_idx][doy][k]
+                        else:
+                            #row+='%6s' %results[0][el_idx][doy][k]
+                            row+='%5s' %results[0][el_idx][doy][k]
                 elif el in ['hdd','cdd'] and (k == 2 or k == 3):
                     row+='%6s' %results[0][el_idx][doy][k]
                 else:
@@ -1341,6 +1345,7 @@ def format_date(date):
     d = date.replace('-','').replace(':','').replace('/','').replace(' ','')
     return d
 
+#For running soddyrec offline
 def run_soddyrec(arg_list, output_file=None):
     if output_file:
         sys.stdout = open(output_file, 'w')

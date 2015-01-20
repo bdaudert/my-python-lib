@@ -14,10 +14,18 @@ import logging
 import os, glob, sys
 
 base_dir = '/tmp/'
-
+fips_codes ={'al':'01','az':'02','ar':'03','ca':'04',\
+'co':'05','ct':'06','de':'07','fl':'08','ga':'09','id':'10',\
+'il':'11','in':'12','ia':'13','ks':'14','ky':'15','la':'16',\
+'me':'17','md':'18','ma':'19','mi':'20','mn':'21','ms':'22',\
+'mo':'23','mt':'24','ne':'25','nv':'26','nh':'27','nj':'28',\
+'nm':'29','ny':'30','nc':'31','nd':'32','oh':'33','ok':'34',\
+'or':'35','pa':'36','ri':'37','sc':'38','sd':'39','tn':'40',\
+'tx':'41','ut':'42','vt':'43','va':'44','wa':'45','wv':'46',\
+'wi':'47','wy':'48','ak':'50','hi':'51','pr':'66','vi':'67','pi':'91'}
 
 def get_US_station_meta():
-    #params = {"bbox":"-170,30,60,-90","meta":"name,sids,valid_daterange","elems":"maxt,pcpn,mint,snow,snwd"}
+    #params = {"bbox":"-119,39,-116,42","meta":"name,sids,valid_daterange","elems":"maxt,pcpn,mint,snow,snwd"}
     params = {
         "bbox":"-177.1,13.71,-61.48,76.63",
         "meta":"name,state,sids,valid_daterange",
@@ -95,23 +103,30 @@ if __name__ == "__main__":
     logger.info('Retrieving metadata')
     USMeta = get_US_station_meta()
     logger.info('metadata retrieved successfully!')
+    #logger.info(str(USMeta))
     #Loop over USMeta stations
     count = 0
     if not USMeta['meta']:
-        logger.error('No metadata could be retrieved.Exiting program.')
+        logger.error('Metadat is empty, check parameters. Exiting program.')
         sys.exit(1)
     for stn_meta in USMeta['meta']:
         if not valid_COOP_station(stn_meta):
             continue
         count+=1
         stn_id = get_coop_id(stn_meta)
-        state = str(stn_meta['state']).lower()
+        try:
+            state = fips_codes[str(stn_meta['state']).lower()]
+        except:
+            continue
+        logger.info('Begin processing station: ' + str(stn_id))
         try:
             os.stat(base_dir + state)
         except:
             os.mkdir(base_dir + state)
+            logger.info('Created directory ' + base_dir + state)
         out_file_name = base_dir + state + '/' + str(stn_id) + '.rec'
         w_params = set_wrapper_params(stn_id)
+        logger.info('Setting application parameters')
         #Execute wrapper
         try:
             logger.info('Starting soddyrec for station %s' %str(stn_id))

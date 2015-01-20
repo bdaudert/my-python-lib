@@ -39,8 +39,8 @@ def get_data_type(form):
     '''
     Sets data type as station or grid
     or stations or grids (if multi request)
-    according to form_input
-    Note that if data_type is in form_input, we
+    according to form
+    Note that if data_type is in form, we
     have either a multi request(station_ids/locations)
     or an area request (cwa, county, climdiv,basin,shape)
     '''
@@ -96,28 +96,31 @@ def set_acis_meta(data_type):
     if data_type == 'grid':
         return 'll, elev'
 
-def set_single_els(form_input):
-    data_type = get_data_type(form_input)
+def set_single_els(form):
+    data_type = get_data_type(form)
     acis_elems = []
-    for el in form_input['elements']:
+    for el in form['elements']:
         el_strip, base_temp = WRCCUtils.get_el_and_base_temp(el)
         l ={
             'vX':WRCCData.ACIS_ELEMENTS_DICT[el_strip]['vX']
         }
+        if 'data_summary' in form.keys() and form['data_summary'] == 'temporal':
+            if 'temporal_summary' in form.keys():
+                l['smry'] = form['temporal_summary']
         if el_strip in ['gdd', 'hdd', 'cdd'] and base_temp is not None:
             l['base'] = int(base_temp)
         #Add flags and time if data_type is station
         if data_type == 'station':
-            if form_input['show_flags'] == 'T' and form_input['show_observation_time'] =='F':
+            if form['show_flags'] == 'T' and form['show_observation_time'] =='F':
                 l['add'] = 'f'
-            if form_input['show_flags'] == 'F' and form_input['show_observation_time'] =='T':
+            if form['show_flags'] == 'F' and form['show_observation_time'] =='T':
                 l['add'] = 't'
-            if form_input['show_flags'] == 'T' and form_input['show_observation_time'] =='T':
+            if form['show_flags'] == 'T' and form['show_observation_time'] =='T':
                 l['add']= 'f,t'
         acis_elems.append(l)
     return acis_elems
 
-def set_acis_params(form_input):
+def set_acis_params(form):
     '''
     Sets ACIS parameters according to:
         area_type: station_id, location, county, state, etc.
@@ -125,11 +128,11 @@ def set_acis_params(form_input):
         and request_type: single, multi or area
     '''
     #Find data_type variable
-    data_type = get_data_type(form_input)
+    data_type = get_data_type(form)
     if not data_type:
         return {}
     #Format dates
-    s_date, e_date = WRCCUtils.start_end_date_to_eight(form_input)
+    s_date, e_date = WRCCUtils.start_end_date_to_eight(form)
     params = {
             'sdate':s_date,
             'edate':e_date
@@ -145,11 +148,11 @@ def set_acis_params(form_input):
         'basin','climate_division','shape']
     p_key = None
     for area_key in area_keys:
-        if area_key not in form_input.keys():
+        if area_key not in form.keys():
             continue
-        if area_key in form_input.keys():
+        if area_key in form.keys():
             p_key = WRCCData.FORM_TO_PARAMS[area_key]
-            params[p_key] = form_input[area_key]
+            params[p_key] = form[area_key]
             break
     if not p_key:
         return {}
@@ -157,19 +160,19 @@ def set_acis_params(form_input):
     #Override with enclosing bbox if data_type == grid
     if data_type == 'grid' and p_key in special_grid_keys:
         del params[p_key]
-        bbox = AcisWS.get_acis_bbox_of_area(p_key,form_input[area_key])
+        bbox = AcisWS.get_acis_bbox_of_area(p_key,form[area_key])
         params['bbox'] = bbox
     #Special case shape
     if area_key == 'shape':
         del params[p_key]
         #Need to find enclosing bbox
-        shape_type,bbox = get_bbox(form_input['shape'])
-        if shape_type == 'location':params['loc'] = form_input['shape']
+        shape_type,bbox = get_bbox(form['shape'])
+        if shape_type == 'location':params['loc'] = form['shape']
         else:params['bbox'] = bbox
     #Set elements
     params['elems'] = []
     if area_key in single_keys:
-        params['elems'] = set_single_els(form_input)
+        params['elems'] = set_single_els(form)
     elif area_key in multi_keys:
         pass
     elif area_key in special_keys:
@@ -178,11 +181,11 @@ def set_acis_params(form_input):
     params['meta'] = set_acis_meta(data_type)
     #Set grid_params
     if data_type =='grid':
-        params['grid'] = form_input['grid']
+        params['grid'] = form['grid']
     return params
 
 
-def make_data_request(form_input):
+def make_data_request(form):
     '''
     Make ACIS request and return results as dictionary with keys:
         errors: List of errors encountered during request call
@@ -197,16 +200,16 @@ def make_data_request(form_input):
         'data':[],
         'smry':[]
     }
-    data_type = get_data_type(form_input)
+    data_type = get_data_type(form)
     #Set request parameters
-    params = set_acis_params(form_input)
+    params = set_acis_params(form)
     #Find correct data call functions
     if not data_type:
         error = 'Not a valid request. Could not find request type.'
         resultsdict['errors'].append( error)
         return resultsdict
     if data_type == 'station':
-        if 'station_id' in form_input.keys():
+        if 'station_id' in form.keys():
             request_data = getattr(AcisWS,'StnData')
         else:
             request_data = getattr(AcisWS,'MultiStnData')
@@ -239,11 +242,12 @@ def make_data_request(form_input):
 ###################################
 #DATA FORMATTING MODULES
 ###################################
-def set_single_req_header(form):
+def set_single_headers(form):
     el_list = form['elements']
     if isinstance(form['elements'], basestring):
         el_list = form['elements'].replace(' ','').split(',')
-    header = ['Date']
+    header_data = ['Date']
+    header_smry = []
     for el in el_list:
         el_strip,base_temp = get_el_and_base_temp(el)
         unit = WRCCData.UNITS_ENGLISH[el_strip]
@@ -258,14 +262,17 @@ def set_single_req_header(form):
         h = el_name + ' (' + unit + ')'
         if base_temp:
             h+=' Base: ' + base_temp
-        header+=[h]
+        header_data+=[h]
+        header_smry+=[h]
         if 'show_flags' in form.keys():
             if form['show_flags'] == 'T':
-                header+=['F']
+                header_data+=['F']
         if 'show_observation_time' in form.keys():
             if form['show_observation_time'] == 'T':
-                header+=['T']
-    return header
+                header_data+=['T']
+    return header_data,header_smry
+
+
 
 def format_data_single_lister(req_data,form):
     '''
@@ -275,18 +282,26 @@ def format_data_single_lister(req_data,form):
     It also takes care of:
         unicode to string formatting
     '''
-    if not req_data['data']:
+    results = {'smry':[]}
+    if not req_data['data'] and not req_data['smry']:
         return []
-    header = set_single_req_header(form)
-    f_data = [header]
+    header_data, header_smry = set_single_headers(form)
+    d_data = [header_data]
     for date_idx,data in enumerate(req_data['data']):
         date = [str(data[0])]
         data = data[1:]
         #Note: format is different if flags/obs are asked for
         #Deal with non-flag/obs time requests first --> easy
         date_data = []
+        smry_data = []
         for el_idx, el_data in enumerate(data):
-            if isinstance(el_data,basestring):
+            #Format Summary
+            if req_data['smry']:
+                try:
+                    smry_data.append(round(float(req_data['smry'][el_idx]),2))
+                except:
+                    smry_data.append(str(req_data['smry'][el_idx]))
+            if not isinstance(el_data,list):
                 #Put each element in its own list so that
                 #format is the same as for flag/obs requests
                 try:
@@ -301,14 +316,33 @@ def format_data_single_lister(req_data,form):
                         date_data.append(round(float(d),2))
                     except:
                         date_data.append(str(d))
-        f_data.append(date + date_data)
-    return f_data
+        d_data.append(date + date_data)
+        results['data'] = d_data
+        if smry_data:
+            results['smry'] = [header_smry,smry_data]
+    return results
 
 def metadict_to_display_list(metadata, key_order_list,form):
-    meta = [[WRCCData.DISPLAY_PARAMS[key]] for key in key_order_list]
+    keys = [k for k in key_order_list]
+    #grid meta ll transforms to lat/lon keys
+    if 'location' in form.keys() or 'locations' in form.keys():
+        ll_idx = keys.index('ll')
+        if 'lat' in metadata.keys():
+            #replace ll with lat, lon keys
+            keys[ll_idx] = 'lat'
+            keys.insert(ll_idx + 1,'lon')
+    meta = [[WRCCData.DISPLAY_PARAMS[key]] for key in keys]
+    #Sanity check:
+    for i,k in enumerate(keys):
+        if not k in metadata.keys():
+            if k == 'data_summary':
+                if form['data_summary'] !='none':
+                    metadict[i].append([WRCCData.DISPLAY_PARAMS[form[form_data_summary]]])
+            else:
+                meta[i].append([' '])
     for key, val in metadata.iteritems():
         try:
-            idx = key_order_list.index(str(key))
+            idx = keys.index(str(key))
         except:
             continue
         if key == 'sids':
@@ -338,12 +372,13 @@ def metadict_to_display_list(metadata, key_order_list,form):
     return meta
 
 
-def write_to_csv(response,results,form):
+def write_to_csv(response,results):
     '''
     Writes results to csv file
     results has keys: meta, data
     '''
     meta = results['meta']
+    form = results['form']
     if 'smry' in results.keys():
         data = results['smry']
     else:
@@ -384,12 +419,13 @@ def write_to_csv(response,results,form):
             row = date_data
             writer.writerow(row)
 
-def write_to_excel(response,results,form):
+def write_to_excel(response,results):
     '''
     Writes results to excel file
     results has keys: meta, data
     '''
     meta = results['meta']
+    form = results['form']
     if 'smry' in results.keys():
         data = results['smry']
     else:
@@ -521,26 +557,26 @@ def get_start_date(time_unit, end_date, number):
     start_date = '%s%s%s' %(yr_start, mon_start,day_start)
     return start_date
 
-def start_end_date_to_eight(form_input):
+def start_end_date_to_eight(form):
     '''
-    Converts form_input['start_date'] and form_input['end_date']
+    Converts form['start_date'] and form['end_date']
     to 8 digit start, end dates of format yyyymmdd.
     '''
     mon_lens = ['31', '28', '31','30','31','30', '31','31','30','31','30','31']
-    if 'start_date' not in form_input.keys():
+    if 'start_date' not in form.keys():
         s_date = 'por'
-    elif form_input['start_date'].lower() == 'por':
+    elif form['start_date'].lower() == 'por':
         s_date = 'por'
     else:
-        s_date = date_to_eight(str(form_input['start_date']),se='start')
+        s_date = date_to_eight(str(form['start_date']),se='start')
         if len(s_date)!=8:
             s_date = None
-    if 'end_date' not in form_input.keys():
+    if 'end_date' not in form.keys():
         e_date = 'por'
-    elif form_input['end_date'].lower() == 'por':
+    elif form['end_date'].lower() == 'por':
         e_date = 'por'
     else:
-        e_date = date_to_eight(str(form_input['end_date']),se='end')
+        e_date = date_to_eight(str(form['end_date']),se='end')
         if len(e_date)!=8:
             e_date = None
     return s_date, e_date
@@ -1257,6 +1293,35 @@ def u_convert(data):
     else:
         return data
 
+def check_dir_path(path,rwx=False):
+    '''
+    Checks if dir_pathexists and has correct permissions
+    Creates path if needed and sets permissions
+    This function swas created to avoid permission errors
+    in /tmp/data_requests after reboot.
+    reboot cleans out /tmp
+    '''
+    path_error = None
+    #create directories
+    try:
+        if not os.path.exists(path):
+            os.makedirs(path)
+    except Exception, e:
+        path_error = str(e)
+    #change permissions to 777 if rwx= True
+    if rwx:
+        for root,dirs,files in os.walk(path):
+            for d in dirs:
+                '''
+                try:
+                    os.chmod(d,0777)
+                except Exception, e:
+                    path_error = str(e)
+                    break
+                '''
+                os.chmod(d,0777)
+    return path_error
+
 def load_data_to_json_file(path_to_file, data):
     '''
     It's better to fail than to pass so that users and I know something is up
@@ -1690,7 +1755,7 @@ def write_station_data_to_file(resultsdict, form, f=None, request=None):
             wb.save(response)
     return response
 
-def format_station_data(request, form_input):
+def format_station_data(request, form):
     '''
     Format station data. Output is a dictionary  with keys:
     dates
@@ -1705,17 +1770,17 @@ def format_station_data(request, form_input):
     stn_elev
     Keyword arguments:
     request    -- Data request object, result of MultiStnData call to ACIS-WS
-    form_input -- parameter dictionary
+    form -- parameter dictionary
     '''
-    elements = get_element_list(form_input)
+    elements = get_element_list(form)
     #Deal with por start/end_dates
-    if form_input['start_date'].lower() == 'por' or form_input['end_date'].lower() == 'por':
+    if form['start_date'].lower() == 'por' or form['end_date'].lower() == 'por':
         if 'date_range' in request.keys() and len(request['date_range']) == 2:
             dates = get_dates(request['date_range'][0], request['date_range'][1])
         else:
-            dates = get_dates(form_input['start_date'], form_input['end_date'])
+            dates = get_dates(form['start_date'], form['end_date'])
     else:
-        dates = get_dates(form_input['start_date'], form_input['end_date'])
+        dates = get_dates(form['start_date'], form['end_date'])
     #Initialize output lists
 
     if 'data' in request.keys() and isinstance(request['data'],list):
@@ -1741,15 +1806,15 @@ def format_station_data(request, form_input):
     idx_empty_list = []
     stn_idx = -1
     shape_type = None
-    if 'shape' in form_input.keys():
-        shape_type,bbox = WRCCUtils.get_bbox(form_input['shape'])
+    if 'shape' in form.keys():
+        shape_type,bbox = WRCCUtils.get_bbox(form['shape'])
     generator = ((stn, data) for stn, data in enumerate(request['data']))
     for (stn, data) in generator:
         stn_idx+=1
         #if custom shape, check if  stn lies within shape
         stn_in = True
         if shape_type is not None:
-            shape = form_input['shape'].split(',')
+            shape = form['shape'].split(',')
             shape = [float(s) for s in shape]
         if shape_type == 'circle':
             poly = shape
@@ -1833,15 +1898,15 @@ def format_station_data(request, form_input):
             for (idx, date) in generator:
             #for idx, date in  enumerate(dates):
                 #Units:
-                if 'units' in form_input.keys() and form_input['units'] == 'metric':
-                    for el_idx, el in enumerate(form_input['elements'].replace(' ','').split(',')):
+                if 'units' in form.keys() and form['units'] == 'metric':
+                    for el_idx, el in enumerate(form['elements'].replace(' ','').split(',')):
                         resultsdict['stn_data'][stn_idx][idx][el_idx][0] = WRCCUtils.convert_to_metric(el, resultsdict['stn_data'][stn_idx][idx][el_idx][0])
                 #Dates
                 d = date.replace(' ','').replace(':','').replace('/','').replace('-','')
-                dlm = WRCCData.DATE_FORMAT[form_input['date_format']]
+                dlm = WRCCData.DATE_FORMAT[form['date_format']]
                 resultsdict['stn_data'][stn_idx][idx].insert(0, d[0:4] + dlm + d[4:6] + dlm + d[6:8])
     #final check on station data if comma separated list of stations
-    if 'station_ids' in form_input.keys():
+    if 'station_ids' in form.keys():
         for idx in idx_empty_list:
             resultsdict['stn_ids'].insert(idx, [stn_list_in[idx] + ' '])
             resultsdict['stn_names'].insert(idx, '')
@@ -2272,23 +2337,23 @@ def convert_to_list(item):
     else:lst = item
     return lst
 
-def get_element_list(form_input, program=None):
+def get_element_list(form, program=None):
     '''
     Finds element list for SOD program data query
 
     Keyword arguments:
-    form_input -- webpage user form fields
+    form -- webpage user form fields
     program    -- application name
     '''
     element_list = []
     if program in ['Soddynorm', 'Sodlist', 'Sodcnv','Soddd','Sodpad']:
         element_list = WRCCData.SOD_ELEMENT_LIST_BY_APP[program]['all']
     else:
-        if 'element' in form_input.keys():
-            element_list = WRCCData.SOD_ELEMENT_LIST_BY_APP[program][form_input['element']]
-        elif 'elements' in form_input.keys():
+        if 'element' in form.keys():
+            element_list = WRCCData.SOD_ELEMENT_LIST_BY_APP[program][form['element']]
+        elif 'elements' in form.keys():
             #Check if elements is given as string, if so, convert to list
-            element_list = convert_to_list(form_input['elements'])
+            element_list = convert_to_list(form['elements'])
     return element_list
 
 

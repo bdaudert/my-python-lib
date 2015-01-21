@@ -598,6 +598,9 @@ DISPLAY_PARAMS = {
     #dates and elements
     'start_date': 'Start Date',
     'end_date': 'End Date',
+    'windowed_data': 'Windowed Data',
+    'start_window': 'Start Window',
+    'end_window': 'End Window',
     'start_month': 'Start Month',
     'end_month': 'End Month',
     'time_period': 'Time Period',

@@ -322,6 +322,76 @@ def format_data_single_lister(req_data,form):
             results['smry'] = [header_smry,smry_data]
     return results
 
+def get_window_data(data, start_date, end_date, start_window, end_window):
+    '''
+    Routine to filter out data according to window specification
+    Keyword arguments:
+    data         -- data array
+    start_date   -- start date of data array
+    end_date     -- end date of data array
+    start_window -- start date of window
+    end_window   -- end date of window
+    '''
+    if start_window == '0101' and end_window == '1231':
+        windowed_data = data
+    else:
+        windowed_data = []
+        start_indices=[]
+        end_indices=[]
+        #Pick first and last data from data array,
+        #Note: data[0] is header so we start with index 1
+        start_d = ''.join(data[1][0].split('-'))
+        end_d = ''.join(data[-1][0].split('-'))
+        st_yr = int(start_d[0:4])
+        st_mon = int(start_d[4:6])
+        st_day = int(start_d[6:8])
+        end_yr = int(end_d[0:4])
+        end_mon = int(end_d[4:6])
+        end_day = int(end_d[6:8])
+        #Date formatting needed to deal with end of data and window size
+        #doy = day of year
+        if WRCCUtils.is_leap_year(st_yr) and st_mon > 2:
+            doy_first = datetime.datetime(st_yr, st_mon, st_day).timetuple().tm_yday -1
+        else:
+            doy_first = datetime.datetime(st_yr, st_mon, st_day).timetuple().tm_yday
+        if WRCCUtils.is_leap_year(end_yr) and end_mon > 2:
+            doy_last = datetime.datetime(end_yr, end_mon, end_day).timetuple().tm_yday - 1
+        else:
+            doy_last = datetime.datetime(end_yr, end_mon, end_day).timetuple().tm_yday
+        doy_window_st = WRCCUtils.compute_doy(start_window[0:2], start_window[2:4])
+        doy_window_end = WRCCUtils.compute_doy(end_window[0:2], end_window[2:4])
+        dates = [data[i][0] for i  in range(len(data))]
+        start_w = '%s-%s' % (start_window[0:2], start_window[2:4])
+        end_w = '%s-%s' % (end_window[0:2], end_window[2:4])
+        #silly python doesn't have list.indices() method
+        #Look for windows in data
+        for i, date in enumerate(dates):
+            if date[5:] == start_w:
+                start_indices.append(i)
+            if date[5:] == end_w:
+                end_indices.append(i)
+        #Check end conditions at endpoints:
+        if doy_window_st == doy_window_end:
+            pass
+        elif doy_window_st < doy_window_end:
+            if doy_first <= doy_window_end and doy_window_st < doy_first:
+                start_indices.insert(0, 0)
+            if doy_last < doy_window_end and doy_window_st <= doy_last:
+                end_indices.insert(len(dates),len(dates)-1)
+        else: #doy_window_st > doy_window_end
+            if (doy_window_st > doy_first and doy_first <= doy_window_end) or (doy_window_st < doy_first and doy_first >= doy_window_end):
+                start_indices.insert(0, 0)
+            if (doy_last <= doy_window_st and doy_last < doy_window_end) or (doy_window_st <= doy_last and doy_last > doy_window_end):
+                end_indices.insert(len(dates),len(dates)-1)
+        #Sanity check
+        if len(start_indices)!= len(end_indices):
+            return []
+        for j in range(len(start_indices)):
+            add_data = data[start_indices[j]:end_indices[j]+1]
+            windowed_data = windowed_data + add_data
+    return windowed_data
+
+
 def metadict_to_display_list(metadata, key_order_list,form):
     keys = [k for k in key_order_list]
     #grid meta ll transforms to lat/lon keys

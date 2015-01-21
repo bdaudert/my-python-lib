@@ -91,6 +91,50 @@ def check_end_year(form):
             return 'User date range is not in valid date range of this grid.'
     return err
 
+def check_start_window(form):
+    #Backbutton sanity check
+    if 'start_window' not in form.keys() or 'end_window' not in form.keys():
+        return 'Start and/or End Window field not valid. You may have pressed the backbutton. Please reset the windowed data button.'
+    err = None
+    s_w = form['start_window'].replace('-','').replace('/','').replace(':','')
+    e_w = form['end_window'].replace('-','').replace('/','').replace(':','')
+    if len(s_w) != 4:
+        return 'Start Window must be of form mmdd/mm-dd or mm:dd. You entered %s' % form['start_window']
+    mm = s_w[0:2]
+    dd= s_w[2:4]
+    #Check month
+    if int(mm) < 1 or int(mm) > 12:
+        return 'Not a valid month.'
+    #Check day
+    if int(dd) < 1 or int(dd) > 31:
+        return 'Not a valid day.'
+    ml = WRCCData.MONTH_LENGTHS[int(mm) - 1]
+    if int(dd) > ml:
+        return 'Month %s only has %s days. You entered: %s' %(WRCCData.NUMBER_TO_MONTH_NAME[mm],ml,dd)
+    return err
+
+def check_end_window(form):
+    #Backbutton sanity check
+    if 'start_window' not in form.keys() or 'end_window' not in form.keys():
+        return 'Start and/or End Window field not valid. You may have pressed the backbutton. Please reset the windowed data button.'
+    err = None
+    s_w = form['start_window'].replace('-','').replace('/','').replace(':','')
+    e_w = form['end_window'].replace('-','').replace('/','').replace(':','')
+    if len(e_w) != 4:
+        return 'Start Window must be of form mmdd/mm-dd or mm:dd. You entered %s' % form['start_window']
+    mm = e_w[0:2]
+    dd= e_w[2:4]
+    #Check month
+    if int(mm) < 1 or int(mm) > 12:
+        return 'Not a valid month.'
+    #Check day
+    if int(dd) < 1 or int(dd) > 31:
+        return 'Not a valid day.'
+    ml = WRCCData.MONTH_LENGTHS[int(mm) - 1]
+    if int(dd) > ml:
+        return 'Month %s only has %s days. You entered: %s' %(WRCCData.NUMBER_TO_MONTH_NAME[mm],ml,dd)
+    return err
+
 def check_start_date(form):
     err = None
     date = form['start_date'].replace('-','').replace('/','').replace(':','')
@@ -115,6 +159,15 @@ def check_start_date(form):
     if int(date[6:8]) < 1 or int(date[4:6]) > 31:
         return 'Not a valid day.'
 
+    ml = WRCCData.MONTH_LENGTHS[int(date[4:6]) - 1]
+    if int(date[6:8]) > ml:
+        if str(date[4:6]) == '02' or str(date[4:6]) == '2':
+            if WRCCUtils.is_leap_year(date[0:4]):
+                return 'Month %s only has %s days. You entered: %s' %(WRCCData.NUMBER_TO_MONTH_NAME[str(date[4:6])],'29',str(date[6:8]))
+            else:
+                return 'Month %s only has %s days. You entered: %s' %(WRCCData.NUMBER_TO_MONTH_NAME[str(date[4:6])],str(ml),str(date[6:8]))
+        else:
+            return 'Month %s only has %s days. You entered: %s' %(WRCCData.NUMBER_TO_MONTH_NAME[str(date[4:6])],str(ml),str(date[6:8]))
 
     #Check for leap year issue
     if not WRCCUtils.is_leap_year(date[0:4]) and date[4:6] == '02' and date[6:8] == '29':
@@ -182,10 +235,15 @@ def check_end_date(form):
     #Check day
     if int(date[6:8]) < 1 or int(date[4:6]) > 31:
         return 'Not a valid day.'
-
-    #Check for leap year issue
-    if not WRCCUtils.is_leap_year(date[0:4]) and date[4:6] == '02' and date[6:8] == '29':
-        return '%s is not a leap year. Change end date to February 28.' %date[0:4]
+    ml = WRCCData.MONTH_LENGTHS[int(date[4:6]) - 1]
+    if int(date[6:8]) > ml:
+        if str(date[4:6]) == '02' or str(date[4:6]) == '2':
+            if WRCCUtils.is_leap_year(date[0:4]):
+                return 'Month %s only has %s days. You entered: %s' %(WRCCData.NUMBER_TO_MONTH_NAME[str(date[4:6])],'29',str(date[6:8]))
+            else:
+                return 'Month %s only has %s days. You entered: %s' %(WRCCData.NUMBER_TO_MONTH_NAME[str(date[4:6])],str(ml),str(date[6:8]))
+        else:
+            return 'Month %s only has %s days. You entered: %s' %(WRCCData.NUMBER_TO_MONTH_NAME[str(date[4:6])],str(ml),str(date[6:8]))
 
     #Check that start date is ealier than end date
     try:
@@ -303,11 +361,17 @@ def check_bounding_box(form):
         return 'Latitude range is too large.'
 
 def check_station_id(form):
+    #Backbutton sanity check
+    if 'station_id' not in form.keys():
+        return 'Station ID field not valid. You may have pressed the backbutton. Please reset the Point of Interest field.'
     err = None
     s = form['station_id']
     return err
 
 def check_station_ids(form):
+     #Backbutton sanity check
+    if 'station_ids' not in form.keys():
+        return 'Station IDs field not valid. You may have pressed the backbutton. Please reset the Points of Interest field.'
     err = None
     s = form['station_ids']
     s_list = s.split(',')
@@ -317,6 +381,28 @@ def check_station_ids(form):
 
 def check_location(form):
     err = None
+    #Backbutton sanity check
+    if 'location' not in form.keys():
+        return 'Location field not valid. You may have pressed the backbutton. Please reset the Point of Interest field.'
+    ll_list = form['location'].replace(' ','').split(',')
+    if len(ll_list) !=2:
+        return '%s is not a valid longitude,latitude pair.' %form['location']
+    for idx, s in enumerate(ll_list):
+        try:
+            float(s)
+        except:
+            return '%s is not a valid longitude,latitude pair.' %form['location']
+        if idx == 0 and float(s) >0:
+            return '%s is not a valid longitude.' %s
+        if idx == 1 and float(s) < 0:
+            return '%s is not a valid latitude.' %s
+    return err
+
+def check_locations(form):
+    err = None
+    #Backbutton sanity check
+    if 'locations' not in form.keys():
+        return 'Locations field not valid. You may have pressed the backbutton. Please reset the Points of Interest field.'
     ll_list = form['location'].replace(' ','').split(',')
     if len(ll_list) !=2:
         return '%s is not a valid longitude,latitude pair.' %form['location']
@@ -332,6 +418,9 @@ def check_location(form):
     return err
 
 def check_county(form):
+    #Backbutton sanity check
+    if 'county' not in form.keys():
+        return 'County field not valid. You may have pressed the backbutton. Please reset the Area of Interest field.'
     err = None
     c = form['county'].replace(' ','')
     if len(c)!=5:
@@ -343,6 +432,9 @@ def check_county(form):
     return err
 
 def check_climate_division(form):
+    #Backbutton sanity check
+    if 'climate_division' not in form.keys():
+        return 'Climate Division field not valid. You may have pressed the backbutton. Please reset the Area of Interest field.'
     err = None
     climdiv = form['climate_division']
     if len(climdiv) != 4:
@@ -359,6 +451,9 @@ def check_climate_division(form):
     return err
 
 def check_county_warning_area(form):
+    #Backbutton sanity check
+    if 'county_warning_area' not in form.keys():
+        return 'County Warning Area field not valid. You may have pressed the backbutton. Please reset the Area of Interest field.'
     err = None
     cwa = form['county_warning_area']
     if len(cwa) != 3:
@@ -369,6 +464,8 @@ def check_county_warning_area(form):
     return err
 
 def check_basin(form):
+    if 'basin' not in form.keys():
+        return 'Basin field not valid. You may have pressed the backbutton. Please reset the area of Interest field.'
     err = None
     b = form['basin']
     if len(b)!=8:

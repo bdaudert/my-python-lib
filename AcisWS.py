@@ -187,7 +187,7 @@ def get_meta_data(search_area, val,vX_list=None):
         Find meta data for  search_area = val
         If vX_list is given, find valid_dateranges for these elements
         '''
-        meta_opts = 'name,state,sids,ll,elev,uid,county,climdiv'
+        meta_opts = 'name,state,sids,ll,elev,uid'
         meta_params = {
                         search_area: val,
                         'meta':meta_opts
@@ -314,7 +314,7 @@ def station_meta_to_json(by_type, val, el_list=None, time_range=None, constraint
     f_name = time_stamp + 'stn.json'
     f_dir = settings.TEMP_DIR
     #Set up metedata request
-    params = {'meta':'name,state,sids,ll,elev,uid,county,climdiv,valid_daterange','elems':vX_tuple}
+    params = {'meta':'name,state,sids,ll,elev,uid,valid_daterange','elems':vX_tuple}
     params[WRCCData.STN_AREA_FORM_TO_PARAM[by_type]] = val
     if by_type == 'sw_states':params['state'] = 'az,ca,co,nm,nv,ut'
     #Find bbox for custom shapes
@@ -464,7 +464,7 @@ def get_station_data(form_input, program):
     params = {
             'sdate':s_date,
             'edate':e_date,
-            'meta':'name,state,sids,ll,elev,uid,county,climdiv,valid_daterange',
+            'meta':'name,state,sids,ll,elev,uid,valid_daterange',
             'elems':elems_list
             }
     shape_type = None

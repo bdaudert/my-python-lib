@@ -149,7 +149,7 @@ class DataComparer(object):
             bbox = self.get_bbox(length)
             meta_params = {
                 'bbox':bbox,
-                "meta":"name,state,sids,ll,elev,uid,county,climdiv,valid_daterange",
+                "meta":"name,state,sids,ll,elev,uid,valid_daterange",
             }
             meta_params['elems'] = els
             try:
@@ -235,7 +235,7 @@ class DataComparer(object):
             del data_params['loc']
             del data_params['grid']
             data_params['sid'] = str(stn_meta['sids'][0].split(' ')[0])
-            data_params['meta'] = 'name,state,sids,ll,elev,uid,county,climdiv,valid_daterange'
+            data_params['meta'] = 'name,state,sids,ll,elev,uid,valid_daterange'
             try:
                 sdata = AcisWS.StnData(data_params)
             except Exception, e:
@@ -764,8 +764,6 @@ class SODDataJob(object):
             'elevs': [],
             'uids':[''],
             'networks':[''],
-            'climdivs':[''],
-            'countys':[''],
             'valid_daterange':[['00000000','00000000']]
         }
         meta_dict['location_list'] = self.set_locations_list(self.params)
@@ -787,8 +785,6 @@ class SODDataJob(object):
             'elevs':[],
             'uids':[],
             'networks':[],
-            'climdivs':[],
-            'countys':[],
             'valid_daterange':[]
         }
         area, val = self.set_area_params()
@@ -817,7 +813,7 @@ class SODDataJob(object):
                     meta_dict['valid_dateranges'] = stn['valid_daterange']
                 #Find other meta data info
                 #NOTE: ACIS quirk: sometimes other meta data attributes don't show up
-                keys = ['state', 'elev', 'uid', 'climdiv', 'county']
+                keys = ['state', 'elev', 'uid']
                 for key in keys:
                     meta_dict_key = key + 's'
                     if key in stn.keys():
@@ -916,7 +912,7 @@ class SODDataJob(object):
             params['grid'] = self.params['grid']
             params['meta'] = 'll, elev'
         else:
-            params['meta'] = 'name,state,sids,ll,elev,uid,county,climdiv'
+            params['meta'] = 'name,state,sids,ll,elev,uid'
         return params
 
     def find_leap_yr_indices(self):

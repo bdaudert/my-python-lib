@@ -2416,7 +2416,7 @@ def Sodlist_new(kwargs):
     params = {
         'sdate':kwargs['start_date'],
         'edate':kwargs['end_date'],
-        'meta':'name,state,sids,ll,elev,uid,county,climdiv,valid_daterange'
+        'meta':'name,state,sids,ll,elev,uid,valid_daterange'
     }
     if 'station_id' in kwargs.keys():params['sids'] = kwargs['station_id']
     if 'station_ids' in kwargs.keys():params['sids'] = kwargs['station_ids']

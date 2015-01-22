@@ -92,7 +92,9 @@ def set_acis_meta(data_type):
     meta string depends on data type
     '''
     if data_type == 'station':
-        return 'name,state,sids,ll,elev,uid,county,climdiv,valid_daterange'
+        #Note climidc, county giv error for Samoa
+        #return 'name,state,sids,ll,elev,uid,county,climdiv,valid_daterange'
+        return 'name,state,sids,ll,elev,uid,valid_daterange'
     if data_type == 'grid':
         return 'll, elev'
 
@@ -152,7 +154,7 @@ def set_acis_params(form):
             continue
         if area_key in form.keys():
             p_key = WRCCData.FORM_TO_PARAMS[area_key]
-            params[p_key] = form[area_key]
+            params[p_key] = str(form[area_key])
             break
     if not p_key:
         return {}
@@ -216,6 +218,7 @@ def make_data_request(form):
     if data_type == 'grid':
         request_data = getattr(AcisWS,'GridData')
     #Make data request
+    print params
     req = request_data(params)
     '''
     try:
@@ -282,9 +285,10 @@ def format_data_single_lister(req_data,form):
     It also takes care of:
         unicode to string formatting
     '''
-    results = {'smry':[]}
+    results = {'smry':[],'data':[]}
     if not req_data['data'] and not req_data['smry']:
-        return []
+        results['errors'] = 'No data found for these parametes.'
+        return results
     header_data, header_smry = set_single_headers(form)
     d_data = [header_data]
     for date_idx,data in enumerate(req_data['data']):

@@ -98,7 +98,7 @@ def set_acis_meta(data_type):
     if data_type == 'grid':
         return 'll, elev'
 
-def set_single_els(form):
+def set_acis_els(form):
     data_type = get_data_type(form)
     acis_elems = []
     for el in form['elements']:
@@ -106,9 +106,14 @@ def set_single_els(form):
         l ={
             'vX':WRCCData.ACIS_ELEMENTS_DICT[el_strip]['vX']
         }
+        #Get smry if data_summary is temporal
         if 'data_summary' in form.keys() and form['data_summary'] == 'temporal':
             if 'temporal_summary' in form.keys():
                 l['smry'] = form['temporal_summary']
+                #Summary only requests for multi,area requests
+                #For single requests always get data, too
+                if not 'location' in form.keys() and not 'station_id' in form.keys():
+                    l['smry_only'] = 1
         if el_strip in ['gdd', 'hdd', 'cdd'] and base_temp is not None:
             l['base'] = int(base_temp)
         #Add flags and time if data_type is station
@@ -121,6 +126,8 @@ def set_single_els(form):
                 l['add']= 'f,t'
         acis_elems.append(l)
     return acis_elems
+
+
 
 def set_acis_params(form):
     '''
@@ -173,12 +180,7 @@ def set_acis_params(form):
         else:params['bbox'] = bbox
     #Set elements
     params['elems'] = []
-    if area_key in single_keys:
-        params['elems'] = set_single_els(form)
-    elif area_key in multi_keys:
-        pass
-    elif area_key in special_keys:
-        pass
+    params['elems'] = set_acis_els(form)
     #Set meta according to data_type
     params['meta'] = set_acis_meta(data_type)
     #Set grid_params
@@ -218,7 +220,6 @@ def make_data_request(form):
     if data_type == 'grid':
         request_data = getattr(AcisWS,'GridData')
     #Make data request
-    print params
     req = request_data(params)
     '''
     try:
@@ -245,7 +246,7 @@ def make_data_request(form):
 ###################################
 #DATA FORMATTING MODULES
 ###################################
-def set_single_headers(form):
+def set_lister_headers(form):
     el_list = form['elements']
     if isinstance(form['elements'], basestring):
         el_list = form['elements'].replace(' ','').split(',')
@@ -289,8 +290,9 @@ def format_data_single_lister(req_data,form):
     if not req_data['data'] and not req_data['smry']:
         results['errors'] = 'No data found for these parametes.'
         return results
-    header_data, header_smry = set_single_headers(form)
+    header_data, header_smry = set_lister_headers(form)
     d_data = [header_data]
+    #Check if we have summary only request
     for date_idx,data in enumerate(req_data['data']):
         date = [str(data[0])]
         data = data[1:]
@@ -324,6 +326,68 @@ def format_data_single_lister(req_data,form):
         results['data'] = d_data
         if smry_data:
             results['smry'] = [header_smry,smry_data]
+    return results
+
+def format_data_area_lister(req_data,form):
+    '''
+    req_data is result of a make_data_request callfor single point
+    This function formats the data for easy display on html pages
+    or download to file options
+    It also takes care of:
+        unicode to string formatting
+    '''
+    results = {'smry':[],'data':[]}
+    date_data = []
+    smry_data = []
+    if not req_data['data'] and not req_data['smry']:
+        results['errors'] = 'No data found for these parametes.'
+        return results
+    header_data, header_smry = set_lister_headers(form)
+    d_data = [header_data]
+    #Format data according to summary type
+    if 'data_summary' in form.keys() and form['data_summary'] == 'temporal':
+        if not 'smry' in req_data.keys() or not req_data['smry']:
+            return results
+        for el_idx, el_data in enumerate(req_data['smry']):
+            try:
+                smry_data.append(round(float(req_data['smry'][el_idx]),2))
+            except:
+                smry_data.append(str(req_data['smry'][el_idx]))
+    if 'data_summary' in form.keys() and form['data_summary'] == 'spatial':
+        if not 'data' in req_data.keys() and not req_data['data']:
+            return results
+        #FIX ME
+        #Need to implement a smart way to deal with spatial summaries
+        #E.g. call basin_mean,max,min,aaaa_fct_xx_yyy,aaaa_pct_xx_yyy over the state that the basin is in
+        #Then find basin in results
+        '''
+        #find the correct summary value
+        data is of form [date, {area_id:el_1smry_value}, {area_id:el_2smry_value},...]
+        for date_idx,smry_data in req_data['data']:
+            date = smry_data[0]
+            date_data = [date]
+            for el_idx, el_data in enumerate(form['elements']):
+                smry_val = el_data[form[form['area_type']]]
+                try:
+                    date_data.append(str(round(float(smry_val),4)))
+                except:
+                    date_data.append(str(val))
+            d_data.append(date_data)
+        '''
+    if 'data_summary' in form.keys() and form['data_summary'] == 'none':
+        if not 'data' in req_data.keys() and not req_data['data']:
+            return results
+        if data_type == 'station':
+            for stn_idx, stn_data in enumerate(req_data['data']):
+                s_data = stn_data['data']
+                dates = get_dates(form['start_date'],form['end_date'])
+                for date_idx, date in enumerate(dates):
+                    date_data = [date] + [str(s) for s in s_data[date_idx]]
+                    d_data.append(date_data)
+        if date_type == 'grid':
+            date_data = format_grid_data(req,form)
+            d_data = d_data + date_data
+        results['data'] = d_data
     return results
 
 def get_window_data(data, start_date, end_date, start_window, end_window):
@@ -411,7 +475,7 @@ def metadict_to_display_list(metadata, key_order_list,form):
         if not k in metadata.keys():
             if k == 'data_summary':
                 if form['data_summary'] !='none':
-                    metadict[i].append([WRCCData.DISPLAY_PARAMS[form[form_data_summary]]])
+                    metadict[i].append([WRCCData.DISPLAY_PARAMS[form[form['data_summary']]]])
             else:
                 meta[i].append([' '])
     for key, val in metadata.iteritems():
@@ -787,14 +851,13 @@ def find_valid_daterange(sid, start_date='por', end_date='por', el_list=None, ma
                 el_tuple+=','
 
         #el_tuple = ','.join(el_list)
-    meta_params = {'sids':sid, 'elems':el_tuple, 'meta':'name,state,sids,ll,elev,uid,county,climdiv,valid_daterange'}
+    meta_params = {'sids':sid, 'elems':el_tuple, 'meta':'name,state,sids,ll,elev,uid,valid_daterange'}
     try:
         request = AcisWS.StnMeta(meta_params)
     except:
         return ['', '']
     if 'error' in request.keys() or not 'meta' in request.keys():
         return ['', '']
-
     #Find valid daterange
     #format first test date
     el_idx = 0
@@ -2191,12 +2254,12 @@ def format_grid_data(req, params):
     return data_out
 
 def get_station_meta(station_id):
-    meta_params = {"sids":station_id,"meta":"name,state,sids,ll ,elev,uid,county,climdiv"}
+    meta_params = {"sids":station_id,"meta":"name,state,sids,ll,elev,uid"}
     try:
         stn_meta = AcisWS.StnMeta(meta_params)
     except:
-        stn_meta = {'name':'', 'sids':[], 'county':'', 'state':'', \
-        'elev':-999, 'climdiv':'', 'uid':-999, 'll':''}
+        stn_meta = {'name':'', 'sids':[], 'state':'', \
+        'elev':-999, 'uid':-999, 'll':''}
     return stn_meta
 
 def format_station_meta(meta_data):

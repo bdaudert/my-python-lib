@@ -45,8 +45,6 @@ class Wrapper:
         self.station_lls = meta_dict['lls']
         self.station_elevs = meta_dict['elevs']
         self.station_uids = meta_dict['uids']
-        self.station_climdivs = meta_dict['climdivs']
-        self.station_countys = meta_dict['countys']
         if 'valid_dateranges' in meta_dict.keys():
             self.station_valid_dateranges = meta_dict['valid_dateranges']
         return data
@@ -675,10 +673,10 @@ def format_soddyrec_results_txt(results, wrapper,data_params):
         el_name = WRCCData.ACIS_ELEMENTS_DICT_SR[el]['name_long']
         if el == 'hdd':
             el_name = 'Heat'
-            start ='|--';end='--'
+            start ='|--------';end='-------'
         if el == 'cdd':
             el_name = 'Cool'
-            start ='|--';end='--'
+            start ='|--------';end='-------'
         if el in ['maxt','mint']:
             start ='|---';end='---'
         if el == 'pcpn':
@@ -704,9 +702,7 @@ def format_soddyrec_results_txt(results, wrapper,data_params):
         table_header+=start
         table_header+=el_name
         table_header+=end
-        if el in ['hdd','cdd']:
-            table_header_2+='   ' + el.upper() + '   NO'
-        elif el in ['pcpn','snow','snwd']:
+        if el in ['pcpn','snow','snwd','hdd','cdd']:
             table_header_2+='   AVG  NO  HI   YR'
         else:
             table_header_2+=' AVG  NO  HI   YR'
@@ -736,8 +732,11 @@ def format_soddyrec_results_txt(results, wrapper,data_params):
                 else:
                     row+='%4s' %results[0][el_idx][doy][k]
             for k in range(5,6):
+                '''
                 if el not in ['hdd','cdd']:
                     row+='%5s' %results[0][el_idx][doy][k]
+                '''
+                row+='%5s' %results[0][el_idx][doy][k]
             if el in ['maxt', 'mint']:
                 row+='%4s%5s' %(results[0][el_idx][doy][6],results[0][el_idx][doy][7])
         print row

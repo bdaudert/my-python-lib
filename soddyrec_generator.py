@@ -115,7 +115,8 @@ if __name__ == "__main__":
         count+=1
         stn_id = get_coop_id(stn_meta)
         try:
-            state = fips_codes[str(stn_meta['state']).lower()]
+            #state = fips_codes[str(stn_meta['state']).lower()]
+            state = str(stn_meta['state']).lower()
         except:
             continue
         logger.info('Begin processing station: ' + str(stn_id))

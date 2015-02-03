@@ -257,7 +257,7 @@ def grid_data_trim_and_summary(req,form):
         smry = [[] for ll in range(len(lats)*len(lats[0]))]
     if form['data_summary'] == 'spatial':
         smry = [[] for date in range(len(req['data']))]
-    smry_data = []
+    smry_data = [[] for el in form['elements']]
     #find the polygon of the special shape
     #and the function to test if a point lies within the shape
     poly, PointIn = set_poly_and_PointIn(form)
@@ -289,15 +289,18 @@ def grid_data_trim_and_summary(req,form):
                 if form['data_summary'] == 'temporal':
                     del smry[lat_index][lon_index]
                 continue
-            #Set up data summary
-            if form['data_summary'] == 'temporal':
-                for date_idx, data_data in enumerate(req['data'])
-                    for el_idx, el in enumerate(form['elements']):
-                        smry_data[el_idx].append(new_data[date_idx][el_idx+1][lat_index][lon_index])
-                #smry[lat_index][lon_index] =Compute summary(smry_data)
-            if form['data_summary'] == 'spatial':
+            #Data summary
+            for date_idx, data_data in enumerate(req['data'])
                 for el_idx, el in enumerate(form['elements']):
-                    smry_data[el_idx].append()
+                    smry_data[el_idx].append(new_data[date_idx][el_idx+1][lat_index][lon_index])
+                    if form['data_summary'] == 'spatial':
+                        if grid_idx == len(lats) -1 and lon_idx == len(lons) -1:
+                            #smry[el_idx][date_idx] = Compute summary(smry_data[el_idx])
+                            pass
+            if form['data_summary'] == 'temporal':
+                for el_idx, el in form['elements']:
+                    #smry[el_idx][lat_index][lon_index] = Compute summary(smry_data[el_idx])
+                    pass
             '''
             #Date loop
             for date_idx,d_data in enumerate(req['data']):
@@ -313,32 +316,6 @@ def grid_data_trim_and_summary(req,form):
                     data[date_idx]+=lat_data
             '''
     return new_data,smry
-
-def data_trim_and_summary(req,form):
-    data_type = get_data_type(form)
-    data=[];smry=[]
-    #Station data
-    if data_type == 'station' and form['area_type'] not in special_station_areas:
-        #regular shape, read request data/smry
-        if 'smry' in req.keys() and req['smry']:
-            smry = req['smry']
-        if 'data' in req.keys() and req['data']:
-            data = req['data']
-    if  data_type == 'station' and form['area_type'] in special_station_areas:
-        #irregular shape, fomat data and compute smry
-        data,smry = station_data_trim_and_summary(req,form)
-
-    #Griddata
-    if data_type == 'grid' and form['area_type'] not in special_grid_areas:
-        #regular shape, read request data/smry
-        if 'smry' in req.keys() and req['smry']:
-            smry = req['smry']
-        if 'data' in req.keys() and req['data']:
-            data = req['data']
-    if data_type == 'grid' and form['area_type'] in special_grid_areas:
-        #irregular shape, fomat data and compute smry
-        data,smry = grid_data_trim_and_summary(req,form)
-    return data,smry
 
 def make_data_request(form):
     '''
@@ -387,11 +364,22 @@ def make_data_request(form):
         error = 'No data found for these parameters.'
         resultsdict['errors'].append( error)
         return resultsdict
-    #Write meta data to resultsdict
+    #Write data to resultsdict
     if 'meta' in req.keys():
         resultsdict['meta'] = req['meta']
-    #Format data and  compute data summaries:
-    resultsdict['data'],resultsdict['smry'] = data_trim_and_summary(req,form)
+    if 'smry' in req.keys() and req['smry']:
+        smry = req['smry']
+    if 'data' in req.keys() and req['data']:
+        data = req['data']
+    #Override data and smry if needed
+    #Grid data
+    if data_type == 'grid' and form['area_type'] in special_grid_areas:
+        #irregular shape, fomat data and compute smry
+        resultsdict['data'],resultsdict['smry'] = grid_data_trim_and_summary(req,form)
+    #Station data
+    if data_type == 'station' and form['area_type'] in special_station_areas:
+        #irregular shape, fomat data and compute smry
+        resultsdict['data'],resultsdict['smry'] = station_data_trim_and_summary(req,form)
     return resultsdict
 
 

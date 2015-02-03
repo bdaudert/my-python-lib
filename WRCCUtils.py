@@ -26,6 +26,17 @@ try:
 except:
     pass
 import WRCCClasses, AcisWS, WRCCData, WRCCUtils
+
+#########
+#STATICS
+########
+area_keys = ['station_id','station_ids','location','locations','state',\
+'bounding_box','county','county_warning_area','basin','climate_division','shape']
+special_station_areas = ['shape']
+special_grid_areas = ['county', 'county_warning_area','basin','climate_division','shape']
+station_reduction_areas = ['county', 'county_warning_area','basin',\
+'climate_division','state','bounding_box']
+grid_reduction_areas = ['state','bounding_box']
 ####################################
 #FUNCTIONS
 #####################################
@@ -109,11 +120,21 @@ def set_acis_els(form):
         #Get smry if data_summary is temporal
         if 'data_summary' in form.keys() and form['data_summary'] == 'temporal':
             if 'temporal_summary' in form.keys():
-                l['smry'] = form['temporal_summary']
-                #Summary only requests for multi,area requests
+                #For performance: Summary only requests for multi area requests
+                #Of station data
                 #For single requests always get data, too
-                if not 'location' in form.keys() and not 'station_id' in form.keys():
-                    l['smry_only'] = 1
+                #Note: GridData does not support  basin, shape,cws,climdiv or county
+                #We need to get the data to compute data summaries
+                if data_type == 'station' and form['area_type'] != 'shape':
+                    if form['area_type'] not in special_station_areas:
+                        l['smry'] = form['temporal_summary']
+                    if form['area_type'] in station_reduction_areas:
+                        l['smry_only'] = 1
+                if data_type == 'grid':
+                    if form['area_type'] not in special_grid_areas:
+                        l['smry'] = form['temporal_summary']
+                    if form['area_type'] in grid_reduction_areas:
+                        l['smry_only'] = 1
         if el_strip in ['gdd', 'hdd', 'cdd'] and base_temp is not None:
             l['base'] = int(base_temp)
         #Add flags and time if data_type is station
@@ -146,40 +167,32 @@ def set_acis_params(form):
             'sdate':s_date,
             'edate':e_date
     }
-    #Set area and element parameters
-    #Simple areas supported by both grid and station data
-    area_keys = ['station_id','station_ids','location','state','bounding_box',\
-        'county','county_warning_area','basin','climate_division','shape']
-    special_grid_keys = ['county','county_warning_area','basin','climate_division']
-    single_keys = ['station_id','location']
-    multi_keys = ['station_ids','locations']
-    special_keys = ['state','bounding_box','county','county_warning_area',\
-        'basin','climate_division','shape']
     p_key = None
+    f_key = None
+    #Convert form area key to ACIS area key
     for area_key in area_keys:
         if area_key not in form.keys():
             continue
         if area_key in form.keys():
             p_key = WRCCData.FORM_TO_PARAMS[area_key]
+            f_key = area_key
             params[p_key] = str(form[area_key])
             break
     if not p_key:
         return {}
     #Override area parameter if necessary
     #Override with enclosing bbox if data_type == grid
-    if data_type == 'grid' and p_key in special_grid_keys:
+    if data_type == 'grid' and f_key in special_grid_areas:
         del params[p_key]
-        bbox = AcisWS.get_acis_bbox_of_area(p_key,form[area_key])
+        #Need to run request on enclosing bbox
+        if f_key == 'shape':
+            shape_type,bbox = get_bbox(form['shape'])
+            if shape_type == 'location':params['loc'] = form['shape']
+            else:params['bbox'] = bbox
+        else:
+            bbox = AcisWS.get_acis_bbox_of_area(p_key,form[area_key])
         params['bbox'] = bbox
-    #Special case shape
-    if area_key == 'shape':
-        del params[p_key]
-        #Need to find enclosing bbox
-        shape_type,bbox = get_bbox(form['shape'])
-        if shape_type == 'location':params['loc'] = form['shape']
-        else:params['bbox'] = bbox
     #Set elements
-    params['elems'] = []
     params['elems'] = set_acis_els(form)
     #Set meta according to data_type
     params['meta'] = set_acis_meta(data_type)
@@ -188,6 +201,144 @@ def set_acis_params(form):
         params['grid'] = form['grid']
     return params
 
+def compute_station_spatial_summary(req,form):
+    '''
+    Spatial summary for station data
+    '''
+    pass
+def compute_station_temporal_summary(req,form):
+    '''
+    Temporal summary for station data
+    '''
+    pass
+def compute_grid_spatial_summary(req,form):
+    '''
+    Spatial summary for grid data
+    '''
+    pass
+def compute_grid_temporal_summary(req,form):
+    '''
+    Temporal summary for grid data
+    '''
+    pass
+
+def station_data_trim_and_summary(req,form):
+    '''
+    Some special shapes are not supported by ACIS
+    E.G. Cumstom polygons or basin,cwa,climdiv,county for grid requests
+    req is data opbtained for the enclosing bbox of the special shape.
+    This function trims down the data of such a station
+    request to the size of the custom shape.
+    '''
+    pass
+
+
+def grid_data_trim_and_summary(req,form):
+    '''
+    Some special shapes are not supported by ACIS
+    E.G. Cumstom polygons or basin,cwa,climdiv,county for grid requests
+    req is data opbtained for the enclosing bbox of the special shape.
+    This function trims down the data of such a grid
+    request to the size of the custom shape.
+    '''
+    smry = []
+    data_type = get_data_type(form)
+    #data format: [[date1,[el1 data],[el2 data],...],[date2,[el1data],[el2 data],...]]
+    data = [[] for date in range(len(req['data']))]
+    try:
+        lats = req['meta']['lat']
+        lons = req['meta']['lon']
+        new_lats = req['meta']['lat']
+        new_lons = req['meta']['lon']
+    except:
+        return data,smry
+    new_data = req['data']
+    if form['data_summary'] == 'temporal':
+        smry = [[] for ll in range(len(lats)*len(lats[0]))]
+    if form['data_summary'] == 'spatial':
+        smry = [[] for date in range(len(req['data']))]
+    smry_data = []
+    #find the polygon of the special shape
+    #and the function to test if a point lies within the shape
+    poly, PointIn = set_poly_and_PointIn(form)
+    #lat,lon loop over data
+    generator_lat =  ((grid_idx, lat_grid) for grid_idx, lat_grid in enumerate(lats))
+    lat_data =  [[[[] for l in lats] for el in form['elements']] for date in req['data']]
+    lat_index = -1
+    for (grid_idx, lat_grid) in generator_lat:
+        lat_index+=1
+        generator_lon = ((lon_idx, lon) for lon_idx, lon in enumerate(lons[grid_idx]))
+        lat = lat_grid[0]
+        lon_index = -1
+        for (lon_idx, lon) in generator_lon:
+            lon_index+=1
+            #Check if point lies in shape
+            point_in = PointIn(lon, lat, poly)
+            if not point_in:
+                #update new_lons,new_lons
+                del new_lats[lat_index][lon_index]
+                del new_lons[lat_idx][lon_index]
+                for date_idx, data_data in enumerate(req['data'])
+                    for el_idx, el in enumerate(form['elements']):
+                        del new_data[date_idx][el_idx+1][lat_index][lon_index]
+                #Update index
+                lon_index-=1
+                if new_data[date_idx][el_idx+1][lat_index] == []:
+                    del new_data[date_idx][el_idx+1][lat_index]
+                    lat_index-=1
+                if form['data_summary'] == 'temporal':
+                    del smry[lat_index][lon_index]
+                continue
+            #Set up data summary
+            if form['data_summary'] == 'temporal':
+                for date_idx, data_data in enumerate(req['data'])
+                    for el_idx, el in enumerate(form['elements']):
+                        smry_data[el_idx].append(new_data[date_idx][el_idx+1][lat_index][lon_index])
+                #smry[lat_index][lon_index] =Compute summary(smry_data)
+            if form['data_summary'] == 'spatial':
+                for el_idx, el in enumerate(form['elements']):
+                    smry_data[el_idx].append()
+            '''
+            #Date loop
+            for date_idx,d_data in enumerate(req['data']):
+                #Write date to output
+                if not data[date_idx]:
+                    data[date_idx] = [d_data[0]]
+                #Element loop
+                for el_idx,el in enumerate(form['elements']):
+                    lat_data[date_idx][el_idx][grid_idx].append(req['data'][date_idx][el_idx+1][grid_idx][lon_idx])
+                    print lat_data
+                #save results when last lat,lon have been traversed
+                if grid_idx == len(lats) - 1 and lon_idx == len(lons) - 1:
+                    data[date_idx]+=lat_data
+            '''
+    return new_data,smry
+
+def data_trim_and_summary(req,form):
+    data_type = get_data_type(form)
+    data=[];smry=[]
+    #Station data
+    if data_type == 'station' and form['area_type'] not in special_station_areas:
+        #regular shape, read request data/smry
+        if 'smry' in req.keys() and req['smry']:
+            smry = req['smry']
+        if 'data' in req.keys() and req['data']:
+            data = req['data']
+    if  data_type == 'station' and form['area_type'] in special_station_areas:
+        #irregular shape, fomat data and compute smry
+        data,smry = station_data_trim_and_summary(req,form)
+
+    #Griddata
+    if data_type == 'grid' and form['area_type'] not in special_grid_areas:
+        #regular shape, read request data/smry
+        if 'smry' in req.keys() and req['smry']:
+            smry = req['smry']
+        if 'data' in req.keys() and req['data']:
+            data = req['data']
+    if data_type == 'grid' and form['area_type'] in special_grid_areas:
+        #irregular shape, fomat data and compute smry
+        data,smry = grid_data_trim_and_summary(req,form)
+    return data,smry
 
 def make_data_request(form):
     '''
@@ -197,6 +348,8 @@ def make_data_request(form):
         meta: meta data list
         data: data list (empty for summary requests)
         smry: data summary list (empty for data requests)
+    Note: since GridData does not support special area requests (shape, basin, cwa...)
+          We ned to compute the data summaries directly from the data
     '''
     resultsdict = {
         'errors':[],
@@ -229,29 +382,36 @@ def make_data_request(form):
         resultsdict['errors'].append( error)
         return resultsdict
     '''
-    #Check that data were obtainable
+    #Sanity check
     if not 'data' in req.keys() and not 'smry' in req.keys():
         error = 'No data found for these parameters.'
         resultsdict['errors'].append( error)
         return resultsdict
-    #Write request data to resultsdict
+    #Write meta data to resultsdict
     if 'meta' in req.keys():
         resultsdict['meta'] = req['meta']
-    if 'data' in req.keys() and req['data']:
-        resultsdict['data'] = req['data']
-    if 'smry' in req.keys() and req['smry']:
-        resultsdict['smry'] = req['smry']
+    #Format data and  compute data summaries:
+    resultsdict['data'],resultsdict['smry'] = data_trim_and_summary(req,form)
     return resultsdict
+
 
 ###################################
 #DATA FORMATTING MODULES
 ###################################
 def set_lister_headers(form):
+    data_type = get_data_type(form)
     el_list = form['elements']
     if isinstance(form['elements'], basestring):
         el_list = form['elements'].replace(' ','').split(',')
     header_data = ['Date']
-    header_smry = []
+    header_summary =[]
+    if form['data_summary'] == 'temporal':
+        if data_type == 'grid':
+            header_smry=['Location(Lon,Lat)']
+        if data_type == 'station':
+            header_smry=['Station (IDs)']
+    else:
+        header_smry = ['Date']
     for el in el_list:
         el_strip,base_temp = get_el_and_base_temp(el)
         unit = WRCCData.UNITS_ENGLISH[el_strip]
@@ -277,7 +437,9 @@ def set_lister_headers(form):
     return header_data,header_smry
 
 
-
+###############################
+#Data formatters
+##################################
 def format_data_single_lister(req_data,form):
     '''
     req_data is result of a make_data_request callfor single point
@@ -328,52 +490,176 @@ def format_data_single_lister(req_data,form):
             results['smry'] = [header_smry,smry_data]
     return results
 
-def format_data_area_lister(req_data,form):
+def format_grid_area_spatial_summary(req_data,form):
     '''
-    req_data is result of a make_data_request callfor single point
-    This function formats the data for easy display on html pages
-    or download to file options
-    It also takes care of:
-        unicode to string formatting
+    Formatting for grid area requests with spatial summary
+    '''
+    pass
+
+def format_grid_area_no_summary(req_data,form):
+    '''
+    Formatting for grid area requests with no data summary
+    '''
+    pass
+
+def format_grid_area_windowed_data(req_data,form):
+    '''
+    Formatting for grid area requests for windowed data requests
+    '''
+    pass
+
+def format_grid_area_temporal_summary(data,form):
+    '''
+    Formatting for grid area requests with temporal summary
+    '''
+    header_data,header_smry = set_lister_headers(form)
+    smry_data = [header_smry]
+    lats = data['meta']['lat']
+    lons = data['meta']['lon']
+    generator_lat = ((grid_idx, lat_grid) for grid_idx, lat_grid in enumerate(lats))
+    #Loop over lats/lons
+    for (grid_idx, lat_grid) in generator_lat:
+        generator_lon = ((lon_idx, lon) for lon_idx, lon in enumerate(lons[grid_idx]))
+        lat = lat_grid[0]
+        for (lon_idx, lon) in generator_lon:
+            l_data = [str(lon) + ', ' + str(lat)]
+            #Element loop
+            for el_idx, el_data in enumerate(data['smry']):
+                l_data.append(el_data[grid_idx][lon_idx])
+            smry_data+=l_data
+    return smry_data
+
+def format_station_area_spatial_summary(req_data,form):
+    '''
+    Formatting for station area requests with spatial summary
     '''
     results = {'smry':[],'data':[]}
     date_data = []
     smry_data = []
-    if not req_data['data'] and not req_data['smry']:
-        results['errors'] = 'No data found for these parametes.'
-        return results
+    header_data,header_smry = set_lister_headers(form)
+    d_data = [header_smry]
+    #FIX ME
+    #Need to implement a smart way to deal with spatial summaries
+    #E.g. call basin_mean,max,min,aaaa_fct_xx_yyy,aaaa_pct_xx_yyy over the state that the basin is in
+    #Then find basin in results
+    '''
+    #find the correct summary value
+    data is of form [date, {area_id:el_1smry_value}, {area_id:el_2smry_value},...]
+    for date_idx,smry_data in req_data['data']:
+        date = smry_data[0]
+        date_data = [date]
+        for el_idx, el_data in enumerate(form['elements']):
+            smry_val = el_data[form[form['area_type']]]
+            try:
+                date_data.append(str(round(float(smry_val),4)))
+            except:
+                date_data.append(str(val))
+        d_data.append(date_data)
+    '''
+
+def format_station_area_no_summary(data,form):
+    '''
+    Formatting for station area requests with no data summary
+    '''
+    date_data = []
+    header_data,header_smry = set_lister_headers(form)
+    d_data = [header_data]
+    for stn_idx, stn_data in enumerate(data):
+        s_data = stn_data['data']
+        dates = get_dates(form['start_date'],form['end_date'])
+        for date_idx, date in enumerate(dates):
+            date_data = [date] + [str(s) for s in s_data[date_idx]]
+            d_data.append(date_data)
+    return d_data
+
+def format_station_area_windowed_data(req_data,form):
+    '''
+    Formatting for station area requests for windowed data requests
+    '''
+    results = {'smry':[],'data':[]}
+    date_data = []
+    smry_data = []
     header_data, header_smry = set_lister_headers(form)
     d_data = [header_data]
-    #Format data according to summary type
-    if 'data_summary' in form.keys() and form['data_summary'] == 'temporal':
-        if not 'smry' in req_data.keys() or not req_data['smry']:
-            return results
-        for el_idx, el_data in enumerate(req_data['smry']):
+
+def format_station_area_temporal_summary(data,form):
+    '''
+    Formatting for station area requests with temporal summary
+    '''
+    header_data,header_smry = set_lister_headers(form)
+    smry_data = [header_smry]
+    for stn_idx, stn_data in enumerate(data):
+        if 'smry' not in stn_data.keys() or not stn_data['smry']:
+            pass
+        try:
+            stn = stn_data['meta']['name'] + ' ('
+        except:
+            stn = 'No Name' + ' ('
+        try:
+            for sid in stn_data['meta']['sids']:
+                stn+= str(sid.split(' ')[0])
+            stn+= ')'
+        except:
+            pass
+        s_data = [stn]
+        for el_idx, el_data in enumerate(stn_data['smry']):
             try:
-                smry_data.append(round(float(req_data['smry'][el_idx]),2))
+                s_data.append(round(float(stn_data['smry'][el_idx]),2))
             except:
-                smry_data.append(str(req_data['smry'][el_idx]))
+                s_data.append(str(stn_data['smry'][el_idx]))
+        smry_data+= s_data
+    return smry_data
+
+def format_data_area_lister(req_data,form):
+    '''
+    Does all formatting of data for easy html display
+    Grid and station data are formatted separately
+    Formatting also depends on data_summary: temporal, spatial, none, windowed data
+    '''
+    results = {'smry':[],'data':[]}
+    #Sanity check
+    if not 'data' in req_data.keys() and  not 'smry' in req_data.keys():
+        return results
+
+    #Format according to data_type and summary
+    if form['data_summary'] == 'none':
+        #Sanity check
+        if 'data' not in req_data.keys() or not req_data['data']:
+            return results
+        if form['data_type'] == 'station':
+            results['data'] = format_station_area_no_summary(req_data['data'],form)
+        if form['data_type'] == 'grid':
+            results['data'] = format_grid_area_no_summary(req_data['data'],form)
+    if form['data_summary'] == 'windowed_data':
+        #Sanity check
+        if 'data' not in req_data.keys() or not req_data['data']:
+            return results
+        if form['data_type'] == 'station':
+            results['data'] = format_station_area_windowed_data(req_data['data'],form)
+        if form['data_type'] == 'grid':
+            results['data'] = format_grid_area_windowed_data(req_data['data'],form)
+    if form['data_summary'] == 'spatial':
+        #Sanity check
+        if 'data' not in req_data.keys() or not req_data['data']:
+            return results
+        if form['data_type'] == 'station':
+            results['data'] = format_station_area_spatial_summary(req_data['data'],form)
+        if form['data_type'] == 'grid':
+            results['data'] = format_grid_area_spatial_summary(req_data['data'],form)
+    if form['data_type'] == 'station' and form['data_summary'] == 'temporal':
+        #Sanity check
+        if 'data' not in req_data.keys() or not req_data['data']:
+            return results
+        results['smry'] = format_station_area_temporal_summary(req_data['data'],form)
+    if form['data_type'] == 'grid' and form['data_summary'] == 'temporal':
+        #Sanity check
+        if 'smry' not in req_data.keys() or not req_data['smry']:
+            return results
+        results['smry'] = format_grid_area_temporal_summary(req_data,form)
+    '''
     if 'data_summary' in form.keys() and form['data_summary'] == 'spatial':
         if not 'data' in req_data.keys() and not req_data['data']:
             return results
-        #FIX ME
-        #Need to implement a smart way to deal with spatial summaries
-        #E.g. call basin_mean,max,min,aaaa_fct_xx_yyy,aaaa_pct_xx_yyy over the state that the basin is in
-        #Then find basin in results
-        '''
-        #find the correct summary value
-        data is of form [date, {area_id:el_1smry_value}, {area_id:el_2smry_value},...]
-        for date_idx,smry_data in req_data['data']:
-            date = smry_data[0]
-            date_data = [date]
-            for el_idx, el_data in enumerate(form['elements']):
-                smry_val = el_data[form[form['area_type']]]
-                try:
-                    date_data.append(str(round(float(smry_val),4)))
-                except:
-                    date_data.append(str(val))
-            d_data.append(date_data)
-        '''
     if 'data_summary' in form.keys() and form['data_summary'] == 'none':
         if not 'data' in req_data.keys() and not req_data['data']:
             return results
@@ -388,6 +674,7 @@ def format_data_area_lister(req_data,form):
             date_data = format_grid_data(req,form)
             d_data = d_data + date_data
         results['data'] = d_data
+    '''
     return results
 
 def get_window_data(data, start_date, end_date, start_window, end_window):

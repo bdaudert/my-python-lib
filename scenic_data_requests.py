@@ -177,6 +177,35 @@ def compose_failed_request_email(params_files_failed, log_file):
         '''%(date,','.join(params_files_failed), failed_params,log_file)
     return subj, message
 
+def check_dir_path(path,rwx=False):
+    '''
+    Checks if dir_pathexists and has correct permissions
+    Creates path if needed and sets permissions
+    This function swas created to avoid permission errors
+    in /tmp/data_requests after reboot.
+    reboot cleans out /tmp
+    '''
+    path_error = None
+    #create directories
+    try:
+        if not os.path.exists(path):
+            os.makedirs(path)
+    except Exception, e:
+        path_error = str(e)
+    #change permissions to 777 if rwx= True
+    if rwx:
+        d = path
+        # Traverse up until we reach the root,
+        # or an OSError if we don't have permission to chmod.
+        while d != '/tmp':
+            try:
+                os.chmod(d, 0777)
+                d = os.path.dirname(d)
+            except OSError:
+                path_error = 'You are not allowed to change permssions in %s' %str(d)
+                break
+    return path_error
+
 #############
 #M A I N
 ###############
@@ -186,6 +215,11 @@ if __name__ == '__main__' :
     #os.remove('/tmp/data_requests/GridNVTwoYr_params.json')
     #Set statics
     base_dir = settings.DATA_REQUEST_BASE_DIR
+    #Ensure that base_dir exists and is writable by all
+    path_error = check_dir_path(base_dir,rwx=True)
+    if path_error:
+        logger.error('Error when changing permissions in %s. Error: %s ' %(base_dir,path_error))
+        sys.exit(1)
     params_file_extension = settings.PARAMS_FILE_EXTENSION
     ftp_server = settings.DRI_FTP_SERVER
     mail_server = settings.DRI_MAIL_SERVER

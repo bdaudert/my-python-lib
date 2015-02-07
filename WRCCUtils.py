@@ -201,120 +201,184 @@ def set_acis_params(form):
         params['grid'] = form['grid']
     return params
 
-def compute_station_spatial_summary(req,form):
-    '''
-    Spatial summary for station data
-    '''
-    pass
-def compute_station_temporal_summary(req,form):
-    '''
-    Temporal summary for station data
-    '''
-    pass
-def compute_grid_spatial_summary(req,form):
-    '''
-    Spatial summary for grid data
-    '''
-    pass
-def compute_grid_temporal_summary(req,form):
-    '''
-    Temporal summary for grid data
-    '''
-    pass
 
-def station_data_trim_and_summary(req,form):
+def compute_data_summary(vals,statistic):
     '''
+    statistic is one of:
+        max,min, mean, median, sum
+    vals is list of floats to be summarized
+    '''
+    if vals == []:
+        return None
+    np_array = numpy.array(vals)
+    if statistic == 'max':
+        return round(numpy.maximum(np_array),4)
+    if statistic == 'min':
+        return round(numpy.minimum(np_array),4)
+    if statistic == 'mean':
+        return round(numpy.mean(np_array),4)
+    if statistic == 'sum':
+        return round(numpy.sum(np_array),4)
+    if statistic == 'median':
+        return round(numpy.median(np_array),4)
+
+
+
+def station_data_format_and_summary(req,form,trim=False):
+    '''
+    Formats grid data for printing/writing to file
+    If trim == True, we also trim the data:
     Some special shapes are not supported by ACIS
     E.G. Cumstom polygons or basin,cwa,climdiv,county for grid requests
     req is data opbtained for the enclosing bbox of the special shape.
     This function trims down the data of such a station
     request to the size of the custom shape.
+
+    Args:
+        req: ACIS data request dictionary
+        form: user form input dictionary
+    Returns:
+        data: for printing/writing to file
+              format: [['lon1,lat1',[date1 data],[date2 data]...], ['lon2,lat2'],[date1 data], ...]
+        smry: data summary
+              format: depends on summary:
+                      spatial summary: [[date1,el1smry,el2smry,...], [date2...]]
+                      temporal summary: [['lon1,lat1', el1smry,el2smry,...],['lon2,lat2',...]]
     '''
     pass
 
-
-def grid_data_trim_and_summary(req,form):
+def grid_data_format_and_summary(req,form, trim=False):
     '''
+    Formats grid data for printing/writing to file
+    If trim == True, we also trim the data:
     Some special shapes are not supported by ACIS
     E.G. Cumstom polygons or basin,cwa,climdiv,county for grid requests
     req is data opbtained for the enclosing bbox of the special shape.
     This function trims down the data of such a grid
     request to the size of the custom shape.
+
+    Args:
+        req: ACIS data request dictionary
+        form: user form input dictionary
+    Returns:
+        data: for printing/writing to file
+              format: [['lon1,lat1',[date1 data],[date2 data]...], ['lon2,lat2'],[date1 data], ...]
+        smry: data summary
+              format: depends on summary:
+                      spatial summary: [[date1,el1smry,el2smry,...], [date2...]]
+                      temporal summary: [['lon1,lat1', el1smry,el2smry,...],['lon2,lat2',...]]
     '''
-    smry = []
     data_type = get_data_type(form)
     #data format: [[date1,[el1 data],[el2 data],...],[date2,[el1data],[el2 data],...]]
-    data = [[] for date in range(len(req['data']))]
     try:
+        #Note: omitting list will override original data when changes
+        #to new vraiables are made!!
         lats = req['meta']['lat']
         lons = req['meta']['lon']
-        new_lats = req['meta']['lat']
-        new_lons = req['meta']['lon']
+        data = req['data']
+        els = form['elements']
     except:
-        return data,smry
-    new_data = req['data']
+        return [],[]
     if form['data_summary'] == 'temporal':
-        smry = [[] for ll in range(len(lats)*len(lats[0]))]
+        smry = []
     if form['data_summary'] == 'spatial':
-        smry = [[] for date in range(len(req['data']))]
+        smry = [[str(data[date_idx][0])] for date_idx in range(len(data))]
+    else:
+        smry = []
     smry_data = [[] for el in form['elements']]
+    #new_data = [[data[date_idx][0]] for date_idx in range(len(data))]
+    new_data = []
     #find the polygon of the special shape
     #and the function to test if a point lies within the shape
-    poly, PointIn = set_poly_and_PointIn(form)
+    poly=None;pointIn = None
+    if trim:
+        poly, PointIn = set_poly_and_PointIn(form)
     #lat,lon loop over data
     generator_lat =  ((grid_idx, lat_grid) for grid_idx, lat_grid in enumerate(lats))
-    lat_data =  [[[[] for l in lats] for el in form['elements']] for date in req['data']]
-    lat_index = -1
     for (grid_idx, lat_grid) in generator_lat:
-        lat_index+=1
+        lat_data = [[[] for el in els] for d in range(len(data))]
         generator_lon = ((lon_idx, lon) for lon_idx, lon in enumerate(lons[grid_idx]))
         lat = lat_grid[0]
-        lon_index = -1
         for (lon_idx, lon) in generator_lon:
-            lon_index+=1
+            lon_data = [[[] for el in els] for d in range(len(data))]
+            if trim:
+                point_in = PointIn(lon, lat, poly)
+                if not point_in:
+                    continue
+            new_data.append([str(lat) + ', ' + str(lon)])
+            #lon_data = map(list,zip([data[date_idx][1:len(els)][grid_idx][lon_idx] for date_idx in range(len(data))]))
+            for date_data in data:
+                d_data = [str(date_data[0])]
+                for el_idx,el in enumerate(els):
+                    try:
+                        d_data.append(round(float(date_data[el_idx+1][grid_idx][lon_idx]),4))
+                        smry_data[el_idx].append(float(date_data[el_idx+1][grid_idx][lon_idx]))
+                    except:
+                        d_data.append(date_data[el_idx+1][grid_idx][lon_idx])
+                    #Compute spatial summary at last gridpoint iteration
+                    if form['data_summary'] == 'spatial':
+                        if grid_idx == len(lats) -1 and lon_idx == len(lons[grid_idx]) -1:
+                            smry[date_idx].append(compute_data_summary(smry_data[el_idx],form['spatial_summary']))
+            new_data[-1].append(d_data)
+            #Temporal summary
+            if form['data_summary'] == 'temporal':
+                row = [lon,lat]
+                if point_in:
+                    for el_idx, el in enumerate(els):
+                        row.append(compute_data_summary(smry_data[el_idx],form['temporal_summary']))
+                smry.append(row)
+    '''
+    #lat,lon loop over data
+    generator_lat =  ((grid_idx, lat_grid) for grid_idx, lat_grid in enumerate(lats))
+    new_lat_idx = -1
+    lat_data = [[[] for el in els] for d in range(len(data))]
+    new_lats = []
+    new_lons = []
+    lon_data = [[[] for el in els] for d in range(len(data))]
+    for (grid_idx, lat_grid) in generator_lat:
+        generator_lon = ((lon_idx, lon) for lon_idx, lon in enumerate(lons[grid_idx]))
+        lat = lat_grid[0]
+        new_lons_tmp = []
+        for (lon_idx, lon) in generator_lon:
             #Check if point lies in shape
             point_in = PointIn(lon, lat, poly)
-            if not point_in:
-                #update new_lons,new_lons
-                del new_lats[lat_index][lon_index]
-                del new_lons[lat_idx][lon_index]
-                for date_idx, data_data in enumerate(req['data'])
-                    for el_idx, el in enumerate(form['elements']):
-                        del new_data[date_idx][el_idx+1][lat_index][lon_index]
-                #Update index
-                lon_index-=1
-                if new_data[date_idx][el_idx+1][lat_index] == []:
-                    del new_data[date_idx][el_idx+1][lat_index]
-                    lat_index-=1
-                if form['data_summary'] == 'temporal':
-                    del smry[lat_index][lon_index]
-                continue
-            #Data summary
-            for date_idx, data_data in enumerate(req['data'])
-                for el_idx, el in enumerate(form['elements']):
-                    smry_data[el_idx].append(new_data[date_idx][el_idx+1][lat_index][lon_index])
-                    if form['data_summary'] == 'spatial':
-                        if grid_idx == len(lats) -1 and lon_idx == len(lons) -1:
-                            #smry[el_idx][date_idx] = Compute summary(smry_data[el_idx])
+            if point_in:
+                new_lons_tmp.append(lon)
+
+            #Loop over data and compute summary
+            for date_idx, date_data in enumerate(data):
+                for el_idx, el in enumerate(els):
+                    if point_in:
+                        lon_data[date_idx][el_idx].append(data[date_idx][el_idx+1][grid_idx][lon_idx])
+                        try:
+                            smry_data[el_idx].append(float(req['data'][date_idx][el_idx+1][grid_idx][lon_idx]))
+                        except:
                             pass
+                    #Compute spatial summary at last gridpoint iteration
+                    if form['data_summary'] == 'spatial':
+                        if grid_idx == len(lats) -1 and lon_idx == len(lons[grid_idx]) -1:
+                            smry[date_idx].append(compute_data_summary(smry_data[el_idx],form['spatial_summary']))
+
+                    #Update new_lats/lons and data at last lon iteration
+                    if lon_idx == len(lons[grid_idx]) -1 and new_lons_tmp:
+                        print grid_idx,lon_idx,date_idx,el_idx
+                        print lon_data[el_idx]
+                        new_lons.append(new_lons_tmp)
+                        new_lats.append([l for l in new_lons_tmp])
+                        lat_data[date_idx][el_idx].append(lon_data[date_idx][el_idx])
+                    #Update final data array for
+                    #each day at last lat,lon and element iteration
+                    if grid_idx == len(lats) - 1 and lon_idx == len(lons[grid_idx]) -1:
+                        new_data[date_idx].append(lat_data[date_idx][el_idx])
+            #Temporal summary
             if form['data_summary'] == 'temporal':
-                for el_idx, el in form['elements']:
-                    #smry[el_idx][lat_index][lon_index] = Compute summary(smry_data[el_idx])
-                    pass
-            '''
-            #Date loop
-            for date_idx,d_data in enumerate(req['data']):
-                #Write date to output
-                if not data[date_idx]:
-                    data[date_idx] = [d_data[0]]
-                #Element loop
-                for el_idx,el in enumerate(form['elements']):
-                    lat_data[date_idx][el_idx][grid_idx].append(req['data'][date_idx][el_idx+1][grid_idx][lon_idx])
-                    print lat_data
-                #save results when last lat,lon have been traversed
-                if grid_idx == len(lats) - 1 and lon_idx == len(lons) - 1:
-                    data[date_idx]+=lat_data
-            '''
+                row = [lon,lat]
+                if point_in:
+                    for el_idx, el in enumerate(els):
+                        row.append(compute_data_summary(smry_data[el_idx],form['temporal_summary']))
+                smry.append(row)
+    #print len(new_data[0][1][0])
+    '''
     return new_data,smry
 
 def make_data_request(form):
@@ -368,18 +432,23 @@ def make_data_request(form):
     if 'meta' in req.keys():
         resultsdict['meta'] = req['meta']
     if 'smry' in req.keys() and req['smry']:
-        smry = req['smry']
+        resultsdict['smry'] = req['smry']
     if 'data' in req.keys() and req['data']:
-        data = req['data']
+        resultsdict['data'] = req['data']
     #Override data and smry if needed
     #Grid data
-    if data_type == 'grid' and form['area_type'] in special_grid_areas:
-        #irregular shape, fomat data and compute smry
-        resultsdict['data'],resultsdict['smry'] = grid_data_trim_and_summary(req,form)
+    Trim = False
+    if data_type == 'grid':
+        if form['area_type'] in special_grid_areas:
+            #irregular shape, data needs trimming
+            Trim = True
+        resultsdict['data'],resultsdict['smry'] = grid_data_format_and_summary(req,form,trim=Trim)
     #Station data
-    if data_type == 'station' and form['area_type'] in special_station_areas:
-        #irregular shape, fomat data and compute smry
-        resultsdict['data'],resultsdict['smry'] = station_data_trim_and_summary(req,form)
+    elif data_type == 'station':
+        if form['area_type'] in special_station_areas:
+            #irregular shape, data needs trimming
+            Trim = True
+        resultsdict['data'],resultsdict['smry'] = station_data_format_and_summary(req,form,trim=Trim)
     return resultsdict
 
 

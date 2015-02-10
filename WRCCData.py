@@ -557,6 +557,9 @@ AREA_DEFAULTS = {
 }
 
 DISPLAY_PARAMS = {
+    #data types
+    'station': 'Station',
+    'grid':'Grid',
     #metadata
     'uid':'Unique Station Identifier',
     'coop_id': 'COOP Identifier',

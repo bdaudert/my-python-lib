@@ -601,7 +601,6 @@ DISPLAY_PARAMS = {
     #dates and elements
     'start_date': 'Start Date',
     'end_date': 'End Date',
-    'windowed_data': 'Windowed Data',
     'start_window': 'Start Window',
     'end_window': 'End Window',
     'start_month': 'Start Month',
@@ -662,6 +661,7 @@ DISPLAY_PARAMS = {
     'summary_type': 'Summary Type',
     'temporal_summary':'Temporal Summary',
     'spatial_summary':'Spatial Summary',
+    'windowed_data': 'Windowed Data',
     'mean': 'Mean',
     'sum': 'Sum of',
     'max': 'Maximum',

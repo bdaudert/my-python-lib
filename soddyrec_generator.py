@@ -107,7 +107,7 @@ if __name__ == "__main__":
     #Loop over USMeta stations
     count = 0
     if not USMeta['meta']:
-        logger.error('Metadat is empty, check parameters. Exiting program.')
+        logger.error('Metadata  empty, check parameters. Exiting program.')
         sys.exit(1)
     for stn_meta in USMeta['meta']:
         if not valid_COOP_station(stn_meta):

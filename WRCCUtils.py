@@ -250,9 +250,9 @@ def compute_data_summary(vals,statistic):
         return None
     np_array = numpy.array(vals)
     if statistic == 'max':
-        return round(numpy.maximum(np_array),4)
+        return round(numpy.amax(np_array),4)
     if statistic == 'min':
-        return round(numpy.minimum(np_array),4)
+        return round(numpy.amin(np_array),4)
     if statistic == 'mean':
         return round(numpy.mean(np_array),4)
     if statistic == 'sum':
@@ -328,8 +328,7 @@ def request_and_format_data(form):
             if form['data_summary'] == 'temporal':
                 resultsdict = format_grid_temporal_summary(req,form)
             if form['data_summary'] == 'spatial':
-                #resultsdict = format_grid_spatial_summary(req,form)
-                pass
+                resultsdict = format_grid_spatial_summary(req,form)
             if form['data_summary'] == 'windowed_data':
                 resultsdict = format_grid_windowed_data(req,form)
     #Station data
@@ -346,11 +345,9 @@ def request_and_format_data(form):
             if form['data_summary'] == 'temporal':
                 resultsdict = format_station_temporal_summary(req,form)
             if form['data_summary'] == 'spatial':
-                #resultsdict  = format_station_spatial_summary(req,form)
-                pass
+                resultsdict  = format_station_spatial_summary(req,form)
             if form['data_summary'] == 'windowed_data':
                 resultsdict = format_station_windowed_data(req,form)
-                pass
     return resultsdict
 
 
@@ -525,9 +522,12 @@ def station_data_trim_and_summary(req,form):
     header_data, header_smry = set_lister_headers(form)
     if form['data_summary'] == 'spatial':
         new_smry = [[str(data[date_idx][0])] for date_idx in range(len(data))]
+        smry_data = [[[] for el in form['elements']] for date_idx in range(len(data))]
+    elif form['data_summary'] == 'temporal':
+        new_smry =[]
+        smry_data = [[] for el in els]
     else:
         new_smry = []
-    smry_data = [[] for el in form['elements']]
     #find the polygon of the special shape
     #and the function to test if a point lies within the shape
     poly, PointIn = set_poly_and_PointIn(form)
@@ -545,25 +545,32 @@ def station_data_trim_and_summary(req,form):
         #point is in shape, add to data and compute summary
         new_meta.append(stn_data['meta'])
         stn_name = str(stn_data['meta']['name'])
-        new_data.append(header_data)
+        new_data.append([])
         try:
             stn_ids = ','.join([sid.split(' ')[0] for sid in stn_data['meta']['sids']])
             stn_ids = ' (' + stn_ids + ')'
         except:
             stn_ids = ' ()'
-        for date_idx,date_data in enumerate(stn_data['data']):
+        for date_data in stn_data['data']:
             d_data = [dates[date_idx]]
             for el_idx, el_data in enumerate(date_data):
                 try:
                     d_data.append(round(float(el_data),4))
-                    smry_data[el_idx].append(float(el_data))
+                    if form['data_summary'] == 'spatial':
+                        smry_data[date_idx][el_idx].append(float(el_data))
+                    if form['data_summary'] == 'temporal':
+                        smry_data[el_idx].append(float(el_data))
                 except:
                     d_data.append(el_data)
-                #Compute spatial summary at last station iteration
-                if form['data_summary'] == 'spatial':
-                    if stn_idx == len(req['data']) -1:
-                        new_smry[date_idx].append(compute_data_summary(smry_data[el_idx],form['spatial_summary']))
-            new_data.append(d_data)
+            new_data[-1].append(d_data)
+        #Wndowed Data
+        if form['data_summary'] == 'windowed_data':
+            sd = form['start_date']
+            ed = form['end_date']
+            sw = form['start_window']
+            ew = form['end_window']
+            new_data[-1] = get_windowed_data(new_data[-1], sd, ed, sw, ew)
+        new_data[-1].insert(0,header_data)
         #Temporal summary
         if form['data_summary'] == 'temporal':
             row = [stn_name + stn_ids]
@@ -571,7 +578,12 @@ def station_data_trim_and_summary(req,form):
                 for el_idx, el in enumerate(els):
                     row.append(compute_data_summary(smry_data[el_idx],form['temporal_summary']))
                 new_smry.append(row)
-    #Insert smmary header
+    #Compute spatial summary
+    if form['data_summary'] == 'spatial':
+        for date_idx in range(len(dates)):
+            for el_idx in range(len(els)):
+                new_smry[date_idx].append(compute_data_summary(smry_data[el_idx],form['spatial_summary']))
+    #Insert summary header
     if new_smry:
         new_smry.insert(0,header_smry)
     resultsdict = {
@@ -616,6 +628,10 @@ def grid_data_trim_and_summary(req,form):
     header_data, header_smry = set_lister_headers(form)
     if form['data_summary'] == 'spatial':
         new_smry = [[str(data[date_idx][0])] for date_idx in range(len(data))]
+        smry_data = [[[] for el in form['elements']] for date_idx in range(len(data))]
+    elif form['data_summary'] == 'temporal':
+        smry_data = [[] for el in form['elements']]
+        new_smry = []
     else:
         new_smry = []
     smry_data = [[] for el in form['elements']]
@@ -640,21 +656,28 @@ def grid_data_trim_and_summary(req,form):
             new_meta.append(meta_dict)
             new_lons.append(lon)
             new_elevs.append(elevs[grid_idx][lon_idx])
-            new_data.append([header_data])
-            #lon_data = map(list,zip([data[date_idx][1:len(els)][grid_idx][lon_idx] for date_idx in range(len(data))]))
+            new_data.append([])
             for date_data in data:
                 d_data = [str(date_data[0])]
                 for el_idx,el in enumerate(els):
                     try:
                         d_data.append(round(float(date_data[el_idx+1][grid_idx][lon_idx]),4))
-                        smry_data[el_idx].append(float(date_data[el_idx+1][grid_idx][lon_idx]))
+                        if form['data_summary'] == 'spatial':
+                            smry_data[date_idx][el_idx].append(float(date_data[el_idx+1][grid_idx][lon_idx]))
+                        if form['data_summary'] == 'temporal':
+                            smry_data[el_idx].append(float(date_data[el_idx+1][grid_idx][lon_idx]))
                     except:
                         d_data.append(date_data[el_idx+1][grid_idx][lon_idx])
-                    #Compute spatial summary at last gridpoint iteration
-                    if form['data_summary'] == 'spatial':
-                        if grid_idx == len(lats) -1 and lon_idx == len(lons[grid_idx]) -1:
-                            new_smry[date_idx].append(compute_data_summary(smry_data[el_idx],form['spatial_summary']))
                 new_data[-1].append(d_data)
+            #Wndowed Data
+            if form['data_summary'] == 'windowed_data':
+                sd = form['start_date']
+                ed = form['end_date']
+                sw = form['start_window']
+                ew = form['end_window']
+                new_data[-1] = get_windowed_data(new_data[-1], sd, ed, sw, ew)
+            new_data[-1].insert(0,header_data)
+
             #Temporal summary
             if form['data_summary'] == 'temporal':
                 row = [str(lon) + ',' + str(lat)]
@@ -662,6 +685,12 @@ def grid_data_trim_and_summary(req,form):
                     for el_idx, el in enumerate(els):
                         row.append(compute_data_summary(smry_data[el_idx],form['temporal_summary']))
                 new_smry.append(row)
+
+    #Compute spatial summary
+    if form['data_summary'] == 'spatial':
+        for date_idx in range(len(data)):
+            for el_idx in range(len(form['elements'])):
+                new_smry[date_idx].append(compute_data_summary(smry_data[el_idx],form['spatial_summary']))
     #Insert summary header
     if new_smry:
         new_smry.insert(0,header_smry)
@@ -696,7 +725,7 @@ def format_grid_spatial_summary(req,form):
         return {'data':[],'smry':[],meta:[],'form':form,'errors':error}
     header_data, header_smry = set_lister_headers(form)
     new_smry = [[str(data[date_idx][0])] for date_idx in range(len(data))]
-    smry_data = [[] for el in form['elements']]
+    smry_data = [[[] for el in form['elements']] for date_idx in range(len(data))]
     new_data = [];new_meta = []
     #lat,lon loop over data
     generator_lat =  ((grid_idx, lat_grid) for grid_idx, lat_grid in enumerate(lats))
@@ -706,15 +735,15 @@ def format_grid_spatial_summary(req,form):
         for (lon_idx, lon) in generator_lon:
             meta_dict = {'lon':lon,'lat':lat,'elev':req['meta']['elev'][grid_idx][lon_idx]}
             new_meta.append(meta_dict)
-            for date_data in data:
+            for date_idx,date_data in enumerate(data):
                 for el_idx,el in enumerate(els):
                     try:
-                        smry_data[el_idx].append(float(date_data[el_idx+1][grid_idx][lon_idx]))
+                        smry_data[date_idx][el_idx].append(float(date_data[el_idx+1][grid_idx][lon_idx]))
                     except:
                         pass
                     #Compute spatial summary at last gridpoint iteration
                     if grid_idx == len(lats) -1 and lon_idx == len(lons[grid_idx]) -1:
-                        new_smry[date_idx].append(compute_data_summary(smry_data[el_idx],form['spatial_summary']))
+                        new_smry[date_idx].append(compute_data_summary(smry_data[date_idx][el_idx],form['spatial_summary']))
     #Insert summary header
     if new_smry:
         new_smry.insert(0,header_smry)
@@ -822,7 +851,8 @@ def format_grid_windowed_data(req,form):
             ed = form['end_date']
             sw = form['start_window']
             ew = form['end_window']
-            new_data[-1] = [header_data,WRCCUtils.get_window_data(new_data[-1], sd, ed, sw, ew)]
+            new_data[-1] = get_windowed_data(new_data[-1], sd, ed, sw, ew)
+            new_data[-1].insert(0,header_data)
 
     resultsdict = {
         'data':new_data,
@@ -902,28 +932,31 @@ def format_station_spatial_summary(req,form):
     '''
     try:
         data = req['data']
-        meta = req['meta']
         els = form['elements']
     except:
         error = 'No data found for these parameters.'
-        return {'data':[],'smry':[],meta:[],'form':form,'errors':error}
+        return {'data':[],'smry':[],'meta':[],'form':form,'errors':error}
     header_data, header_smry = set_lister_headers(form)
-    new_smry = [[str(data[date_idx][0])] for date_idx in range(len(data))]
-    smry_data = [[] for el in form['elements']]
     dates = get_dates(form['start_date'],form['end_date'])
+    #Sanity check on dates
+    if len(dates) != len(data[0]['data']):
+        error = 'Dates mismatch.'
+        return {'data':[],'smry':[],'meta':[],'form':form,'errors':error}
     new_data = [];new_meta = []
+    smry_data = [[[] for el in form['elements']] for date_idx in range(len(dates))]
+    new_smry = [[str(dates[date_idx])] for date_idx in range(len(dates))]
     #Station loop over data
     for stn_idx, stn_data in enumerate(req['data']):
         new_meta.append(stn_data['meta'])
         for date_idx,date_data in enumerate(stn_data['data']):
             for el_idx, el_data in enumerate(date_data):
                 try:
-                    smry_data[el_idx].append(float(el_data))
+                    smry_data[date_idx][el_idx].append(float(el_data))
                 except:
                     pass
                 #Compute spatial summary at last station iteration
                 if stn_idx == len(req['data']) -1:
-                    new_smry[date_idx].append(compute_data_summary(smry_data[el_idx],form['spatial_summary']))
+                    new_smry[date_idx].append(compute_data_summary(smry_data[date_idx][el_idx],form['spatial_summary']))
     if new_smry:
         new_smry.insert(0,header_smry)
     resultsdict = {
@@ -1023,7 +1056,8 @@ def format_station_windowed_data(req,form):
                     d_data.append(el_data)
             new_data[-1].append(d_data)
         #Windowed data
-        new_data[-1] = [header_data,WRCCUtils.get_window_data(new_data[-1], sd, ed, sw, ew)]
+        new_data[-1] = get_windowed_data(new_data[-1], sd, ed, sw, ew)
+        new_data[-1].insert(0,header_data)
     resultsdict = {
         'data':new_data,
         'smry':new_smry,
@@ -3335,14 +3369,20 @@ def get_windowed_data(data, start_date, end_date, start_window, end_window):
         doy_window_st = WRCCUtils.compute_doy(start_window[0:2], start_window[2:4])
         doy_window_end = WRCCUtils.compute_doy(end_window[0:2], end_window[2:4])
         dates = [data[i][0] for i  in range(len(data))]
-        start_w = '%s-%s' % (start_window[0:2], start_window[2:4])
-        end_w = '%s-%s' % (end_window[0:2], end_window[2:4])
+        #match dates and window formats
+        if len(dates[0]) == 8:
+            start_w = start_window;end_w = end_window
+        else:
+            start_w = '%s-%s' % (start_window[0:2], start_window[2:4])
+            end_w = '%s-%s' % (end_window[0:2], end_window[2:4])
         #silly python doesn't have list.indices() method
         #Look for windows in data
         for i, date in enumerate(dates):
-            if date[5:] == start_w:
+            if len(date) == 8:sidx = 4
+            else:sidx = 5
+            if date[sidx:] == start_w:
                 start_indices.append(i)
-            if date[5:] == end_w:
+            if date[sidx:] == end_w:
                 end_indices.append(i)
         #Check end conditions at endpoints:
         if doy_window_st == doy_window_end:

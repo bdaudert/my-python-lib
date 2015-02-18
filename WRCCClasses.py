@@ -44,6 +44,161 @@ except:
 #WRCC modules
 import AcisWS, WRCCDataApps, WRCCUtils, WRCCData
 
+class CsvWriter(object):
+    '''
+    Writes data to csv
+    Keyword arguments:
+        response HTTPResponse object
+        req data requestdictionary with keys
+            data,smry,form,errors
+    '''
+    def __init__(self, response,req):
+        self.req = req
+        self.form =  self.req['form']
+        self.response = response
+        self.delim = WRCCData.DELIMITERS[self.form['delimiter']]
+
+    def set_data_type(self):
+        self.data_type = WRCCUtils.get_data_type(self.form)
+
+    def set_data(self):
+        if 'smry' in self.req.keys() and self.req['smry']:
+            self.data = self.req['smry']
+            self.smry = True
+        else:
+            self.data = self.req['data']
+            self.smry = False
+
+    def set_meta_keys(self):
+        self.meta_keys = WRCCUtils.get_meta_keys(self.form)
+
+    def set_writer(self):
+        import csv
+        self.writer = csv.writer(self.response, delimiter=self.delim)
+
+    def write_header(self):
+        #Search params header:
+        row = ['*SearchArea',WRCCData.DISPLAY_PARAMS[self.form['area_type']],self.form[self.form['area_type']]]
+        self.writer.writerow(row)
+        if self.data_type == 'station' and not self.smry:
+            row = ['*DataFlags','M=Missing', 'T=Trace', 'S=Subsequent', 'A=Accumulated']
+            self.writer.writerow(row)
+        if self.smry:
+            smry = WRCCData.DISPLAY_PARAMS[self.form['data_summary']]
+            row = ['*']
+            self.writer.writerow(row)
+
+    def write_data(self):
+        #Loop over data points
+        for p_idx, p_data in enumerate(self.data):
+            #Write meta
+            meta_display_params = WRCCUtils.metadict_to_display_list(self.req['meta'][p_idx], self.meta_keys, self.form)
+            for key_val in meta_display_params:
+                row = ['*' + key_val[0].replace(' ',''),' '.join(key_val[1])]
+                self.writer.writerow(row)
+            #Write data
+            self.writer.writerow(['*'])
+            for d_idx, date_data in enumerate(p_data):
+                if d_idx == 0:
+                    #Data Header
+                    date_data[0] = '*' + date_data[0]
+                row = date_data
+                self.writer.writerow(row)
+
+    def write_summary(self):
+        for s_idx, s_data in enumerate(self.data):
+            if s_idx == 0:
+                #Data Header
+                s_data[0] = '*' + s_data[0]
+            row = s_data
+            self.writer.writerow(row)
+
+    def write_to_file(self):
+        self.set_data_type()
+        self.set_data()
+        self.set_meta_keys()
+        self.set_writer()
+        self.write_header()
+        if self.smry:
+            self.write_summary()
+        else:
+            self.write_data()
+
+class ExcelWriter(object):
+    '''
+    Writes data to csv
+    Keyword arguments:
+        response HTTPResponse object
+        req data requestdictionary with keys
+            data,smry,form,errors
+    '''
+    def __init__(self, response,req):
+        self.req = req
+        self.form =  self.req['form']
+        self.response = response
+        self.delim = WRCCData.DELIMITERS[self.form['delimiter']]
+
+    def set_data_type(self):
+        self.data_type = WRCCUtils.get_data_type(self.form
+)
+    def set_data(self):
+        if 'smry' in self.req.keys() and self.req['smry']:
+            self.data = self.req['smry']
+            self.smry = True
+        else:
+            self.data = self.req['data']
+            self.smry = False
+    def set_meta_keys(self):
+        self.meta_keys = WRCCUtils.get_meta_keys(self.form)
+
+    def set_workbook(self):
+        from xlwt import Workbook
+        self.wb = Workbook()
+
+    def write_data(self):
+        #Loop over data points
+        for p_idx, p_data in enumerate(self.data):
+            #Write meta
+            meta_display_params = WRCCUtils.metadict_to_display_list(self.req['meta'][p_idx], self.meta_keys, self.form)
+            #New sheet for each point
+            ws = self.wb.add_sheet('Point' + str(p_idx))
+            #Write header
+            for m_idx,key_val in enumerate(meta_display_params):
+                ws.write(0,m_idx,meta_display_params[m_idx][0])
+                ws.write(1,m_idx,' '.join(meta_display_params[m_idx][1]))
+            if self.data_type =='station':
+                ws.write(3,0,'DataFlags')
+                ws.write(3,1,'M=Missing')
+                ws.write(3,2,'T=Trace')
+                ws.write(3,3,'S=Subsequent')
+                ws.write(3,4,'A=Accumulated')
+            #Write data
+            for date_idx in range(len(p_data)):
+                for data_idx in range(len(p_data[date_idx])):
+                    ws.write(date_idx + 5 ,data_idx,p_data[date_idx][data_idx])
+            #Save workbook
+            self.wb.save(self.response)
+
+    def write_summary(self):
+        ws = self.wb.add_sheet('1')
+        #Write data
+        for row_idx in range(len(self.data)):
+            for val_idx in range(len(self.data[row_idx])):
+                ws.write(row_idx + 5 ,val_idx,self.data[row_idx][val_idx])
+            #Save workbook
+            self.wb.save(self.response)
+
+    def write_to_file(self):
+        self.set_data_type()
+        self.set_data()
+        self.set_meta_keys()
+        self.set_workbook()
+        #self.write_header()
+        if self.smry:
+            self.write_summary()
+        else:
+            self.write_data()
+
 class DataComparer(object):
     '''
     Compare historic station data with gridded data at a lat/lon coordinate.
@@ -52,7 +207,7 @@ class DataComparer(object):
     Data is obtained for both.
 
     Keywork arguments:
-    params: Dictionary containing request parameters:
+        params: Dictionary containing request parameters:
             location: lon, lat
             grid: grid ID
             start_date/end_date of request

@@ -218,7 +218,12 @@ def set_acis_params(form):
         return {}
     #Override area parameter if necessary
     #Override with enclosing bbox if data_type == grid
+    special_shape = False
     if data_type == 'grid' and f_key in special_grid_areas:
+        special_shape = True
+    if data_type == 'station' and f_key in special_station_areas:
+        special_shape = True
+    if special_shape:
         del params[p_key]
         #Need to run request on enclosing bbox
         if f_key == 'shape':
@@ -300,6 +305,8 @@ def request_and_format_data(form):
         request_data = getattr(AcisWS,'GridData')
     #Make data request
     req = request_data(params)
+    print params
+    print req
     '''
     try:
         req = request_data(params)
@@ -313,7 +320,26 @@ def request_and_format_data(form):
         error = 'No data found for these parameters.'
         resultsdict['errors'].append( error)
         return resultsdict
+    '''
     #Format data for display or writing to file
+    if data_type == 'grid':
+        if form['area_type'] == 'location':
+            #Single point request
+            resultsdict = format_data_single_lister(req,form)
+        elif form['area_type'] in special_grid_areas:
+            #Irregular shape, data needs trimming
+            resultsdict = grid_data_trim_and_summary(req,form,trim=True)
+        else:
+            resultsdict = grid_data_trim_and_summary(req,form)
+    if data_type == 'station':
+        if form['area_type'] == 'station_id':
+            resultsdict = format_data_single_lister(req,form)
+        elif form['area_type'] in special_station_areas:
+            #Irregular shape, data needs trimming
+            resultsdict = station_data_trim_and_summary(req,form,trim=True)
+        else:
+            resultsdict = station_data_trim_and_summary(req,form)
+    '''
     #Grid data
     if data_type == 'grid':
         if form['area_type'] == 'location':
@@ -446,7 +472,7 @@ def format_data_single_lister(req,form):
         ids = ' (' + ids + ')'
         name+=ids
     if 'location' in form.keys():
-        name=str(req['meta']['lon'] + ',' + req['meta']['lat'])
+        name=str(req['meta']['lon']) + ',' + str(req['meta']['lat'])
     #Check if we have summary only request
     for date_idx,data in enumerate(req['data']):
         date = [str(data[0])]
@@ -492,7 +518,7 @@ def format_data_single_lister(req,form):
 
 def station_data_trim_and_summary(req,form):
     '''
-    Tris and summarizes station data for printing/writing to file
+    Trims and summarizes station data for printing/writing to file
     If trim == True, we also trim the data:
     Some special shapes are not supported by ACIS
     E.G. Cumstom polygons or basin,cwa,climdiv,county for grid requests
@@ -534,11 +560,14 @@ def station_data_trim_and_summary(req,form):
     #MultiStnData calls return no dates
     dates = get_dates(form['start_date'],form['end_date'])
     #Sanity check on dates
-    if len(dates) != len(data[0]['data']):
-        return [],[],[]
     new_data = [];new_meta = []
     #Station loop over data
     for stn_idx, stn_data in enumerate(req['data']):
+        try:
+            lon = stn_data['meta']['ll'][0]
+            lat = stn_data['meta']['ll'][1]
+        except:
+            continue
         point_in = PointIn(lon, lat, poly)
         if not point_in:
             continue
@@ -551,7 +580,7 @@ def station_data_trim_and_summary(req,form):
             stn_ids = ' (' + stn_ids + ')'
         except:
             stn_ids = ' ()'
-        for date_data in stn_data['data']:
+        for date_idx, date_data in enumerate(stn_data['data']):
             d_data = [dates[date_idx]]
             for el_idx, el_data in enumerate(date_data):
                 try:
@@ -628,13 +657,12 @@ def grid_data_trim_and_summary(req,form):
     header_data, header_smry = set_lister_headers(form)
     if form['data_summary'] == 'spatial':
         new_smry = [[str(data[date_idx][0])] for date_idx in range(len(data))]
-        smry_data = [[[] for el in form['elements']] for date_idx in range(len(data))]
+        smry_data = [[[] for el in els] for date_idx in range(len(data))]
     elif form['data_summary'] == 'temporal':
-        smry_data = [[] for el in form['elements']]
+        smry_data = [[] for el in els]
         new_smry = []
     else:
         new_smry = []
-    smry_data = [[] for el in form['elements']]
     new_data = [];new_meta = []
     #find the polygon of the special shape
     #and the function to test if a point lies within the shape
@@ -657,15 +685,16 @@ def grid_data_trim_and_summary(req,form):
             new_lons.append(lon)
             new_elevs.append(elevs[grid_idx][lon_idx])
             new_data.append([])
-            for date_data in data:
+            for date_idx, date_data in enumerate(data):
                 d_data = [str(date_data[0])]
                 for el_idx,el in enumerate(els):
                     try:
-                        d_data.append(round(float(date_data[el_idx+1][grid_idx][lon_idx]),4))
+                        d = float(date_data[el_idx+1][grid_idx][lon_idx])
+                        d_data.append(round(d,4))
                         if form['data_summary'] == 'spatial':
-                            smry_data[date_idx][el_idx].append(float(date_data[el_idx+1][grid_idx][lon_idx]))
+                            smry_data[date_idx][el_idx].append(d)
                         if form['data_summary'] == 'temporal':
-                            smry_data[el_idx].append(float(date_data[el_idx+1][grid_idx][lon_idx]))
+                            smry_data[el_idx].append(d)
                     except:
                         d_data.append(date_data[el_idx+1][grid_idx][lon_idx])
                 new_data[-1].append(d_data)
@@ -680,7 +709,7 @@ def grid_data_trim_and_summary(req,form):
 
             #Temporal summary
             if form['data_summary'] == 'temporal':
-                row = [str(lon) + ',' + str(lat)]
+                row = [str(round(lon,4)) + ',' + str(round(lat,4))]
                 if point_in:
                     for el_idx, el in enumerate(els):
                         row.append(compute_data_summary(smry_data[el_idx],form['temporal_summary']))
@@ -690,7 +719,7 @@ def grid_data_trim_and_summary(req,form):
     if form['data_summary'] == 'spatial':
         for date_idx in range(len(data)):
             for el_idx in range(len(form['elements'])):
-                new_smry[date_idx].append(compute_data_summary(smry_data[el_idx],form['spatial_summary']))
+                new_smry[date_idx].append(compute_data_summary(smry_data[date_idx][el_idx],form['spatial_summary']))
     #Insert summary header
     if new_smry:
         new_smry.insert(0,header_smry)
@@ -1261,15 +1290,8 @@ def write_to_csv(response,req):
     if data_type == 'station':
         row = ['*DataFlags','M=Missing', 'T=Trace', 'S=Subsequent', 'A=Accumulated']
         writer.writerow(row)
-    #NOTE: row writer does not like delimiter characters in string,
-    #need to set space char to be used in header string
-    header_seperator = ': '
-    if delim == ':':
-        header_seperator = ' '
     #Loop over data points
     for p_idx, p_data in enumerate(data):
-        #NOTE: row writer does not like delimiter characters in string,
-        #need to set space char to be used in header string
         #Write meta
         meta_display_params = metadict_to_display_list(meta[p_idx], meta_keys, form)
         for key_val in meta_display_params:
@@ -1307,8 +1329,6 @@ def write_to_excel(response,req):
     wb = Workbook()
     #Loop over data points
     for p_idx, p_data in enumerate(data):
-        #NOTE: row writer does not like delimiter characters in string,
-        #need to set space char to be used in header string
         #Write meta
         meta_display_params = metadict_to_display_list(meta[p_idx], meta_keys, form)
         #New sheet for each point

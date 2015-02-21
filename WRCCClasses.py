@@ -78,19 +78,25 @@ class CsvWriter(object):
 
     def write_header(self):
         #Search params header:
-        row = ['*SearchArea',WRCCData.DISPLAY_PARAMS[self.form['area_type']],self.form[self.form['area_type']]]
-        self.writer.writerow(row)
+        if self.smry and self.form['data_summary'] != 'None':
+            header_keys = [self.form['area_type'],'data_summary','start_date', 'end_date']
+            header = WRCCUtils.form_to_display_list(header_keys, self.form)
+        else:
+            header_keys = [self.form['area_type'],'start_date', 'end_date']
+            header = WRCCUtils.form_to_display_list(header_keys, self.form)
+            #header= [['*SearchArea',WRCCData.DISPLAY_PARAMS[self.form['area_type']],self.form[self.form['area_type']]]]
+        for key_val in header:
+            row = ['*' + key_val[0].replace(' ',''),' '.join(key_val[1])]
+            self.writer.writerow(row)
+
         if self.data_type == 'station' and not self.smry:
             row = ['*DataFlags','M=Missing', 'T=Trace', 'S=Subsequent', 'A=Accumulated']
-            self.writer.writerow(row)
-        if self.smry:
-            smry = WRCCData.DISPLAY_PARAMS[self.form['data_summary']]
-            row = ['*']
             self.writer.writerow(row)
 
     def write_data(self):
         #Loop over data points
         for p_idx, p_data in enumerate(self.data):
+            self.writer.writerow(['*'])
             #Write meta
             meta_display_params = WRCCUtils.metadict_to_display_list(self.req['meta'][p_idx], self.meta_keys, self.form)
             for key_val in meta_display_params:
@@ -101,9 +107,11 @@ class CsvWriter(object):
             for d_idx, date_data in enumerate(p_data):
                 if d_idx == 0:
                     #Data Header
-                    date_data[0] = '*' + date_data[0]
-                row = date_data
-                self.writer.writerow(row)
+                    h = ['*' + date_data[0]]
+                else:
+                    h = [date_data[0]]
+                d = date_data[1:]
+                self.writer.writerow(h + d)
 
     def write_summary(self):
         for s_idx, s_data in enumerate(self.data):
@@ -155,6 +163,16 @@ class ExcelWriter(object):
         from xlwt import Workbook
         self.wb = Workbook()
 
+    def write_header(self,ws):
+        if self.smry:
+            header_keys = [self.form['area_type'],'data_summary','start_date', 'end_date']
+            header = WRCCUtils.form_to_display_list(header_keys, self.form)
+        else:
+            header = []
+        for k_idx, key_val in enumerate(header):
+            ws.write(0,k_idx,key_val[0].replace(' ',''))
+            ws.write(1,k_idx,' '.join(key_val[1]))
+
     def write_data(self):
         #Loop over data points
         for p_idx, p_data in enumerate(self.data):
@@ -181,12 +199,17 @@ class ExcelWriter(object):
 
     def write_summary(self):
         ws = self.wb.add_sheet('1')
+        self.write_header(ws)
         #Write data
         for row_idx in range(len(self.data)):
             for val_idx in range(len(self.data[row_idx])):
-                ws.write(row_idx + 5 ,val_idx,self.data[row_idx][val_idx])
+                try:
+                    val =  round(float(self.data[row_idx][val_idx]),4)
+                except:
+                    val = self.data[row_idx][val_idx]
+                ws.write(row_idx + 4 ,val_idx,val)
             #Save workbook
-            self.wb.save(self.response)
+        self.wb.save(self.response)
 
     def write_to_file(self):
         self.set_data_type()

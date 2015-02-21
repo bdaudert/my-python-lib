@@ -558,6 +558,7 @@ AREA_DEFAULTS = {
 
 DISPLAY_PARAMS = {
     #data types
+    'data_type':'Data Type',
     'station': 'Station',
     'grid':'Grid',
     #metadata

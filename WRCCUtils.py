@@ -25,11 +25,13 @@ try:
     from xlwt import Workbook
 except:
     pass
-import WRCCClasses, AcisWS, WRCCData, WRCCUtils
+import WRCCClasses, AcisWS, WRCCData
 
 #########
 #STATICS
 ########
+thismodule =  sys.modules[__name__]
+
 area_keys = ['station_id','station_ids','location','locations','state',\
 'bounding_box','county','county_warning_area','basin','climate_division','shape']
 special_station_areas = ['shape']
@@ -145,7 +147,7 @@ def set_acis_els(form):
     data_type = get_data_type(form)
     acis_elems = []
     for el in form['elements']:
-        el_strip, base_temp = WRCCUtils.get_el_and_base_temp(el)
+        el_strip, base_temp = get_el_and_base_temp(el)
         l ={
             'vX':WRCCData.ACIS_ELEMENTS_DICT[el_strip]['vX']
         }
@@ -197,7 +199,7 @@ def set_acis_params(form):
     if not data_type:
         return {}
     #Format dates
-    s_date, e_date = WRCCUtils.start_end_date_to_eight(form)
+    s_date, e_date = start_end_date_to_eight(form)
     params = {
             'sdate':s_date,
             'edate':e_date
@@ -305,8 +307,6 @@ def request_and_format_data(form):
         request_data = getattr(AcisWS,'GridData')
     #Make data request
     req = request_data(params)
-    print params
-    print req
     '''
     try:
         req = request_data(params)
@@ -320,26 +320,7 @@ def request_and_format_data(form):
         error = 'No data found for these parameters.'
         resultsdict['errors'].append( error)
         return resultsdict
-    '''
-    #Format data for display or writing to file
-    if data_type == 'grid':
-        if form['area_type'] == 'location':
-            #Single point request
-            resultsdict = format_data_single_lister(req,form)
-        elif form['area_type'] in special_grid_areas:
-            #Irregular shape, data needs trimming
-            resultsdict = grid_data_trim_and_summary(req,form,trim=True)
-        else:
-            resultsdict = grid_data_trim_and_summary(req,form)
-    if data_type == 'station':
-        if form['area_type'] == 'station_id':
-            resultsdict = format_data_single_lister(req,form)
-        elif form['area_type'] in special_station_areas:
-            #Irregular shape, data needs trimming
-            resultsdict = station_data_trim_and_summary(req,form,trim=True)
-        else:
-            resultsdict = station_data_trim_and_summary(req,form)
-    '''
+    #Format results
     #Grid data
     if data_type == 'grid':
         if form['area_type'] == 'location':
@@ -419,7 +400,7 @@ def set_lister_headers(form):
         if form['units'] == 'metric':
             unit = WRCCData.UNITS_METRIC[el_strip]
             if base_temp:
-                WRCCUtils.convert_to_metric(base_temp)
+                convert_to_metric(base_temp)
         base_temp = ''
         if base_temp:
             base_temp = str(base_temp)
@@ -459,7 +440,7 @@ def format_data_single_lister(req,form):
         form -- user form input dictionary
     '''
     new_data = [];new_smry = [];new_meta = req['meta']
-    #results = {'smry':[],'data':[]}
+    els = form['elements']
     if not req['data'] and not req['smry']:
         error = 'No data found for these parameters.'
         return {'data':[],'smry':[],meta:[],'form':form,'errors':error}
@@ -473,9 +454,16 @@ def format_data_single_lister(req,form):
         name+=ids
     if 'location' in form.keys():
         name=str(req['meta']['lon']) + ',' + str(req['meta']['lat'])
-    #Check if we have summary only request
+    #Set unit converter
+    unit_convert = getattr(thismodule,'convert_nothing')
+    if 'units' in form.keys() and form['units'] == 'metric':
+        unit_convert = getattr(thismodule,'convert_to_metric')
+    #Set date converter
+    format_date = getattr(thismodule,'format_date_string')
+    sep = form['date_format']
+    #Data Loop
     for date_idx,data in enumerate(req['data']):
-        date = [str(data[0])]
+        date = [format_date(str(data[0]),sep)]
         data = data[1:]
         #Note: format is different if flags/obs are asked for
         #Deal with non-flag/obs time requests first --> easy
@@ -484,25 +472,29 @@ def format_data_single_lister(req,form):
         for el_idx, el_data in enumerate(data):
             #Format Summary
             if 'smry' in req.keys() and req['smry']:
+
                 try:
-                    smry_data.append(round(float(req['smry'][el_idx]),4))
+                    val = round(unit_convert(els[el_idx],float(req['smry'][el_idx])),4)
                 except:
-                    smry_data.append(str(req['smry'][el_idx]))
+                    val = str(req['smry'][el_idx])
+                smry_data.append(val)
             if not isinstance(el_data,list):
                 #Put each element in its own list so that
                 #format is the same as for flag/obs requests
                 try:
-                    date_data.append(round(float(el_data),4))
+                    val = round(unit_convert(els[el_idx],float(el_data)),4)
                 except:
-                    date_data.append(str(el_data))
+                    val = str(el_data)
+                date_data.append(val)
             else:
                 for d in el_data:
                     if d =='':
                         d=' '
                     try:
-                        date_data.append(round(float(d),4))
+                        val = round(unit_convert(els[el_idx],float(d)),4)
                     except:
-                        date_data.append(str(d))
+                        val = str(d)
+                    date_data.append(val)
         d_data.append(date + date_data)
         new_data = d_data
         if smry_data:
@@ -531,7 +523,7 @@ def station_data_trim_and_summary(req,form):
         form: user form input dictionary
     Returns: dictionary with keys
         data -- for printing/writing to file
-              format: [['stn_name1 (stn_ids)',[date1 data],[date2 data]...], ['stn_name2,stn_ids'],[date1 data], ...]
+              format: [[date1 stn1data],[date2 stn1data]...], [[date1 stn2data], ...]
         smry --
             format depends on summary:
                 spatial summary: [[date1,el1smry,el2smry,...], [date2...]]
@@ -546,9 +538,14 @@ def station_data_trim_and_summary(req,form):
         error = 'No data found for these parameters.'
         return {'data':[],'smry':[],meta:[],'form':form,'errors':error}
     header_data, header_smry = set_lister_headers(form)
+    #MultiStnData calls return no dates
+    dates = get_dates(form['start_date'],form['end_date'])
+    #Set date converter
+    format_date = getattr(thismodule,'format_date_string')
+    sep = form['date_format']
     if form['data_summary'] == 'spatial':
-        new_smry = [[str(data[date_idx][0])] for date_idx in range(len(data))]
-        smry_data = [[[] for el in form['elements']] for date_idx in range(len(data))]
+        new_smry = [[format_date(dates[d_idx],sep)] for d_idx in range(len(dates))]
+        smry_data = [[[] for el in form['elements']] for date_idx in range(len(dates))]
     elif form['data_summary'] == 'temporal':
         new_smry =[]
         smry_data = [[] for el in els]
@@ -557,10 +554,11 @@ def station_data_trim_and_summary(req,form):
     #find the polygon of the special shape
     #and the function to test if a point lies within the shape
     poly, PointIn = set_poly_and_PointIn(form)
-    #MultiStnData calls return no dates
-    dates = get_dates(form['start_date'],form['end_date'])
-    #Sanity check on dates
     new_data = [];new_meta = []
+    #Set unit converter
+    unit_convert = getattr(thismodule,'convert_nothing')
+    if 'units' in form.keys() and form['units'] == 'metric':
+        unit_convert = getattr(thismodule,'convert_to_metric')
     #Station loop over data
     for stn_idx, stn_data in enumerate(req['data']):
         try:
@@ -575,20 +573,16 @@ def station_data_trim_and_summary(req,form):
         new_meta.append(stn_data['meta'])
         stn_name = str(stn_data['meta']['name'])
         new_data.append([])
-        try:
-            stn_ids = ','.join([sid.split(' ')[0] for sid in stn_data['meta']['sids']])
-            stn_ids = ' (' + stn_ids + ')'
-        except:
-            stn_ids = ' ()'
         for date_idx, date_data in enumerate(stn_data['data']):
-            d_data = [dates[date_idx]]
+            d_data = [format_date(dates[date_idx],sep)]
             for el_idx, el_data in enumerate(date_data):
                 try:
-                    d_data.append(round(float(el_data),4))
+                    val = unit_convert(els[el_idx],float(el_data))
+                    d_data.append(round(val,4))
                     if form['data_summary'] == 'spatial':
-                        smry_data[date_idx][el_idx].append(float(el_data))
+                        smry_data[date_idx][el_idx].append(val)
                     if form['data_summary'] == 'temporal':
-                        smry_data[el_idx].append(float(el_data))
+                        smry_data[el_idx].append(val)
                 except:
                     d_data.append(el_data)
             new_data[-1].append(d_data)
@@ -602,6 +596,11 @@ def station_data_trim_and_summary(req,form):
         new_data[-1].insert(0,header_data)
         #Temporal summary
         if form['data_summary'] == 'temporal':
+            try:
+                stn_ids = ','.join([sid.split(' ')[0] for sid in stn_data['meta']['sids']])
+                stn_ids = ' (' + stn_ids + ')'
+            except:
+                stn_ids = ' ()'
             row = [stn_name + stn_ids]
             if point_in:
                 for el_idx, el in enumerate(els):
@@ -611,7 +610,7 @@ def station_data_trim_and_summary(req,form):
     if form['data_summary'] == 'spatial':
         for date_idx in range(len(dates)):
             for el_idx in range(len(els)):
-                new_smry[date_idx].append(compute_data_summary(smry_data[el_idx],form['spatial_summary']))
+                new_smry[date_idx].append(compute_data_summary(smry_data[date_idx][el_idx],form['spatial_summary']))
     #Insert summary header
     if new_smry:
         new_smry.insert(0,header_smry)
@@ -655,8 +654,11 @@ def grid_data_trim_and_summary(req,form):
         error = 'No data found for these parameters.'
         return {'data':[],'smry':[],meta:[],'form':form,'errors':error}
     header_data, header_smry = set_lister_headers(form)
+    #Set date converter
+    format_date = getattr(thismodule,'format_date_string')
+    sep = form['date_format']
     if form['data_summary'] == 'spatial':
-        new_smry = [[str(data[date_idx][0])] for date_idx in range(len(data))]
+        new_smry = [[format_date(str(data[date_idx][0]),sep)] for date_idx in range(len(data))]
         smry_data = [[[] for el in els] for date_idx in range(len(data))]
     elif form['data_summary'] == 'temporal':
         smry_data = [[] for el in els]
@@ -667,6 +669,10 @@ def grid_data_trim_and_summary(req,form):
     #find the polygon of the special shape
     #and the function to test if a point lies within the shape
     poly, PointIn = set_poly_and_PointIn(form)
+    #Set unit converter
+    unit_convert = getattr(thismodule,'convert_nothing')
+    if 'units' in form.keys() and form['units'] == 'metric':
+        unit_convert = getattr(thismodule,'convert_to_metric')
     #lat,lon loop over data
     generator_lat =  ((grid_idx, lat_grid) for grid_idx, lat_grid in enumerate(lats))
     for (grid_idx, lat_grid) in generator_lat:
@@ -680,16 +686,16 @@ def grid_data_trim_and_summary(req,form):
             if not point_in:
                 continue
             #points is in shape, add tp data and compute summary
-            meta_dict = {'lon':lon,'lat':lat,'elev':req['meta']['elev'][grid_idx][lon_idx]}
+            meta_dict = {'lon':lon,'lat':lat,'elev':unit_convert('elev',req['meta']['elev'][grid_idx][lon_idx])}
             new_meta.append(meta_dict)
             new_lons.append(lon)
             new_elevs.append(elevs[grid_idx][lon_idx])
             new_data.append([])
             for date_idx, date_data in enumerate(data):
-                d_data = [str(date_data[0])]
+                d_data = [format_date(date_data[0],sep)]
                 for el_idx,el in enumerate(els):
                     try:
-                        d = float(date_data[el_idx+1][grid_idx][lon_idx])
+                        d = unit_convert(el, float(date_data[el_idx+1][grid_idx][lon_idx]))
                         d_data.append(round(d,4))
                         if form['data_summary'] == 'spatial':
                             smry_data[date_idx][el_idx].append(d)
@@ -753,26 +759,35 @@ def format_grid_spatial_summary(req,form):
         error = 'No data found for these parameters.'
         return {'data':[],'smry':[],meta:[],'form':form,'errors':error}
     header_data, header_smry = set_lister_headers(form)
-    new_smry = [[str(data[date_idx][0])] for date_idx in range(len(data))]
+    #Set date converter
+    format_date = getattr(thismodule,'format_date_string')
+    sep = form['date_format']
+    new_smry = [[format_date(str(data[date_idx][0]),sep)] for date_idx in range(len(data))]
     smry_data = [[[] for el in form['elements']] for date_idx in range(len(data))]
     new_data = [];new_meta = []
+    #Set unit converter
+    unit_convert = getattr(thismodule,'convert_nothing')
+    if 'units' in form.keys() and form['units'] == 'metric':
+        unit_convert = getattr(thismodule,'convert_to_metric')
     #lat,lon loop over data
     generator_lat =  ((grid_idx, lat_grid) for grid_idx, lat_grid in enumerate(lats))
     for (grid_idx, lat_grid) in generator_lat:
         generator_lon = ((lon_idx, lon) for lon_idx, lon in enumerate(lons[grid_idx]))
         lat = lat_grid[0]
         for (lon_idx, lon) in generator_lon:
-            meta_dict = {'lon':lon,'lat':lat,'elev':req['meta']['elev'][grid_idx][lon_idx]}
+            meta_dict = {'lon':lon,'lat':lat,'elev':unit_convert('elev',req['meta']['elev'][grid_idx][lon_idx])}
             new_meta.append(meta_dict)
             for date_idx,date_data in enumerate(data):
                 for el_idx,el in enumerate(els):
                     try:
-                        smry_data[date_idx][el_idx].append(float(date_data[el_idx+1][grid_idx][lon_idx]))
+                        val = unit_convert(el,float(date_data[el_idx+1][grid_idx][lon_idx]))
+                        smry_data[date_idx][el_idx].append(float(val))
                     except:
                         pass
                     #Compute spatial summary at last gridpoint iteration
                     if grid_idx == len(lats) -1 and lon_idx == len(lons[grid_idx]) -1:
-                        new_smry[date_idx].append(compute_data_summary(smry_data[date_idx][el_idx],form['spatial_summary']))
+                        s = smry_data[date_idx][el_idx]
+                        new_smry[date_idx].append(compute_data_summary(s,form['spatial_summary']))
     #Insert summary header
     if new_smry:
         new_smry.insert(0,header_smry)
@@ -808,20 +823,29 @@ def format_grid_no_summary(req,form):
         return {'data':[],'smry':[],meta:[],'form':form,'errors':error}
     #Set headers
     header_data, header_smry = set_lister_headers(form)
+    #Set date converter
+    format_date = getattr(thismodule,'format_date_string')
+    sep = form['date_format']
     new_data = [];new_smry = [];new_meta = []
+    #Set unit converter
+    unit_convert = getattr(thismodule,'convert_nothing')
+    if 'units' in form.keys() and form['units'] == 'metric':
+        unit_convert = getattr(thismodule,'convert_to_metric')
+    #Lat/lon loop
     generator_lat =  ((grid_idx, lat_grid) for grid_idx, lat_grid in enumerate(lats))
     for (grid_idx, lat_grid) in generator_lat:
         generator_lon = ((lon_idx, lon) for lon_idx, lon in enumerate(lons[grid_idx]))
         lat = lat_grid[0]
         for (lon_idx, lon) in generator_lon:
-            meta_dict = {'lon':lon,'lat':lat,'elev':req['meta']['elev'][grid_idx][lon_idx]}
+            meta_dict = {'lon':lon,'lat':lat,'elev':unit_convert('elev',req['meta']['elev'][grid_idx][lon_idx])}
             new_meta.append(meta_dict)
             new_data.append([header_data])
             for date_data in data:
-                d_data = [str(date_data[0])]
+                d_data = [format_date(str(date_data[0]),sep)]
                 for el_idx,el in enumerate(els):
                     try:
-                        d_data.append(round(float(date_data[el_idx+1][grid_idx][lon_idx]),4))
+                        val = unit_convert(el, float(date_data[el_idx+1][grid_idx][lon_idx]))
+                        d_data.append(round(val,4))
                     except:
                         d_data.append(date_data[el_idx+1][grid_idx][lon_idx])
                 new_data[-1].append(d_data)
@@ -858,20 +882,29 @@ def format_grid_windowed_data(req,form):
         return {'data':[],'smry':[],meta:[],'form':form,'errors':error}
     #Set headers
     header_data, header_smry = set_lister_headers(form)
+    #Set date converter
+    format_date = getattr(thismodule,'format_date_string')
+    sep = form['date_format']
     new_data = [];new_smry = [];new_meta = []
+    #Set unit converter
+    unit_convert = getattr(thismodule,'convert_nothing')
+    if 'units' in form.keys() and form['units'] == 'metric':
+        unit_convert = getattr(thismodule,'convert_to_metric')
+    #Lon/Lat Loop
     generator_lat =  ((grid_idx, lat_grid) for grid_idx, lat_grid in enumerate(lats))
     for (grid_idx, lat_grid) in generator_lat:
         generator_lon = ((lon_idx, lon) for lon_idx, lon in enumerate(lons[grid_idx]))
         lat = lat_grid[0]
         for (lon_idx, lon) in generator_lon:
-            meta_dict = {'lon':lon,'lat':lat,'elev':req['meta']['elev'][grid_idx][lon_idx]}
+            meta_dict = {'lon':lon,'lat':lat,'elev':unit_convert('elev',req['meta']['elev'][grid_idx][lon_idx])}
             new_meta.append(meta_dict)
             new_data.append([])
             for date_data in data:
-                d_data = [str(date_data[0])]
+                d_data = [format_date(str(date_data[0]),sep)]
                 for el_idx,el in enumerate(els):
                     try:
-                        d_data.append(round(float(date_data[el_idx+1][grid_idx][lon_idx]),4))
+                        val = unit_convert(el,float(date_data[el_idx+1][grid_idx][lon_idx]))
+                        d_data.append(round(val,4))
                     except:
                         d_data.append(date_data[el_idx+1][grid_idx][lon_idx])
                 new_data[-1].append(d_data)
@@ -917,18 +950,23 @@ def format_grid_temporal_summary(req,form):
     new_smry = []
     new_data=[];new_meta = []
     smry_data = [[] for el in form['elements']]
+    #Set unit converter
+    unit_convert = getattr(thismodule,'convert_nothing')
+    if 'units' in form.keys() and form['units'] == 'metric':
+        unit_convert = getattr(thismodule,'convert_to_metric')
     #lat,lon loop over data
     generator_lat =  ((grid_idx, lat_grid) for grid_idx, lat_grid in enumerate(lats))
     for (grid_idx, lat_grid) in generator_lat:
         generator_lon = ((lon_idx, lon) for lon_idx, lon in enumerate(lons[grid_idx]))
         lat = lat_grid[0]
         for (lon_idx, lon) in generator_lon:
-            meta_dict = {'lon':lon,'lat':lat,'elev':req['meta']['elev'][grid_idx][lon_idx]}
+            meta_dict = {'lon':lon,'lat':lat,'elev':unit_convert('elev',req['meta']['elev'][grid_idx][lon_idx])}
             new_meta.append(meta_dict)
             for date_data in data:
                 for el_idx,el in enumerate(els):
                     try:
-                        smry_data[el_idx].append(float(date_data[el_idx+1][grid_idx][lon_idx]))
+                        val = unit_convert(el,float(date_data[el_idx+1][grid_idx][lon_idx]))
+                        smry_data[el_idx].append(float(val))
                     except:
                         pass
                 new_data[-1].append(d_data)
@@ -965,7 +1003,11 @@ def format_station_spatial_summary(req,form):
     except:
         error = 'No data found for these parameters.'
         return {'data':[],'smry':[],'meta':[],'form':form,'errors':error}
+    #Headers
     header_data, header_smry = set_lister_headers(form)
+    #Set date converter
+    format_date = getattr(thismodule,'format_date_string')
+    sep = form['date_format']
     dates = get_dates(form['start_date'],form['end_date'])
     #Sanity check on dates
     if len(dates) != len(data[0]['data']):
@@ -973,14 +1015,19 @@ def format_station_spatial_summary(req,form):
         return {'data':[],'smry':[],'meta':[],'form':form,'errors':error}
     new_data = [];new_meta = []
     smry_data = [[[] for el in form['elements']] for date_idx in range(len(dates))]
-    new_smry = [[str(dates[date_idx])] for date_idx in range(len(dates))]
+    new_smry = [[format_date(str(dates[date_idx]),sep)] for date_idx in range(len(dates))]
+    #Set unit converter
+    unit_convert = getattr(thismodule,'convert_nothing')
+    if 'units' in form.keys() and form['units'] == 'metric':
+        unit_convert = getattr(thismodule,'convert_to_metric')
     #Station loop over data
     for stn_idx, stn_data in enumerate(req['data']):
         new_meta.append(stn_data['meta'])
         for date_idx,date_data in enumerate(stn_data['data']):
             for el_idx, el_data in enumerate(date_data):
                 try:
-                    smry_data[date_idx][el_idx].append(float(el_data))
+                    val = unit_convert(els[el_idx],float(el_data))
+                    smry_data[date_idx][el_idx].append(val)
                 except:
                     pass
                 #Compute spatial summary at last station iteration
@@ -1015,23 +1062,32 @@ def format_station_no_summary(req,form):
     except:
         error = 'No data found for these parameters.'
         return {'data':[],'smry':[],meta:[],'form':form,'errors':error}
+    #Headers
     header_data, header_smry = set_lister_headers(form)
+    #Set date converter
+    format_date = getattr(thismodule,'format_date_string')
+    sep = form['date_format']
     new_data = [];new_smry = [];new_meta = []
     #MultiStnData calls return no dates
     dates = get_dates(form['start_date'],form['end_date'])
     #Sanity check on dates
     if len(dates) != len(data[0]['data']):
         return new_data,new_smry,new_meta
+    #Set unit converter
+    unit_convert = getattr(thismodule,'convert_nothing')
+    if 'units' in form.keys() and form['units'] == 'metric':
+        unit_convert = getattr(thismodule,'convert_to_metric')
     #Station loop over data
     for stn_idx, stn_data in enumerate(req['data']):
         #point is in shape, add to data and compute summary
         new_meta.append(stn_data['meta'])
         new_data.append([header_data])
         for date_idx,date_data in enumerate(stn_data['data']):
-            d_data = [dates[date_idx]]
+            d_data = [format_date(dates[date_idx],sep)]
             for el_idx, el_data in enumerate(date_data):
                 try:
-                    d_data.append(round(float(el_data),4))
+                    val = unit_convert(els[el_idx],float(el_data))
+                    d_data.append(round(val,4))
                 except:
                     d_data.append(el_data)
             new_data[-1].append(d_data)
@@ -1062,12 +1118,19 @@ def format_station_windowed_data(req,form):
         error = 'No data found for these parameters.'
         return {'data':[],'smry':[],meta:[],'form':form,'errors':error}
     header_data, header_smry = set_lister_headers(form)
+    #Set date converter
+    format_date = getattr(thismodule,'format_date_string')
+    sep = form['date_format']
     new_data = [];new_smry = [];new_meta = []
     #MultiStnData calls return no dates
     dates = get_dates(form['start_date'],form['end_date'])
     #Sanity check on dates
     if len(dates) != len(data[0]['data']):
         return {'data':[],'smry':[],meta:[],'form':form}
+    #Set unit converter
+    unit_convert = getattr(thismodule,'convert_nothing')
+    if 'units' in form.keys() and form['units'] == 'metric':
+        unit_convert = getattr(thismodule,'convert_to_metric')
     #Station loop over data
     for stn_idx, stn_data in enumerate(req['data']):
         new_meta.append(stn_data['meta'])
@@ -1077,10 +1140,11 @@ def format_station_windowed_data(req,form):
         ew = form['end_window']
         new_data.append([])
         for date_idx,date_data in enumerate(stn_data['data']):
-            d_data = [dates[date_idx]]
+            d_data = [format_date(dates[date_idx],sep)]
             for el_idx, el_data in enumerate(date_data):
                 try:
-                    d_data.append(round(float(el_data),4))
+                    val = unit_convert(els[el_idx], float(el_data))
+                    d_data.append(round(val,4))
                 except:
                     d_data.append(el_data)
             new_data[-1].append(d_data)
@@ -1118,6 +1182,10 @@ def format_station_temporal_summary(req,form):
     #MultiStnData calls return no dates
     dates = get_dates(form['start_date'],form['end_date'])
     new_data = [];new_meta = []
+    #Set unit converter
+    unit_convert = getattr(thismodule,'convert_nothing')
+    if 'units' in form.keys() and form['units'] == 'metric':
+        unit_convert = getattr(thismodule,'convert_to_metric')
     #Station loop over data
     for stn_idx, stn_data in enumerate(req['data']):
         new_meta.append(stn_data['meta'])
@@ -1128,7 +1196,8 @@ def format_station_temporal_summary(req,form):
         except:
             stn_ids = ' ()'
         #Tempral summary
-        row = [stn_name + stn_ids] + stn_data['smry']
+        ss = [unit_convert(els[el_idx],stn_data['smry'][el_idx]) for el_idx in range(len(els))]
+        row = [stn_name + stn_ids] + ss
         new_smry.append(row)
     if new_smry:
         new_smry.insert(0,header_smry)
@@ -1170,16 +1239,16 @@ def get_window_data(data, start_date, end_date, start_window, end_window):
         end_day = int(end_d[6:8])
         #Date formatting needed to deal with end of data and window size
         #doy = day of year
-        if WRCCUtils.is_leap_year(st_yr) and st_mon > 2:
+        if is_leap_year(st_yr) and st_mon > 2:
             doy_first = datetime.datetime(st_yr, st_mon, st_day).timetuple().tm_yday -1
         else:
             doy_first = datetime.datetime(st_yr, st_mon, st_day).timetuple().tm_yday
-        if WRCCUtils.is_leap_year(end_yr) and end_mon > 2:
+        if is_leap_year(end_yr) and end_mon > 2:
             doy_last = datetime.datetime(end_yr, end_mon, end_day).timetuple().tm_yday - 1
         else:
             doy_last = datetime.datetime(end_yr, end_mon, end_day).timetuple().tm_yday
-        doy_window_st = WRCCUtils.compute_doy(start_window[0:2], start_window[2:4])
-        doy_window_end = WRCCUtils.compute_doy(end_window[0:2], end_window[2:4])
+        doy_window_st = compute_doy(start_window[0:2], start_window[2:4])
+        doy_window_end = compute_doy(end_window[0:2], end_window[2:4])
         dates = [data[i][0] for i  in range(len(data))]
         start_w = '%s-%s' % (start_window[0:2], start_window[2:4])
         end_w = '%s-%s' % (end_window[0:2], end_window[2:4])
@@ -1211,8 +1280,93 @@ def get_window_data(data, start_date, end_date, start_window, end_window):
             windowed_data = windowed_data + add_data
     return windowed_data
 
+########################
+#HEADER FORMATTING
+########################
+def elements_to_display(elements,units,valid_daterange=None):
+    '''
+    Converts form elements for display
+    Args:
+        elements -- list or string of abbreviated elements
+        units -- english or metric
+        vd -- list of valid dateranges for elements
+    Returns:
+        element list for display
+    '''
+    el_list_long = []
+    el_list = convert_elements_to_list(elements)
+    for el_idx,el in enumerate(el_list):
+        el_strip,base_temp = get_el_and_base_temp(el)
+        unit = WRCCData.UNITS_ENGLISH[el_strip]
+        if units == 'metric':
+            unit = WRCCData.UNITS_METRIC[el_strip]
+            base_temp = convert_to_metric(el_strip,base_temp)
+        if not base_temp:
+            el_list_long.append(WRCCData.DISPLAY_PARAMS[el_strip] + ' (' + unit + ')')
+        else:
+            el_list_long.append(WRCCData.DISPLAY_PARAMS[el_strip] + ' (' + unit + '), Base: ' + str(base_temp))
+        if valid_daterange:
+            try:
+                vd = [str(valid_daterange[el_idx][0]),str(valid_daterange[el_idx][1])]
+            except:
+                vd =[]
+            el_list_long[-1]+= ' ' + str(vd)
+    return el_list_long
+
+def sids_to_display(sids):
+    sid_list = []
+    for sid in sids:
+        sid_l = sid.split()
+        sid_list.append(str(sid_l[0]) + '/' + WRCCData.NETWORK_CODES[str(sid_l[1])])
+    return sid_list
+
+def form_to_display_list(key_order_list, form):
+    '''
+    Converts form parameters
+    for display in html/file headers
+    Args:
+        key_order_list -- keys to be converted for display
+        form -- user form input dictionary
+    Returns: List of [key,val] pairs
+    '''
+    keys = [k for k in key_order_list]
+    display_list = [[WRCCData.DISPLAY_PARAMS[key]] for key in keys]
+    for key, val in form.iteritems():
+        if str(key) not in keys:
+            continue
+        idx = keys.index(str(key))
+        if key == 'data_summary':
+            if 'data_summary' in form.keys() and form['data_summary'] !='none':
+                s_type = WRCCData.DISPLAY_PARAMS[form['data_summary']]
+                if form['data_summary'] == 'windowed_data':
+                    s = ''
+                else:
+                    s = WRCCData.DISPLAY_PARAMS[form[form['data_summary']+'_summary']]
+                display_list[idx]= ([s_type, [s]])
+        elif key == 'elements':
+            el_list_long = elements_to_display(form['elements'],form['units'])
+            display_list[idx].append([', '.join(el_list_long)])
+        elif key == 'data_type':
+            display_list[idx].append([WRCCData.DISPLAY_PARAMS[form['data_type']]])
+        else:
+            display_list[idx].append([str(val)])
+    return display_list
 
 def metadict_to_display_list(metadata, key_order_list,form):
+    '''
+    Converts metadata from ACIS lister call
+    for display in html/file headers
+    metadata is list of stn metadicts with keys:
+        name, state,sids, uid, ll,elev
+    or
+    list of grid metadicts with keys:
+        lat,lon,elev
+    Args:
+        metadata -- station of grid metadata list
+        key_order_list -- keys to be converted for display
+        form -- user form input dictionary
+    Returns: List of [key,val] pairs
+    '''
     keys = [k for k in key_order_list]
     #grid meta ll transforms to lat/lon keys
     if 'location' in form.keys() or 'locations' in form.keys():
@@ -1221,6 +1375,7 @@ def metadict_to_display_list(metadata, key_order_list,form):
             #replace ll with lat, lon keys
             keys[ll_idx] = 'lat'
             keys.insert(ll_idx + 1,'lon')
+    #Initialize results
     meta = [[WRCCData.DISPLAY_PARAMS[key]] for key in keys]
     #Sanity check:
     for i,k in enumerate(keys):
@@ -1236,124 +1391,41 @@ def metadict_to_display_list(metadata, key_order_list,form):
         except:
             continue
         if key == 'sids':
-            sid_list = []
-            for sid in val:
-                sid_l = sid.split()
-                sid_list.append(str(sid_l[0]) + '/' + WRCCData.NETWORK_CODES[str(sid_l[1])])
+            sid_list = sids_to_display(metadata['sids'])
             meta[idx].append(sid_list)
         elif key == 'valid_daterange':
-            el_list_long = []
-            el_list = convert_elements_to_list(form['elements'])
-            for el_idx,el in enumerate(el_list):
-                #Get rid of unicode
-                vd = [str(metadata['valid_daterange'][el_idx][0]),str(metadata['valid_daterange'][el_idx][1])]
-                el_strip,base_temp = WRCCUtils.get_el_and_base_temp(el)
-                unit = WRCCData.UNITS_ENGLISH[el_strip]
-                if form['units'] == 'metric':
-                    unit = WRCCData.UNITS_METRIC[el_strip]
-                    base_temp = WRCCUtils.convert_to_metric(el_strip,base_temp)
-                if not base_temp:
-                    el_list_long.append(WRCCData.DISPLAY_PARAMS[el_strip] + ' (' + unit + ') ' + str(vd))
-                else:
-                    el_list_long.append(WRCCData.DISPLAY_PARAMS[el_strip] + ' (' + unit + '), Base: ' + str(base_temp) + ' ' + str(vd))
+            els = form['elements']
+            units = form['units']
+            vd = metadata['valid_daterange']
+            el_list_long = elements_to_display(els, units, valid_daterange=vd)
             meta[idx].append(el_list_long)
         else:
             meta[idx].append([str(val)])
     return meta
 
 
-def write_to_csv(response,req):
-    '''
-    Writes data to csv file
-    Args:
-        response -- csv response object
-        req -- dictionary, result of make_data_request call
-            keys: data,smry,meta
-    Returns:
-    '''
-    meta = req['meta']
-    form = req['form']
-    if 'smry' in req.keys() and req['smry']:
-        data = req['smry']
-    else:
-        data = req['data']
-    #Set meta keys according to data_type
-    meta_keys = get_meta_keys(form)
-    #Set data type
-    data_type = get_data_type(form)
-    delim = WRCCData.DELIMITERS[form['delimiter']]
-    import csv
-    writer = csv.writer(response, delimiter=delim)
-    #Search params header:
-    row = ['*SearchArea',WRCCData.DISPLAY_PARAMS[form['area_type']],form[form['area_type']]]
-    writer.writerow(row)
-    if data_type == 'station':
-        row = ['*DataFlags','M=Missing', 'T=Trace', 'S=Subsequent', 'A=Accumulated']
-        writer.writerow(row)
-    #Loop over data points
-    for p_idx, p_data in enumerate(data):
-        #Write meta
-        meta_display_params = metadict_to_display_list(meta[p_idx], meta_keys, form)
-        for key_val in meta_display_params:
-            row = ['*' + key_val[0].replace(' ',''),' '.join(key_val[1])]
-            writer.writerow(row)
-        #Write data
-        writer.writerow(['*'])
-        for d_idx, date_data in enumerate(p_data):
-            if d_idx == 0:
-                #Data Header
-                date_data[0] = '*' + date_data[0]
-            row = date_data
-            writer.writerow(row)
-
-def write_to_excel(response,req):
-    '''
-    Writes data to excel file
-    Args:
-        response -- excel response object
-        req  -- dictionary, result of make_data_request call
-                    keys: data,smry,meta
-    '''
-    meta = req['meta']
-    form = req['form']
-    if 'smry' in req.keys():
-        data = req['smry']
-    else:
-        data = req['data']
-    #Set meta keys according to data_type
-    meta_keys = get_meta_keys(form)
-    #Set data type
-    data_type = get_data_type(form)
-    delim = WRCCData.DELIMITERS[form['delimiter']]
-    from xlwt import Workbook
-    wb = Workbook()
-    #Loop over data points
-    for p_idx, p_data in enumerate(data):
-        #Write meta
-        meta_display_params = metadict_to_display_list(meta[p_idx], meta_keys, form)
-        #New sheet for each point
-        ws = wb.add_sheet('Point' + str(p_idx))
-        for m_idx,key_val in enumerate(meta_display_params):
-            ws.write(0,m_idx,meta_display_params[m_idx][0])
-            ws.write(1,m_idx,' '.join(meta_display_params[m_idx][1]))
-        if data_type =='station':
-            ws.write(3,0,'DataFlags')
-            ws.write(3,1,'M=Missing')
-            ws.write(3,2,'T=Trace')
-            ws.write(3,3,'S=Subsequent')
-            ws.write(3,4,'A=Accumulated')
-        #Write data
-        for date_idx in range(len(p_data)):
-            for data_idx in range(len(p_data[date_idx])):
-                ws.write(date_idx + 5 ,data_idx,p_data[date_idx][data_idx])
-        #Save workbook
-        wb.save(response)
-####################################
-#NEED CLEANUP
-#####################################
 ##########################
 #DATE/TIME FUNCTIONS
 ##########################
+def format_date_string(date,separator):
+    '''
+    Args:
+        date datestring, can be of varying format
+        separator
+    Returns
+        date string where year,month and day are
+        separated by separator
+    '''
+    d = str(date).replace('-','').replace(':','').replace('/','')
+    y = d[0:4]
+    m = d[4:6]
+    d = d[6:8]
+    s = separator
+    if separator == 'dash':s = '-'
+    if separator == 'colon':s = ':'
+    if separator == 'slash':s = '/'
+    return y + s + m + s + d
+
 def date_to_eight(date,se=None):
     '''
     Converts dates of form
@@ -1372,7 +1444,7 @@ def date_to_eight(date,se=None):
     if se == 'end':
         mmdd = '1231'
         if len(d8) == 6:
-            if d8[4:6] == '02' and WRCCUtils.is_leap_year(d8[0:4]):
+            if d8[4:6] == '02' and is_leap_year(d8[0:4]):
                 mon_len = '29'
             else:
                 mon_len = mon_lens[int(d8[4:6]) - 1]
@@ -1563,6 +1635,9 @@ def geoll2ddmmss(lat,lon):
             lon_ddmmss = '%s%s%s' %(str(dd),str(mm),str(ss))
     return [lat_ddmmss,lon_ddmmss]
 
+####################################
+#NEED CLEANUP
+#####################################
 ##########################
 #SPECIAL FUNCTIONS
 ##########################
@@ -2089,13 +2164,13 @@ def set_poly_and_PointIn(prms):
         shape = [float(sh) for sh in shape]
         if len(shape) == 3:#circle
             poly = shape
-            PointIn = getattr(WRCCUtils,'point_in_circle')
+            PointIn = getattr(thismodule,'point_in_circle')
         elif len(shape)== 4:#bbox
             poly = [(shape[0],shape[1]),(shape[0],shape[3]),(shape[2],shape[3]),(shape[2],shape[1])]
-            PointIn = getattr(WRCCUtils,'point_in_poly')
+            PointIn = getattr(thismodule,'point_in_poly')
         else:
             poly = [(shape[2*idx],shape[2*idx+1]) for idx in range(len(shape)/2)]
-            PointIn = getattr(WRCCUtils,'point_in_poly')
+            PointIn = getattr(thismodule,'point_in_poly')
     else:
         if 'basin' in prms.keys():
             sh = AcisWS.find_geojson_of_area('basin', prms['basin'])
@@ -2110,7 +2185,7 @@ def set_poly_and_PointIn(prms):
             sh = AcisWS.find_geojson_of_area('county', prms['county'])
         if 'bounding_box' not in prms.keys() and not 'state' in prms.keys():
             poly = [(s[0],s[1]) for s in sh]
-            PointIn = getattr(WRCCUtils,'point_in_poly')
+            PointIn = getattr(thismodule,'point_in_poly')
     return poly, PointIn
 
 def check_for_int(string):
@@ -2694,7 +2769,7 @@ def format_station_data(request, form):
     stn_idx = -1
     shape_type = None
     if 'shape' in form.keys():
-        shape_type,bbox = WRCCUtils.get_bbox(form['shape'])
+        shape_type,bbox = get_bbox(form['shape'])
     generator = ((stn, data) for stn, data in enumerate(request['data']))
     for (stn, data) in generator:
         stn_idx+=1
@@ -2706,7 +2781,7 @@ def format_station_data(request, form):
         if shape_type == 'circle':
             poly = shape
             try:
-                stn_in = WRCCUtils.point_in_circle(data['meta']['ll'][0], data['meta']['ll'][1], poly)
+                stn_in = point_in_circle(data['meta']['ll'][0], data['meta']['ll'][1], poly)
             except:
                 stn_in = False
         elif shape_type in ['polygon','bbox', 'point']:
@@ -2714,7 +2789,7 @@ def format_station_data(request, form):
                 shape = [shape[0], shape[1], shape[2], shape[1], shape[0],shape[3], shape[2],shape[3]]
             poly = [(shape[2*idx],shape[2*idx+1]) for idx in range(len(shape)/2)]
             try:
-                stn_in = WRCCUtils.point_in_poly(data['meta']['ll'][0], data['meta']['ll'][1], poly)
+                stn_in = point_in_poly(data['meta']['ll'][0], data['meta']['ll'][1], poly)
             except:
                 stn_in = False
         if not stn_in:
@@ -2787,7 +2862,7 @@ def format_station_data(request, form):
                 #Units:
                 if 'units' in form.keys() and form['units'] == 'metric':
                     for el_idx, el in enumerate(form['elements'].replace(' ','').split(',')):
-                        resultsdict['stn_data'][stn_idx][idx][el_idx][0] = WRCCUtils.convert_to_metric(el, resultsdict['stn_data'][stn_idx][idx][el_idx][0])
+                        resultsdict['stn_data'][stn_idx][idx][el_idx][0] = convert_to_metric(el, resultsdict['stn_data'][stn_idx][idx][el_idx][0])
                 #Dates
                 d = date.replace(' ','').replace(':','').replace('/','').replace('-','')
                 dlm = WRCCData.DATE_FORMAT[form['date_format']]
@@ -2879,12 +2954,12 @@ def format_grid_data(req, params):
     #TEMPORAL SUMMARY
     if data_summary == 'temporal':
         if 'start_date' in prms.keys():
-            d = WRCCUtils.date_to_eight(prms['start_date'], 'start')
+            d = date_to_eight(prms['start_date'], 'start')
             start_date = d[0:4] + dlm + d[4:6] + dlm + d[6:8]
         else:
             start_date = '0000'+dlm+'00'+dlm+'00'
         if 'end_date' in prms.keys():
-            d = WRCCUtils.date_to_eight(prms['end_date'], 'end')
+            d = date_to_eight(prms['end_date'], 'end')
             end_date = d[0:4] + dlm + d[4:6] + dlm + d[6:8]
         else:
             end_date = '0000'+dlm+'00'+dlm+'00'
@@ -2915,13 +2990,13 @@ def format_grid_data(req, params):
                 data_out[idx].append(round(lat,2))
                 #Take care of units for elevation
                 if prms['units'] == 'metric':
-                    data_out[idx].append(WRCCUtils.convert_to_metric('elev',elevs[grid_idx][lon_idx]))
+                    data_out[idx].append(convert_to_metric('elev',elevs[grid_idx][lon_idx]))
                 else:
                     data_out[idx].append(elevs[grid_idx][lon_idx])
                 #Element data
                 for el_idx in range(len(data['data'])):
                     if prms['units'] == 'metric':
-                        data_out[idx].append(WRCCUtils.convert_to_metric(el_list[el_idx],data['data'][el_idx][grid_idx][lon_idx]))
+                        data_out[idx].append(convert_to_metric(el_list[el_idx],data['data'][el_idx][grid_idx][lon_idx]))
                     else:
                         data_out[idx].append(data['data'][el_idx][grid_idx][lon_idx])
         return data_out
@@ -2941,7 +3016,7 @@ def format_grid_data(req, params):
     #Spatial summary output
     generator = ((date_idx, date_vals) for date_idx, date_vals in enumerate(data['data']))
     for (date_idx, date_vals) in generator:
-        d = WRCCUtils.date_to_eight(date_vals[0], 'start')
+        d = date_to_eight(date_vals[0], 'start')
         #data array for spatial summary computation
         data_summ = [[] for el in el_list]
         generator_lat = ((grid_idx, lat_grid) for grid_idx, lat_grid in enumerate(lats))
@@ -2966,13 +3041,13 @@ def format_grid_data(req, params):
                     data_out[idx].append(round(lons[grid_idx][lon_idx],2))
                     data_out[idx].append(round(lat,2))
                     if prms['units'] == 'metric':
-                        data_out[idx].append(WRCCUtils.convert_to_metric('elev',elevs[grid_idx][lon_idx]))
+                        data_out[idx].append(convert_to_metric('elev',elevs[grid_idx][lon_idx]))
                     else:
                         data_out[idx].append(elevs[grid_idx][lon_idx])
 
                     for el_idx in range(1,len(el_list) + 1):
                         if prms['units'] == 'metric':
-                            data_out[idx].append(WRCCUtils.convert_to_metric(el_list[el_idx - 1],date_vals[el_idx][grid_idx][lon_idx]))
+                            data_out[idx].append(convert_to_metric(el_list[el_idx - 1],date_vals[el_idx][grid_idx][lon_idx]))
                         else:
                             data_out[idx].append(date_vals[el_idx][grid_idx][lon_idx])
 
@@ -2982,7 +3057,7 @@ def format_grid_data(req, params):
                         v = float(date_vals[el_idx][grid_idx][lon_idx])
                         if abs(v + 999.0)>0.0001:
                             if prms['units'] == 'metric':
-                                data_summ[el_idx-1].append(WRCCUtils.convert_to_metric(el_list[el_idx - 1],v))
+                                data_summ[el_idx-1].append(convert_to_metric(el_list[el_idx - 1],v))
                             else:
                                 data_summ[el_idx-1].append(v)
                     except:
@@ -3316,17 +3391,17 @@ def get_windowed_indices(dates, start_window, end_window):
     end_yr = int(end_d[0:4]);end_mon = int(end_d[4:6]);end_day = int(end_d[6:8])
     #Date formatting needed to deal with end of data and window size
     #doy = day of year
-    if WRCCUtils.is_leap_year(start_yr) and start_mon > 2:
+    if is_leap_year(start_yr) and start_mon > 2:
         doy_first = datetime.datetime(start_yr, start_mon, start_day).timetuple().tm_yday -1
     else:
         doy_first = datetime.datetime(start_yr, start_mon, start_day).timetuple().tm_yday
 
-    if WRCCUtils.is_leap_year(end_yr) and end_mon > 2:
+    if is_leap_year(end_yr) and end_mon > 2:
         doy_last = datetime.datetime(end_yr, end_mon, end_day).timetuple().tm_yday - 1
     else:
         doy_last = datetime.datetime(end_yr, end_mon, end_day).timetuple().tm_yday
-    doy_window_st = WRCCUtils.compute_doy(start_window[0:2], start_window[2:4])
-    doy_window_end = WRCCUtils.compute_doy(end_window[0:2], end_window[2:4])
+    doy_window_st = compute_doy(start_window[0:2], start_window[2:4])
+    doy_window_end = compute_doy(end_window[0:2], end_window[2:4])
     #Check end conditions at endpoints:
     if doy_window_st == doy_window_end:
         pass
@@ -3378,16 +3453,16 @@ def get_windowed_data(data, start_date, end_date, start_window, end_window):
         end_day = int(end_d[6:8])
         #Date formatting needed to deal with end of data and window size
         #doy = day of year
-        if WRCCUtils.is_leap_year(st_yr) and st_mon > 2:
+        if is_leap_year(st_yr) and st_mon > 2:
             doy_first = datetime.datetime(st_yr, st_mon, st_day).timetuple().tm_yday -1
         else:
             doy_first = datetime.datetime(st_yr, st_mon, st_day).timetuple().tm_yday
-        if WRCCUtils.is_leap_year(end_yr) and end_mon > 2:
+        if is_leap_year(end_yr) and end_mon > 2:
             doy_last = datetime.datetime(end_yr, end_mon, end_day).timetuple().tm_yday - 1
         else:
             doy_last = datetime.datetime(end_yr, end_mon, end_day).timetuple().tm_yday
-        doy_window_st = WRCCUtils.compute_doy(start_window[0:2], start_window[2:4])
-        doy_window_end = WRCCUtils.compute_doy(end_window[0:2], end_window[2:4])
+        doy_window_st = compute_doy(start_window[0:2], start_window[2:4])
+        doy_window_end = compute_doy(end_window[0:2], end_window[2:4])
         dates = [data[i][0] for i  in range(len(data))]
         #match dates and window formats
         if len(dates[0]) == 8:

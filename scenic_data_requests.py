@@ -70,7 +70,10 @@ def get_display_params(params):
         if key in params.keys():val = params[key]
         if  key == 'elements':
             elems_long = ''
-            el_list = params['elements'].replace(' ', '').split(',')
+            if isinstance(params['elements'],list):
+                el_list = params['elements']
+            else:
+                el_list = params['elements'].replace(' ', '').split(',')
             for el_idx, el in enumerate(el_list):
                 elems_long+= WRCCData.DISPLAY_PARAMS[el]
                 if el_idx < len(el_list):
@@ -269,6 +272,7 @@ if __name__ == '__main__' :
         #Request Data
         logger.info('Requesting data')
         LDR.get_data()
+
         logger.info('Data obtained')
         #check that results of data request are valid
         if 'error' in LDR.request.keys():

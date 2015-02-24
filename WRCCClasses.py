@@ -1441,7 +1441,10 @@ class GridFigure(object) :
     image_padding = 0,150
     def __init__(self, params, img_offset=0, text_offset=(80,50)) :
         self.params= params
-        self.region =params['select_grid_by']
+        try:
+            self.region = params['select_grid_by']
+        except:
+            self.region = params['area_type']
         if 'date' in params.keys():
             self.date = params['date']
         elif 'this' in params.keys():
@@ -1552,8 +1555,12 @@ class GridFigure(object) :
         title+=' ' + WRCCData.DISPLAY_PARAMS[el_strip] + ' (' + WRCCData.UNITS_ENGLISH[el_strip] + ')'
         if base_temp:
             title+= ' Base Temperature: ' + str(base_temp)
-        area_description = WRCCData.DISPLAY_PARAMS[self.params['select_grid_by']]
-        area_description+= ': ' + self.params[self.params['select_grid_by']].upper()
+        try:
+            area_description = WRCCData.DISPLAY_PARAMS[self.params['select_grid_by']]
+            area_description+= ': ' + self.params[self.params['select_grid_by']].upper()
+        except:
+            area_description = WRCCData.DISPLAY_PARAMS[self.params['area_type']]
+            area_description+= ': ' + self.params[self.params['area_type']].upper()
         date_str = 'Start Date: %s End Date: %s' % (self.params['sdate'], self.params['edate'])
         if self.params['image']['width']<301:
             ctx.set_font_size(8.)
@@ -1863,11 +1870,12 @@ class LargeDataRequest(object):
         #Limit of stations for file writing
         self.max_stations = settings.MAX_STATIONS
         #Set data request and formatting scripts
-        if 'select_grid_by' in self.params.keys():
+        if ('data_type' in self.params.keys() and self.params['data_type'] == 'grid') or 'select_grid_by' in self.params.keys():
             self.request_data = getattr(AcisWS, 'get_grid_data')
             self.format_data = getattr(WRCCUtils, 'format_grid_data')
             self.write_to_file = getattr(WRCCUtils, 'write_griddata_to_file')
-        else:
+
+        if ('data_type' in self.params.keys() and self.params['data_type'] == 'station') or 'select_grid_by' in self.params.keys():
             self.request_data = getattr(AcisWS, 'get_station_data')
             self.format_data = getattr(WRCCUtils, 'format_station_data')
             self.write_to_file = getattr(WRCCUtils, 'write_station_data_to_file')
@@ -1968,6 +1976,14 @@ class LargeDataRequest(object):
             idx_list = self.split_data_grid()
         elif 'select_stations_by' in self.params.keys():
             idx_list = self.split_data_station()
+        elif 'data_type' in self.params.keys() and self.params['data_type'] == 'station':
+            idx_list = self.split_data_station()
+        elif 'data_type' in self.params.keys() and self.params['data_type'] == 'grid':
+            idx_list = self.split_data_grid()
+        elif 'station_id' in self.params.keys():
+            idx_list = self.split_data_station()
+        elif 'location' in self.params.keys():
+            idx_list = self.split_data_grid()
         return idx_list
 
     def load_file(self,f_name, ftp_server, ftp_dir, logger=None):

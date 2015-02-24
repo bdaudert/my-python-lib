@@ -1348,6 +1348,8 @@ def form_to_display_list(key_order_list, form):
             display_list[idx].append([', '.join(el_list_long)])
         elif key == 'data_type':
             display_list[idx].append([WRCCData.DISPLAY_PARAMS[form['data_type']]])
+        elif key == 'grid':
+            display_list[idx].append([WRCCData.GRID_CHOICES[form['grid']][0]])
         else:
             display_list[idx].append([str(val)])
     return display_list

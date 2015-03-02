@@ -59,7 +59,7 @@ class GraphDictWriter(object):
             start_date, end_date
             yLabel, xLabel
             axis_min
-            varUnits
+            elUnits
     '''
     def __init__(self, form, data, element):
         self.form = form
@@ -68,17 +68,18 @@ class GraphDictWriter(object):
 
 
     def set_chartType(self):
-        if self.element in ['snow', 'snwd', 'hdd','cdd','gdd']:
+        if self.element in ['pcpn','snow', 'snwd', 'hdd','cdd','gdd']:
             self.chartType = 'column'
         else:
             self.chartType = 'spline'
 
-    def set_varUnits(self):
+
+    def set_elUnits(self):
         if 'units' in self.form.keys() and self.form['units'] == 'metric':
-            varUnits = WRCCData.UNITS_METRIC[self.element]
+            elUnits = WRCCData.UNITS_METRIC[self.element]
         else:
-            varUnits = WRCCData.UNITS_ENGLISH[self.element]
-        return varUnits
+            elUnits = WRCCData.UNITS_ENGLISH[self.element]
+        return elUnits
 
     def set_title(self):
         title = ''
@@ -88,14 +89,14 @@ class GraphDictWriter(object):
             title = WRCCData.DISPLAY_PARAMS[self.form['temporal_summary']]
 
         title += ' ' + WRCCData.DISPLAY_PARAMS[self.element]
-        unit = self.set_varUnits()
+        unit = self.set_elUnits()
         title += ' (' + unit + ')'
         return title
 
-    def set_subtitle(self):
-        subtitle = WRCCData.DISPLAY_PARAMS[self.form['area_type']]
-        subtitle+= ': ' + self.form[self.form['area_type']]
-        return subtitle
+    def set_subTitle(self):
+        subTitle = WRCCData.DISPLAY_PARAMS[self.form['area_type']]
+        subTitle+= ': ' + self.form[self.form['area_type']]
+        return subTitle
 
     def set_xLabel(self):
         xLabel = 'Start Date: '
@@ -112,23 +113,33 @@ class GraphDictWriter(object):
         legendTitle = ''
         return legendTitle
 
-    def set_axis_min(self):
+    def set_axisMin(self):
         if self.element in ['snow', 'snwd', 'hdd','cdd','gdd']:
-            axis_min = 0
+            axisMin = 0
         else:
-            axis_min = None
-        return axis_min
+            axisMin = None
+        return axisMin
+
+    def set_plotColor(self):
+        return WRCCData.PLOT_COLOR[self.element]
+
+    def set_seriesName(self):
+        return WRCCData.DISPLAY_PARAMS[self.element]
+
 
     def write_dict(self):
         datadict = {
             'data':self.data,
-            'varUnits':self.set_varUnits(),
+            'element':self.element,
+            'elUnits':self.set_elUnits(),
             'title':self.set_title(),
-            'subtitle':self.set_subtitle(),
+            'subTitle':self.set_subTitle(),
             'legendTitle':self.set_legendTitle(),
             'xLabel':self.set_xLabel(),
             'yLabel':self.set_yLabel(),
-            'axis_min':self.set_axis_min()
+            'axisMin':self.set_axisMin(),
+            'plotColor':self.set_plotColor(),
+            'seriesName':self.set_seriesName()
         }
         return datadict
 

@@ -262,7 +262,7 @@ UNITS_ENGLISH = {
     'evap': 'in',
     'wdmv': 'Mi',
     'elev':'ft',
-    'pet':'in/day',
+    'pet':'in/day'
 }
 
 UNITS_LONG={
@@ -274,6 +274,23 @@ UNITS_LONG={
     'km':'Kilometer',
     'ft':'Feet',
     'm':'Meter'
+}
+
+PLOT_COLOR = {
+    'maxt':'#660066',
+    'mint':'#0000FF',
+    'avgt':'#FF00FF',
+    'dtr': '#FF00FF',
+    'obst':'#FF00FF',
+    'pcpn': '#008000',
+    'snow': '#008000',
+    'snwd': '#008000',
+    'cdd': '#00FFFF',
+    'hdd': '#00FFFF',
+    'gdd': '#00FFFF',
+    'evap': '#008000',
+    'wdmv': '#008000',
+    'pet':'#008000',
 }
 
 MONTH_NAMES_LONG = ['January', 'February', 'March', 'April', 'May', 'June',\

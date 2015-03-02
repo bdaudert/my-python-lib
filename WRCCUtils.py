@@ -1302,7 +1302,7 @@ def extract_highcarts_data(data,el_idx, element):
             val = round(float(row_data[el_idx + 1]),4)
         except:
             val = None
-        hc_data.append([d,val])
+        hc_data.append([int_time,val])
     return hc_data
 ########################
 

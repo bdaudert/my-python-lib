@@ -44,6 +44,94 @@ except:
 #WRCC modules
 import AcisWS, WRCCDataApps, WRCCUtils, WRCCData
 
+class GraphDictWriter(object):
+    '''
+    Writes dictionary for plotting
+    with generateHighartsFigure.js
+    Args:
+        form: user input dictionary
+        data: element data formatted for highcarts plotting
+    Returns:
+        Dictionary with keys:
+            data
+            chartType
+            title, subtitle, legendTitle
+            start_date, end_date
+            yLabel, xLabel
+            axis_min
+            varUnits
+    '''
+    def __init__(self, form, data, element):
+        self.form = form
+        self.data = data
+        self.element = element
+
+
+    def set_chartType(self):
+        if self.element in ['snow', 'snwd', 'hdd','cdd','gdd']:
+            self.chartType = 'column'
+        else:
+            self.chartType = 'spline'
+
+    def set_varUnits(self):
+        if 'units' in self.form.keys() and self.form['units'] == 'metric':
+            varUnits = WRCCData.UNITS_METRIC[self.element]
+        else:
+            varUnits = WRCCData.UNITS_ENGLISH[self.element]
+        return varUnits
+
+    def set_title(self):
+        title = ''
+        if 'spatial_summary' in self.form.keys():
+            title = WRCCData.DISPLAY_PARAMS[self.form['spatial_summary']]
+        if 'temporal_summary' in self.form.keys():
+            title = WRCCData.DISPLAY_PARAMS[self.form['temporal_summary']]
+
+        title += ' ' + WRCCData.DISPLAY_PARAMS[self.element]
+        unit = self.set_varUnits()
+        title += ' (' + unit + ')'
+        return title
+
+    def set_subtitle(self):
+        subtitle = WRCCData.DISPLAY_PARAMS[self.form['area_type']]
+        subtitle+= ': ' + self.form[self.form['area_type']]
+        return subtitle
+
+    def set_xLabel(self):
+        xLabel = 'Start Date: '
+        xLabel+= WRCCUtils.format_date_string(self.form['start_date'],'dash')
+        xLabel+= ' End Date: '
+        xLabel+= WRCCUtils.format_date_string(self.form['end_date'],'dash')
+        return xLabel
+
+    def set_yLabel(self):
+        yLabel = self.set_title().split(' ')[-1]
+        return yLabel
+
+    def set_legendTitle(self):
+        legendTitle = ''
+        return legendTitle
+
+    def set_axis_min(self):
+        if self.element in ['snow', 'snwd', 'hdd','cdd','gdd']:
+            axis_min = 0
+        else:
+            axis_min = None
+        return axis_min
+
+    def write_dict(self):
+        datadict = {
+            'data':self.data,
+            'varUnits':self.set_varUnits(),
+            'title':self.set_title(),
+            'subtitle':self.set_subtitle(),
+            'legendTitle':self.set_legendTitle(),
+            'xLabel':self.set_xLabel(),
+            'yLabel':self.set_yLabel(),
+            'axis_min':self.set_axis_min()
+        }
+        return datadict
+
 class CsvWriter(object):
     '''
     Writes data to csv

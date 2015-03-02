@@ -4,7 +4,7 @@
 Module WRCCUtils
 '''
 
-import datetime, time, sys, os
+import datetime, calendar, time, sys, os
 import re
 import json
 import numpy,math
@@ -172,12 +172,13 @@ def set_acis_els(form):
             l['base'] = int(base_temp)
         #Add flags and time if data_type is station
         if data_type == 'station':
-            if form['show_flags'] == 'T' and form['show_observation_time'] =='F':
-                l['add'] = 'f'
-            if form['show_flags'] == 'F' and form['show_observation_time'] =='T':
-                l['add'] = 't'
-            if form['show_flags'] == 'T' and form['show_observation_time'] =='T':
-                l['add']= 'f,t'
+            if 'show_flags' in form.keys() and 'show_observation_time' in form.keys():
+                if form['show_flags'] == 'T' and form['show_observation_time'] =='F':
+                    l['add'] = 'f'
+                if form['show_flags'] == 'F' and form['show_observation_time'] =='T':
+                    l['add'] = 't'
+                if form['show_flags'] == 'T' and form['show_observation_time'] =='T':
+                    l['add']= 'f,t'
         acis_elems.append(l)
     return acis_elems
 
@@ -1280,7 +1281,31 @@ def get_window_data(data, start_date, end_date, start_window, end_window):
             windowed_data = windowed_data + add_data
     return windowed_data
 
+def extract_highcarts_data(data,el_idx, element):
+    '''
+    Format data for highcarts plotting
+    Args:
+        data: data list containing data for all elements
+        el_idx: index of element data in data
+        element: element short name
+    Returns:
+        highcharts series data
+    '''
+    #strip header
+    req_data = data[1:]
+    hc_data = []
+    for row_data in req_data:
+        date = format_date_string(row_data[0],'dash')
+        d = calendar.timegm(datetime.datetime.strptime(date, '%Y-%m-%d').timetuple())
+        int_time = 1000 * d
+        try:
+            val = round(float(row_data[el_idx + 1]),4)
+        except:
+            val = None
+        hc_data.append([d,val])
+    return hc_data
 ########################
+
 #HEADER FORMATTING
 ########################
 def elements_to_display(elements,units,valid_daterange=None):

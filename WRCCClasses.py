@@ -147,14 +147,16 @@ class CsvWriter(object):
     '''
     Writes data to csv
     Keyword arguments:
-        response HTTPResponse object
         req data requestdictionary with keys
-            data,smry,form,errors
+            data,meta, smry,form,errors
+        f file, if given, data will be written to file
+        response HTTPResponse object, if given, output file will appear in browser
     '''
-    def __init__(self, response,req):
+    def __init__(self, req, f=None, response=None):
         self.req = req
         self.form =  self.req['form']
         self.response = response
+        self.f = f
         self.delim = WRCCData.DELIMITERS[self.form['delimiter']]
 
     def set_data_type(self):
@@ -173,7 +175,11 @@ class CsvWriter(object):
 
     def set_writer(self):
         import csv
-        self.writer = csv.writer(self.response, delimiter=self.delim)
+        if self.f is not None:
+            self.csvfile = open(self.f, 'w+')
+            self.writer = csv.writer(csvfile, delimiter=self.delim )
+        if self.response is not None:
+            self.writer = csv.writer(self.response, delimiter=self.delim)
 
     def write_header(self):
         #Search params header:
@@ -183,7 +189,6 @@ class CsvWriter(object):
         else:
             header_keys = [self.form['area_type'],'start_date', 'end_date']
             header = WRCCUtils.form_to_display_list(header_keys, self.form)
-            #header= [['*SearchArea',WRCCData.DISPLAY_PARAMS[self.form['area_type']],self.form[self.form['area_type']]]]
         for key_val in header:
             row = ['*' + key_val[0].replace(' ',''),' '.join(key_val[1])]
             self.writer.writerow(row)
@@ -212,6 +217,7 @@ class CsvWriter(object):
                 d = date_data[1:]
                 self.writer.writerow(h + d)
 
+
     def write_summary(self):
         for s_idx, s_data in enumerate(self.data):
             if s_idx == 0:
@@ -219,6 +225,12 @@ class CsvWriter(object):
                 s_data[0] = '*' + s_data[0]
             row = s_data
             self.writer.writerow(row)
+
+    def close_writer(self):
+        try:
+            self.csvfile.close()
+        except:
+            pass
 
     def write_to_file(self):
         self.set_data_type()
@@ -230,24 +242,27 @@ class CsvWriter(object):
             self.write_summary()
         else:
             self.write_data()
+        self.close_writer()
 
 class ExcelWriter(object):
     '''
-    Writes data to csv
+    Writes data to excel
     Keyword arguments:
-        response HTTPResponse object
         req data requestdictionary with keys
-            data,smry,form,errors
+            data, meta, smry, form, errors
+            f file, if given, data will be written to file
+        response HTTPResponse object, if given, output file will appear in browser
     '''
-    def __init__(self, response,req):
+    def __init__(self, req, f = None, response = None):
         self.req = req
         self.form =  self.req['form']
+        self.f = f
         self.response = response
         self.delim = WRCCData.DELIMITERS[self.form['delimiter']]
 
     def set_data_type(self):
-        self.data_type = WRCCUtils.get_data_type(self.form
-)
+        self.data_type = WRCCUtils.get_data_type(self.form)
+
     def set_data(self):
         if 'smry' in self.req.keys() and self.req['smry']:
             self.data = self.req['smry']
@@ -255,6 +270,7 @@ class ExcelWriter(object):
         else:
             self.data = self.req['data']
             self.smry = False
+
     def set_meta_keys(self):
         self.meta_keys = WRCCUtils.get_meta_keys(self.form)
 
@@ -294,7 +310,10 @@ class ExcelWriter(object):
                 for data_idx in range(len(p_data[date_idx])):
                     ws.write(date_idx + 5 ,data_idx,p_data[date_idx][data_idx])
             #Save workbook
-            self.wb.save(self.response)
+            if self.f is not None:
+                wb.save(self.f)
+            if self.response is not None:
+                self.wb.save(self.response)
 
     def write_summary(self):
         ws = self.wb.add_sheet('1')
@@ -1942,6 +1961,91 @@ class Mail(object):
             return None
         except Exception, e:
             return 'Email attempt to recipient %s failed with error %s' %(str(self.toaddr), str(e))
+
+class LargeDataRequestNew(object):
+    '''
+    This class handles large station data request freom SCENIC.
+    Components:
+    Args:
+        form:  dictionary of user input
+        logger -- logger object
+    '''
+    def __init__(self, form, logger, base_dir):
+        self.form = form
+        self.logger =  logger
+        self.base_dir
+
+    def get_data(self):
+        '''
+        Requests and format data
+        resultsdict has keys:
+            errors, meta, data, smry, form
+        '''
+        resultsdict = WRCCUtils.request_and_format_data(form)
+        if 'errors' in resultsdict.keys():
+            self.logger.error(resultsdict['errors'])
+        return resultsdict
+
+    def split_data(self,resultsdict,max_lines):
+        '''
+        Splits results of get_data into
+        smaller chunks if needed
+        '''
+
+        if resultsdict['data']:
+            data = resultsdict['data']
+            key_data = 'data';key_empty = 'smry'
+        if resultsdict['smry']:
+            data = resultsdict['smry']
+            key_data = 'smry';key_empty = 'data'
+        chunks =[]
+        if len(data) <= max_lines:
+            chunk = {
+                'key':data,
+                'key_empty':[],
+                'meta':resultsdict['meta'],
+                'form':resultsdict['form']
+            }
+            chunks.append(chunk)
+            return chunks
+        # len(data) > max_lines:
+        start_idx = 0
+        end_idx = max_lines
+        while end_idx < len(data):
+            chunk = {
+                'key':data[start_idx:end_idx],
+                'key_empty':[],
+                'meta':resultsdict['meta'][start_idx:end_idx],
+                'form':resultsdict['form']
+            }
+            chunks.append(chunk)
+            start_idx = end_idx
+            end_idx = end_idx + max_lines
+            if end_idx > len(data):
+                end_idx = len(data)
+        return chunks
+
+    def set_out_file_path(self,chunkc_idx):
+        fe = WRCCData.FILE_EXTENSIONS[form['data_format']]
+        path_to_file = self.base_dir + form['output_file_name']
+        path_to_file+='_' + str(chunkIdx) +fe
+        return path_to_file
+
+    def write_to_file(self,data_chunk,path_to_file):
+        if self.form['data_format'] in ['clm','dlm']:
+            Writer = CsvWriter(data_chunk, f = path_to_file)
+        if self.form['data_format'] == 'xl':
+            Writer = ExcelWriter(data_chunk,f = path_to_file)
+        Writer.write_to_file()
+
+    def load_file(self,f_name, ftp_server, ftp_dir, logger=None):
+        error = None
+        FTP = FTPClass(ftp_server, ftp_dir, f_name, logger)
+        error = FTP.FTPUpload()
+        if error:
+            self.logger.error('ERROR tranferring %s to ftp server. Error %s'%(os.path.basename(f_name),error))
+            os.remove(f_name)
+        return error
 
 class LargeDataRequest(object):
     '''

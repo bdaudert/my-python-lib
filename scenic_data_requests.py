@@ -52,58 +52,6 @@ def check_output_file(out_file):
     except OSError:
         return 'No file found.'
 
-def get_display_params(params):
-    keys = ['elements','units', 'start_date', 'end_date','date_format', 'data_format']
-    if 'select_stations_by' in params.keys():
-        #keys.insert(0, 'select_stations_by')
-        for k in ['show_flags', 'show_observation_time']:
-            keys.append(k)
-    else:
-        #keys.insert(0, 'select_grid_by')
-        for k in ['grid', 'data_summary']:
-            keys.append(k)
-
-    display_params = ['' for key in keys]
-
-    for idx, ky in enumerate(keys):
-        key = ky;val = ''
-        if key in params.keys():val = params[key]
-        if  key == 'elements':
-            elems_long = ''
-            if isinstance(params['elements'],list):
-                el_list = params['elements']
-            else:
-                el_list = params['elements'].replace(' ', '').split(',')
-            for el_idx, el in enumerate(el_list):
-                elems_long+= WRCCData.DISPLAY_PARAMS[el]
-                if el_idx < len(el_list):
-                    elems_long+= ', '
-            display_params[idx] = 'Elements: ' + elems_long
-        elif key in ['date_format']:
-            df = WRCCData.DATE_FORMAT[params[key]]
-            d = 'yyyy' + df + 'mm' + df + 'dd'
-            if 'temporal_resolution' in params.keys():
-                if params['temporal_resolution'] == 'mly':d = df.join(d.split(df)[0:2])
-                if params['temporal_resolution'] == 'yly':d = df.join(d.split(df)[0])
-            display_params[idx] = WRCCData.DISPLAY_PARAMS[key] + ': ' + d
-        elif key in ['data_format']:
-            display_params[idx] = WRCCData.DISPLAY_PARAMS[key] + ': '+ WRCCData.DATA_FORMAT[params[key]]
-        elif key in ['show_observation_time', 'show_flags','data_summary']:
-            if key == 'data_summary' and params[key] != 'none':k = params[key] + '_summary'
-            else:k=key
-            display_params[idx] = WRCCData.DISPLAY_PARAMS[k] + ': ' + WRCCData.DISPLAY_PARAMS[params[k]]
-        elif key == 'grid':
-            display_params[idx] = WRCCData.DISPLAY_PARAMS[key] + ': '+ WRCCData.GRID_CHOICES[params[key]][0]
-        else:
-            display_params[idx] = WRCCData.DISPLAY_PARAMS[key] + ': ' + params[key]
-    if 'select_grid_by' in params.keys():
-        display_params.insert(0, WRCCData.DISPLAY_PARAMS[params['select_grid_by']] + ': ' + params[params['select_grid_by']])
-        display_params.insert(0, WRCCData.DISPLAY_PARAMS['select_grid_by'])
-    elif 'select_stations_by' in params.keys():
-        display_params.insert(0, WRCCData.DISPLAY_PARAMS[params['select_stations_by']] + ': ' + params[params['select_stations_by']])
-        display_params.insert(0, WRCCData.DISPLAY_PARAMS['select_stations_by'])
-    return display_params
-
 def get_user_info(params):
     if 'user_name' in params.keys():user_name = params['user_name']
     else : user_name = 'bdaudert'
@@ -121,10 +69,13 @@ def compose_email(params, ftp_server, ftp_dir, out_files):
         now = datetime.datetime.now()
         date = now.strftime( '%Y-%m-%d %H:%M' )
         pick_up_latest = (now + datetime.timedelta(days=25)).strftime( '%Y-%m-%d' )
-        display_params = get_display_params(params)
+        display_keys = [params['area_type'],'elements','units', 'start_date', 'end_date']
+        display_params_list = WRCCUtils.form_to_display_list(display_keys, params)
         dp = '';files=''
-        for line in display_params:
-            dp+=line +'\n' + '      '
+        for item in display_params_list:
+            key = item[0]
+            val = item[1][0]
+            dp+=key + ': ' + val  +'\n' + '      '
         for f in out_files:
             files+= f + '\n' + '      '
         message_text ='''
@@ -227,7 +178,7 @@ if __name__ == '__main__' :
     ftp_server = settings.DRI_FTP_SERVER
     mail_server = settings.DRI_MAIL_SERVER
     fromaddr = settings.CSC_FROM_ADDRESS
-    max_file_size = settings.MAX_FILE_SIZE
+    max_lines_per_file = settings.MAX_LINES_PER_FILE
     #Set timers
     cron_job_time = settings.CRON_JOB_TIME
     now = now = datetime.datetime.now()
@@ -259,6 +210,7 @@ if __name__ == '__main__' :
         #Check if params file is older than
         #cron job time --> data request completed or in progress
         #Check if request in progress
+        '''
         st=os.stat(params_file)
         mtime=datetime.datetime.fromtimestamp(st.st_mtime)
         if mtime <= x_mins_ago:
@@ -267,35 +219,17 @@ if __name__ == '__main__' :
                 logger.info('24 hr processing limit reached. Removing parameter file: %s' %str(params_file))
                 os.remove(params_file)
             continue
+        '''
         #Define and instantiate data request class
-        LDR = WRCCClasses.LargeDataRequest(params,logger)
-        #Request Data
-        logger.info('Requesting data')
-        LDR.get_data()
-
-        logger.info('Data obtained')
-        #check that results of data request are valid
-        if 'error' in LDR.request.keys():
-            logger.error('Data request error: %s! Parameter file: %s' %( LDR.request['error'],os.path.basename(params_file)))
+        LDR = WRCCClasses.LargeDataRequestNew(params, logger, base_dir, ftp_server, ftp_dir, max_lines_per_file)
+        error, out_files = LDR.process_request()
+        if error is not None:
+            logger.error('Data request error: %s! Parameter file: %s' %( error,os.path.basename(params_file)))
             params_files_failed.append(params_file)
             os.remove(params_file)
             continue
-        if not 'data' in LDR.request.keys() and not 'smry' in LDR.request.keys():
-            logger.error('No data found! Parameter file: %s' %( os.path.basename(params_file)))
-            params_files_failed.append(params_file)
-            os.remove(params_file)
-            continue
-        #Format data and write to file
-        #Avoid naming conflicts of output file names--timestamp will be attached
-        out_file = set_output_file(params, base_dir, time_stamp)
-        out_files = LDR.format_write_transfer(params_file,params_files_failed,out_file, ftp_server, ftp_dir,max_file_size,logger)
         logger.info('Large Data Request completed. Parameter file was: %s' %str(os.path.basename(params_file)))
-        #Check that out_file exists and is non-empty
-        if not out_files:
-            logger.error('ERROR: No output files were generated. Parameter file: %s.' %(os.path.basename(params_file)))
-            params_files_failed.append(params_file)
-            os.remove(params_file)
-            continue
+
         #Notify User
         subject, message = compose_email(params, ftp_server, ftp_dir,out_files)
         user_name, user_email = get_user_info(params)

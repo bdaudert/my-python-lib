@@ -176,8 +176,9 @@ class CsvWriter(object):
     def set_writer(self):
         import csv
         if self.f is not None:
-            self.csvfile = open(self.f, 'w+')
-            self.writer = csv.writer(csvfile, delimiter=self.delim )
+            #self.csvfile = open(self.f, 'w+')
+            self.csvfile = gzip.open(self.f, 'wb')
+            self.writer = csv.writer(self.csvfile, delimiter=self.delim )
         if self.response is not None:
             self.writer = csv.writer(self.response, delimiter=self.delim)
 
@@ -311,7 +312,7 @@ class ExcelWriter(object):
                     ws.write(date_idx + 5 ,data_idx,p_data[date_idx][data_idx])
             #Save workbook
             if self.f is not None:
-                wb.save(self.f)
+                self.wb.save(self.f)
             if self.response is not None:
                 self.wb.save(self.response)
 
@@ -1970,10 +1971,13 @@ class LargeDataRequestNew(object):
         form:  dictionary of user input
         logger -- logger object
     '''
-    def __init__(self, form, logger, base_dir):
+    def __init__(self, form, logger, local_base_dir, ftp_server, ftp_dir, max_lines_per_file):
         self.form = form
         self.logger =  logger
-        self.base_dir
+        self.base_dir = local_base_dir
+        self.ftp_server = ftp_server
+        self.ftp_dir = ftp_dir
+        self.max_lines_per_file = max_lines_per_file
 
     def get_data(self):
         '''
@@ -1981,9 +1985,13 @@ class LargeDataRequestNew(object):
         resultsdict has keys:
             errors, meta, data, smry, form
         '''
-        resultsdict = WRCCUtils.request_and_format_data(form)
+        resultsdict = WRCCUtils.request_and_format_data(self.form)
         if 'errors' in resultsdict.keys():
-            self.logger.error(resultsdict['errors'])
+            self.logger.error('ERROR in get_data: ' + resultsdict['errors'])
+        self.logger.info('Data request  %s completed successfully!' %str(self.form['output_file_name']))
+        if not resultsdict['data'] and not resultsdict['smry']:
+            self.logger.error('ERROR in get_data: empty data lists')
+            return {}
         return resultsdict
 
     def split_data(self,resultsdict,max_lines):
@@ -1995,57 +2003,126 @@ class LargeDataRequestNew(object):
         if resultsdict['data']:
             data = resultsdict['data']
             key_data = 'data';key_empty = 'smry'
-        if resultsdict['smry']:
+        elif resultsdict['smry']:
             data = resultsdict['smry']
             key_data = 'smry';key_empty = 'data'
+        else:
+            self.logger.error('ERROR in split_data: empty data lists')
+            return []
         chunks =[]
-        if len(data) <= max_lines:
-            chunk = {
-                'key':data,
-                'key_empty':[],
-                'meta':resultsdict['meta'],
-                'form':resultsdict['form']
-            }
-            chunks.append(chunk)
-            return chunks
-        # len(data) > max_lines:
+        c_idx = 0
         start_idx = 0
-        end_idx = max_lines
-        while end_idx < len(data):
+        if len(data) <= max_lines:
+            end_idx = len(data)
+        else:
+            end_idx = max_lines
+        while end_idx <= len(data):
+            c_idx+=1
             chunk = {
-                'key':data[start_idx:end_idx],
-                'key_empty':[],
+                key_data:data[start_idx:end_idx],
+                key_empty:[],
                 'meta':resultsdict['meta'][start_idx:end_idx],
                 'form':resultsdict['form']
             }
             chunks.append(chunk)
+            #Check if we at end of data
+            if end_idx == len(data):
+                break
+            #Set start/end for next chunk
             start_idx = end_idx
             end_idx = end_idx + max_lines
+            #Check if new chunk covers rest of data
             if end_idx > len(data):
                 end_idx = len(data)
+        self.logger.info('Split data into %s chunks.' %str(c_idx))
         return chunks
 
-    def set_out_file_path(self,chunkc_idx):
-        fe = WRCCData.FILE_EXTENSIONS[form['data_format']]
-        path_to_file = self.base_dir + form['output_file_name']
-        path_to_file+='_' + str(chunkIdx) +fe
+    def set_out_file_path(self):
+        time_stamp = datetime.datetime.now().strftime('%Y%m_%d_%H_%M_%S')
+        fe = WRCCData.FILE_EXTENSIONS[self.form['data_format']]
+        path_to_file = self.base_dir + self.form['output_file_name']
+        path_to_file +='_' + time_stamp + fe + '.gz'
+        self.logger.info('Output file path: %s.' %str(path_to_file))
         return path_to_file
 
     def write_to_file(self,data_chunk,path_to_file):
-        if self.form['data_format'] in ['clm','dlm']:
-            Writer = CsvWriter(data_chunk, f = path_to_file)
-        if self.form['data_format'] == 'xl':
-            Writer = ExcelWriter(data_chunk,f = path_to_file)
-        Writer.write_to_file()
-
-    def load_file(self,f_name, ftp_server, ftp_dir, logger=None):
         error = None
-        FTP = FTPClass(ftp_server, ftp_dir, f_name, logger)
+        if self.form['data_format'] in ['clm','dlm']:
+            try:
+                Writer = CsvWriter(data_chunk, f = path_to_file)
+            except Exception, e:
+                self.logger.error('ERROR in write_to_file. Cannot initialize writer: ' + str(e))
+                return str(e)
+        if self.form['data_format'] == 'xl':
+            try:
+                Writer = ExcelWriter(data_chunk,f = path_to_file)
+            except Exception, e:
+                self.logger.error('ERROR in write_to_file. Cannot initialize writer: ' + str(e))
+                return str(e)
+        self.logger.info('Writing data to file.')
+        Writer.write_to_file()
+        '''
+        try:
+            Writer.write_to_file()
+        except Exception, e:
+            self.logger.error('ERROR in write_to_file. Cannot write to file: ' + str(e))
+            return str(e)
+        return error
+        '''
+    def load_file(self,f_name, ftp_server, ftp_dir):
+        error = None
+        FTP = FTPClass(ftp_server, ftp_dir, f_name, self.logger)
         error = FTP.FTPUpload()
         if error:
-            self.logger.error('ERROR tranferring %s to ftp server. Error %s'%(os.path.basename(f_name),error))
+            self.logger.error('ERROR in load_file: %s' %str(error))
             os.remove(f_name)
-        return error
+            return error
+        self.logger.info('File loaded to ftp server.')
+        os.remove(f_name)
+        self.logger.info('File deleted from local server server.')
+        return None
+
+    def process_request(self):
+        error = None
+        out_files =[]
+        resultsdict = self.get_data()
+        if not resultsdict:
+            error = 'ERROR: Data Request failed!'
+            return error, out_files
+        chunks = self.split_data(resultsdict,self.max_lines_per_file)
+        if not chunks:
+            error = 'ERROR: Data request could not be slpit into chunks.'
+            return error, out_files
+        for c_idx,data_chunk in enumerate(chunks):
+            path_to_file = self.set_out_file_path()
+            f_name = path_to_file
+            self.logger.info('Processing chunk %s' %str(c_idx))
+            error = self.write_to_file(data_chunk,path_to_file)
+            if error is not None:
+                return error, []
+            #Compress file
+            '''
+            try:
+                f = gzip.open(f_name, 'wb')
+            except:
+                error = 'ERROR: Cannot open file %s' %f_name
+                return error, []
+            try:
+                with open(path_to_file, 'r') as temp:
+                    f.write(temp.read())
+                f.close()
+            except:
+                error = 'ERROR: Cannot read file %s' %path_to_file
+                return error, out_files
+            self.logger.info('Output file compressed.')
+            '''
+            error = self.load_file(f_name, self.ftp_server, self.ftp_dir)
+            if error is not None:
+                return error,[]
+            self.logger.info('File %s successfully loaded to FTP server' %f_name)
+            out_files.append(f_name)
+        self.logger.info('All files successfully loaded to FTP server')
+        return error, out_files
 
 class LargeDataRequest(object):
     '''

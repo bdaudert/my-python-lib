@@ -586,7 +586,7 @@ DISPLAY_PARAMS = {
     'elev':'Elevation',
     'name':'Station Name',
     'state':'State',
-    'valid_daterange': 'Valid Date Range (by element)',
+    'valid_daterange': 'Valid Date Range (by Element)',
     'select_grid_by':'Grid Data Request',
     'select_stations_by': 'Station Data Request',
     #search areas

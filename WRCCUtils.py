@@ -401,8 +401,7 @@ def set_lister_headers(form):
         if form['units'] == 'metric':
             unit = WRCCData.UNITS_METRIC[el_strip]
             if base_temp:
-                convert_to_metric(base_temp)
-        base_temp = ''
+                base_temp = convert_to_metric('maxt', base_temp)
         if base_temp:
             base_temp = str(base_temp)
         el_name = WRCCData.MICHELES_ELEMENT_NAMES[el_strip]
@@ -1325,7 +1324,7 @@ def elements_to_display(elements,units,valid_daterange=None):
         unit = WRCCData.UNITS_ENGLISH[el_strip]
         if units == 'metric':
             unit = WRCCData.UNITS_METRIC[el_strip]
-            base_temp = convert_to_metric(el_strip,base_temp)
+            #base_temp = convert_to_metric(el_strip,base_temp)
         if not base_temp:
             el_list_long.append(WRCCData.DISPLAY_PARAMS[el_strip] + ' (' + unit + ')')
         else:
@@ -1371,8 +1370,8 @@ def form_to_display_list(key_order_list, form):
         elif key == 'elements':
             el_list_long = elements_to_display(form['elements'],form['units'])
             display_list[idx].append([', '.join(el_list_long)])
-        elif key == 'data_type':
-            display_list[idx].append([WRCCData.DISPLAY_PARAMS[form['data_type']]])
+        elif key in ['data_type','units']:
+            display_list[idx].append([WRCCData.DISPLAY_PARAMS[form[key]]])
         elif key == 'grid':
             display_list[idx].append([WRCCData.GRID_CHOICES[form['grid']][0]])
         else:

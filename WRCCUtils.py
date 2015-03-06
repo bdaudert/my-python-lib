@@ -168,8 +168,19 @@ def set_acis_els(form):
                     l['smry'] = form['temporal_summary']
                 if form['area_type'] in grid_reduction_areas:
                     l['smry_only'] = 1
-        if el_strip in ['gdd', 'hdd', 'cdd'] and base_temp is not None:
+        if el_strip in ['gdd', 'hdd', 'cdd']:
+            if base_temp is None and el_strip in ['hdd','cdd']:
+                base_temp = '65'
+                if form['units'] == 'metric':
+                    base_temp = '18'
+            if base_temp is None and el_strip in ['gdd']:
+                base_temp = '50'
+                if form['units'] == 'metric':
+                    base_temp = '10'
             l['base'] = int(base_temp)
+            #Convert to english, ACIS station queries not possible in metric
+            if form['units'] == 'metric':
+                l['base'] = convert_to_english('base_temp', base_temp)
         #Add flags and time if data_type is station
         if data_type == 'station':
             if 'show_flags' in form.keys() and 'show_observation_time' in form.keys():
@@ -400,8 +411,6 @@ def set_lister_headers(form):
         unit = WRCCData.UNITS_ENGLISH[el_strip]
         if form['units'] == 'metric':
             unit = WRCCData.UNITS_METRIC[el_strip]
-            if base_temp:
-                base_temp = convert_to_metric('maxt', base_temp)
         if base_temp:
             base_temp = str(base_temp)
         el_name = WRCCData.MICHELES_ELEMENT_NAMES[el_strip]
@@ -410,10 +419,10 @@ def set_lister_headers(form):
             h+=' Base: ' + base_temp
         header_data+=[h]
         header_smry+=[h]
-        if 'show_flags' in form.keys():
+        if data_type == 'station' and 'show_flags' in form.keys():
             if form['show_flags'] == 'T':
                 header_data+=['F']
-        if 'show_observation_time' in form.keys():
+        if data_type == 'station' and 'show_observation_time' in form.keys():
             if form['show_observation_time'] == 'T':
                 header_data+=['T']
     return header_data,header_smry
@@ -576,6 +585,8 @@ def station_data_trim_and_summary(req,form):
         for date_idx, date_data in enumerate(stn_data['data']):
             d_data = [format_date(dates[date_idx],sep)]
             for el_idx, el_data in enumerate(date_data):
+                #If user asked for flags/obstime
+                #data el_data is a list and we need to pick the correct value
                 try:
                     val = unit_convert(els[el_idx],float(el_data))
                     d_data.append(round(val,4))
@@ -584,7 +595,21 @@ def station_data_trim_and_summary(req,form):
                     if form['data_summary'] == 'temporal':
                         smry_data[el_idx].append(val)
                 except:
-                    d_data.append(el_data)
+                    #Check flags and Obs time
+                    #Data format returned by ACIS is different
+                    if isinstance(el_data, list):
+                        val = el_data[0]
+                        try:
+                            val = unit_convert(els[el_idx],float(val))
+                            d_data.append(round(val,4))
+                        except:
+                            d_data.append(val)
+                        #Append flags ond obs time
+                        if len(el_data) >1:
+                            for fo in el_data[1:]:
+                                d_data.append(str(fo))
+                    else:
+                        d_data.append(el_data)
             new_data[-1].append(d_data)
         #Wndowed Data
         if form['data_summary'] == 'windowed_data':
@@ -1088,8 +1113,23 @@ def format_station_no_summary(req,form):
                 try:
                     val = unit_convert(els[el_idx],float(el_data))
                     d_data.append(round(val,4))
+
                 except:
-                    d_data.append(el_data)
+                    #Check flags and Obs time
+                    #Data format returned by ACIS is different
+                    if isinstance(el_data, list):
+                        val = el_data[0]
+                        try:
+                            val = unit_convert(els[el_idx],float(val))
+                            d_data.append(round(val,4))
+                        except:
+                            d_data.append(val)
+                        #Append flags ond obs time
+                        if len(el_data) >1:
+                            for fo in el_data[1:]:
+                                d_data.append(str(fo))
+                    else:
+                        d_data.append(el_data)
             new_data[-1].append(d_data)
     resultsdict = {
         'data':new_data,
@@ -1146,7 +1186,21 @@ def format_station_windowed_data(req,form):
                     val = unit_convert(els[el_idx], float(el_data))
                     d_data.append(round(val,4))
                 except:
-                    d_data.append(el_data)
+                    #Check flags and Obs time
+                    #Data format returned by ACIS is different
+                    if isinstance(el_data, list):
+                        val = el_data[0]
+                        try:
+                            val = unit_convert(els[el_idx],float(val))
+                            d_data.append(round(val,4))
+                        except:
+                            d_data.append(val)
+                        #Append flags ond obs time
+                        if len(el_data) >1:
+                            for fo in el_data[1:]:
+                                d_data.append(str(fo))
+                    else:
+                        d_data.append(el_data)
             new_data[-1].append(d_data)
         #Windowed data
         new_data[-1] = get_windowed_data(new_data[-1], sd, ed, sw, ew)
@@ -1355,6 +1409,8 @@ def form_to_display_list(key_order_list, form):
     '''
     keys = [k for k in key_order_list]
     display_list = [[WRCCData.DISPLAY_PARAMS[key]] for key in keys]
+    if 'user_area_id' in form.keys():
+        display_list.insert(0,['Area of Interest',[form['user_area_id']]])
     for key, val in form.iteritems():
         if str(key) not in keys:
             continue
@@ -1395,7 +1451,7 @@ def metadict_to_display_list(metadata, key_order_list,form):
     '''
     keys = [k for k in key_order_list]
     #grid meta ll transforms to lat/lon keys
-    if 'location' in form.keys() or 'locations' in form.keys():
+    if 'll' in keys:
         ll_idx = keys.index('ll')
         if 'lat' in metadata.keys():
             #replace ll with lat, lon keys
@@ -1833,12 +1889,16 @@ def convert_to_metric(element, value):
         float(value)
     except:
         return value
-    if el in ['maxt','mint','avgt','obst', 'yly_maxt', 'yly_mint', 'mly_maxt', 'mly_mint', 'dtr']:
+    if el in ['maxt','mint','avgt','obst', 'yly_maxt', 'yly_mint', 'mly_maxt', 'mly_mint', 'dtr','base_temp']:
         v = int(round((float(value) - 32.0)*5.0/9.0))
     elif el in ['hdd','cdd','gdd']:
-        #Since a temperature difference of 1C is equivalent to a temperature difference of 1.8F,
-        #Fahrenheit-based degree days are 1.8 times bigger than their equivalent Celsius-based degree days.
-        v = int(round(float(value)*10.0/18.0))
+        '''
+        Note that, because HDD are relative to a
+        base temperature (as opposed to being relative to zero),
+        it is incorrect to add or subtract 32 when converting
+        degree days.
+        '''
+        v = int(round(float(value)*5.0/9.0))
     elif el in ['pcpn','snow','snwd','evap','yly_pcpn', 'mly_pcpn', 'pet', 'evap']:
         v = round(float(value)*25.4,2)
     elif el in ['wdmv']:
@@ -1856,12 +1916,15 @@ def convert_to_english(element, value):
         float(value)
     except:
         return value
-    if el in ['maxt','mint','avgt','obst','yly_maxt', 'yly_mint', 'mly_maxt', 'mly_mint']:
+    if el in ['maxt','mint','avgt','obst','yly_maxt', 'yly_mint', 'mly_maxt', 'mly_mint','base_temp']:
         v = int(round(9.0/5.0*float(value) + 32.0,1))
     elif el in ['hdd','cdd','gdd']:
-        #Since a temperature difference of 1C is equivalent to a temperature difference of 1.8F,
-        #Fahrenheit-based degree days are 1.8 times bigger than their equivalent Celsius-based degree days.
-        v = int(round(float(value)*18.0/10.0))
+        '''
+        Note that, because HDD are relative to a
+        base temperature (as opposed to being relative to zero),
+        it is incorrect to add or subtract 32 when converting degre days
+        '''
+        v = int(round(float(value)*9.0/5.0))
     elif el in ['pcpn','snow','snwd','evap','mly_pcpn', 'yly_pcpn']:
         v = round(float(value)/25.4,2)
     elif el in ['wdmv']:

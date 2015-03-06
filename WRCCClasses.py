@@ -75,21 +75,35 @@ class GraphDictWriter(object):
 
 
     def set_elUnits(self):
+        el_strip, base_temp = WRCCUtils.get_el_and_base_temp(self.element)
         if 'units' in self.form.keys() and self.form['units'] == 'metric':
-            elUnits = WRCCData.UNITS_METRIC[self.element]
+            elUnits = WRCCData.UNITS_METRIC[el_strip]
         else:
-            elUnits = WRCCData.UNITS_ENGLISH[self.element]
+            elUnits = WRCCData.UNITS_ENGLISH[el_strip]
         return elUnits
 
+    def set_date(self,date):
+        if len(date) == 8:
+            return date[0:4] + '-' + date[4:6] + '-' + date[6:8]
+        else:
+            return date
+
     def set_title(self):
+        #NOTE: element comes from form_cleaned as english
+        el_strip, base_temp = WRCCUtils.get_el_and_base_temp(self.element)
+        if self.form['units'] == 'metric':
+            base_temp = WRCCUtils.convert_to_metric('base_temp',base_temp)
         title = ''
         if 'spatial_summary' in self.form.keys():
             title = WRCCData.DISPLAY_PARAMS[self.form['spatial_summary']]
         if 'temporal_summary' in self.form.keys():
             title = WRCCData.DISPLAY_PARAMS[self.form['temporal_summary']]
 
-        title += ' ' + WRCCData.DISPLAY_PARAMS[self.element]
+        title += ' of ' + WRCCData.DISPLAY_PARAMS[el_strip]
         unit = self.set_elUnits()
+        if base_temp:
+            title+= ' Base: ' + str(base_temp)
+        return title
         title += ' (' + unit + ')'
         return title
 
@@ -106,7 +120,7 @@ class GraphDictWriter(object):
         return xLabel
 
     def set_yLabel(self):
-        yLabel = self.set_title().split(' ')[-1]
+        yLabel = self.set_elUnits()
         return yLabel
 
     def set_legendTitle(self):
@@ -114,24 +128,33 @@ class GraphDictWriter(object):
         return legendTitle
 
     def set_axisMin(self):
-        if self.element in ['snow', 'snwd', 'hdd','cdd','gdd']:
+        el_strip, base_temp = WRCCUtils.get_el_and_base_temp(self.element)
+        if el_strip in ['snow', 'snwd', 'hdd','cdd','gdd']:
             axisMin = 0
         else:
             axisMin = None
         return axisMin
 
     def set_plotColor(self):
-        return WRCCData.PLOT_COLOR[self.element]
+        el_strip, base_temp = WRCCUtils.get_el_and_base_temp(self.element)
+        return WRCCData.PLOT_COLOR[el_strip]
 
     def set_seriesName(self):
-        return WRCCData.DISPLAY_PARAMS[self.element]
-
+        el_strip, base_temp = WRCCUtils.get_el_and_base_temp(self.element)
+        if self.form['units'] == 'metric':
+            base_temp = WRCCUtils.convert_to_metric('base_temp',base_temp)
+        sname = WRCCData.DISPLAY_PARAMS[el_strip]
+        if base_temp:
+            sname+=' ' + str(base_temp)
+        return sname
 
     def write_dict(self):
         datadict = {
             'data':self.data,
             'element':self.element,
             'elUnits':self.set_elUnits(),
+            'startDate':self.set_date(self.form['start_date']),
+            'endDate': self.set_date(self.form['end_date']),
             'title':self.set_title(),
             'subTitle':self.set_subTitle(),
             'legendTitle':self.set_legendTitle(),
@@ -310,11 +333,11 @@ class ExcelWriter(object):
             for date_idx in range(len(p_data)):
                 for data_idx in range(len(p_data[date_idx])):
                     ws.write(date_idx + 5 ,data_idx,p_data[date_idx][data_idx])
-            #Save workbook
-            if self.f is not None:
-                self.wb.save(self.f)
-            if self.response is not None:
-                self.wb.save(self.response)
+        #Save workbook
+        if self.f is not None:
+            self.wb.save(self.f)
+        if self.response is not None:
+            self.wb.save(self.response)
 
     def write_summary(self):
         ws = self.wb.add_sheet('1')

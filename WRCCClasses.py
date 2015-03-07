@@ -61,10 +61,11 @@ class GraphDictWriter(object):
             axis_min
             elUnits
     '''
-    def __init__(self, form, data, element):
+    def __init__(self, form, data, element,rm_data):
         self.form = form
         self.data = data
         self.element = element
+        self.rm_data = rm_data #running mean data
 
 
     def set_chartType(self):
@@ -111,6 +112,20 @@ class GraphDictWriter(object):
         subTitle = WRCCData.DISPLAY_PARAMS[self.form['area_type']]
         subTitle+= ': ' + self.form[self.form['area_type']]
         return subTitle
+
+    def set_rm_title(self):
+        rm_title = ''
+        if self.form['show_running_mean'] == 'T':
+            try:
+                rm_time = str(self.form['running_mean_days'])
+                rm_title = rm_time + '-day running mean'
+            except:
+                try:
+                    rm_time = str(self.form['running_mean_years'])
+                    rm_title = rm_time + '-year running mean'
+                except:
+                    pass
+        return rm_title
 
     def set_xLabel(self):
         xLabel = 'Start Date: '
@@ -164,6 +179,10 @@ class GraphDictWriter(object):
             'plotColor':self.set_plotColor(),
             'seriesName':self.set_seriesName()
         }
+        #add running mean data
+        if self.rm_data:
+            datadict['running_mean_data'] = self.rm_data
+            datadict['running_mean_title'] = self.set_rm_title()
         return datadict
 
 class CsvWriter(object):

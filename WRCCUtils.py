@@ -408,15 +408,17 @@ def set_lister_headers(form):
         header_smry = ['Date']
     for el in el_list:
         el_strip,base_temp = get_el_and_base_temp(el)
+        if base_temp:
+            base_temp = str(base_temp)
         unit = WRCCData.UNITS_ENGLISH[el_strip]
         if form['units'] == 'metric':
             unit = WRCCData.UNITS_METRIC[el_strip]
-        if base_temp:
-            base_temp = str(base_temp)
+            base_temp = str(convert_to_metric('base_temp',base_temp))
         el_name = WRCCData.MICHELES_ELEMENT_NAMES[el_strip]
-        h = el_name + ' (' + unit + ')'
-        if base_temp:
-            h+=' Base: ' + base_temp
+        h = el_name
+        #Add base temp and units
+        if base_temp:h+=str(base_temp)
+        h+=' (' + unit + ')'
         header_data+=[h]
         header_smry+=[h]
         if data_type == 'station' and 'show_flags' in form.keys():
@@ -1334,7 +1336,8 @@ def get_window_data(data, start_date, end_date, start_window, end_window):
             windowed_data = windowed_data + add_data
     return windowed_data
 
-def extract_highcarts_data(data,el_idx, element):
+
+def extract_highcarts_data(data,el_idx, element, form):
     '''
     Format data for highcarts plotting
     Args:
@@ -1345,9 +1348,23 @@ def extract_highcarts_data(data,el_idx, element):
         highcharts series data
     '''
     #strip header
+
     req_data = data[1:]
-    hc_data = []
-    for row_data in req_data:
+    hc_data = [];rm_data = []
+    if form['show_running_mean'] == 'T':
+        try:
+            num_nulls = int(form['running_mean_days'])
+        except:
+            try:
+                num_nulls = int(form['running_mean_years'])
+            except:
+                num_nulls = None
+        if num_nulls is not None:
+            if num_nulls % 2 == 0:
+                num_nulls = num_nulls /2 -1
+            else:
+                num_nulls = (num_nulls - 1) / 2
+    for idx,row_data in enumerate(req_data):
         date = format_date_string(row_data[0],'dash')
         d = calendar.timegm(datetime.datetime.strptime(date, '%Y-%m-%d').timetuple())
         int_time = 1000 * d
@@ -1356,7 +1373,25 @@ def extract_highcarts_data(data,el_idx, element):
         except:
             val = None
         hc_data.append([int_time,val])
-    return hc_data
+        #Running Mean
+        if num_nulls is not None:
+            skip = False
+            if idx > num_nulls and idx < len(req_data) -1 - num_nulls:
+                cnt = 0; summ = 0
+                for i in range(idx -  num_nulls,idx + num_nulls + 1):
+                    try:
+                        rm_val = round(float(req_data[i][el_idx + 1]),4)
+                        summ+=rm_val
+                        cnt+=1
+                    except:
+                        skip = True
+                        break
+                if not skip and cnt >0:
+
+                    rm_data.append([int_time,round(summ / float(cnt),4)])
+
+    return hc_data, rm_data
+
 ########################
 
 #HEADER FORMATTING
@@ -1378,7 +1413,8 @@ def elements_to_display(elements,units,valid_daterange=None):
         unit = WRCCData.UNITS_ENGLISH[el_strip]
         if units == 'metric':
             unit = WRCCData.UNITS_METRIC[el_strip]
-            #base_temp = convert_to_metric(el_strip,base_temp)
+            #form cleaned has english units
+            base_temp = convert_to_metric(el_strip,base_temp)
         if not base_temp:
             el_list_long.append(WRCCData.DISPLAY_PARAMS[el_strip] + ' (' + unit + ')')
         else:

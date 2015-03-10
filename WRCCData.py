@@ -682,6 +682,7 @@ DISPLAY_PARAMS = {
     'spatial_summary':'Spatial Summary',
     'windowed_data': 'Windowed Data',
     'mean': 'Mean',
+    'median':'Median',
     'sum': 'Sum of',
     'max': 'Maximum',
     'min': 'Minimum',

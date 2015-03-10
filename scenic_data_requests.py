@@ -210,7 +210,6 @@ if __name__ == '__main__' :
         #Check if params file is older than
         #cron job time --> data request completed or in progress
         #Check if request in progress
-        '''
         st=os.stat(params_file)
         mtime=datetime.datetime.fromtimestamp(st.st_mtime)
         if mtime <= x_mins_ago:
@@ -219,7 +218,6 @@ if __name__ == '__main__' :
                 logger.info('24 hr processing limit reached. Removing parameter file: %s' %str(params_file))
                 os.remove(params_file)
             continue
-        '''
         #Define and instantiate data request class
         LDR = WRCCClasses.LargeDataRequestNew(params, logger, base_dir, ftp_server, ftp_dir, max_lines_per_file)
         error, out_files = LDR.process_request()
@@ -227,6 +225,11 @@ if __name__ == '__main__' :
             logger.error('Data request error: %s! Parameter file: %s' %( error,os.path.basename(params_file)))
             params_files_failed.append(params_file)
             os.remove(params_file)
+            for out_f in out_files:
+                try:
+                    os.remove(base_dir + out_f)
+                except:
+                    pass
             continue
         logger.info('Large Data Request completed. Parameter file was: %s' %str(os.path.basename(params_file)))
 

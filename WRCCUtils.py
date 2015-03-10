@@ -62,13 +62,14 @@ def get_data_type(form):
         data_type -- station or grid
     '''
     data_type = None
-    if 'data_type' in form.keys():
-        return str(form['data_type'])
+    if 'station_id' in form.keys() or 'station_id' in form.keys():
+        return 'station'
+    elif 'location' in form.keys() or 'locations' in form.keys():
+        return 'grid'
     else:
-        if 'station_id' in form.keys() or 'station_id' in form.keys():
-            return 'station'
-        if 'location' in form.keys() or 'locations' in form.keys():
-            return 'grid'
+        if 'data_type' in form.keys():
+            return str(form['data_type'])
+    return data_type
     return data_type
 
 def get_meta_keys(form):
@@ -148,9 +149,16 @@ def set_acis_els(form):
     acis_elems = []
     for el in form['elements']:
         el_strip, base_temp = get_el_and_base_temp(el)
-        l ={
-            'vX':WRCCData.ACIS_ELEMENTS_DICT[el_strip]['vX']
-        }
+
+        if data_type == 'grid' and form['grid'] == '21' and form['temporal_resolution'] in ['mly','yly']:
+            #Special case prims data
+            l = {
+                'name':form['temporal_resolution'] + '_' + el_strip
+            }
+        else:
+            l ={
+                'vX':WRCCData.ACIS_ELEMENTS_DICT[el_strip]['vX']
+            }
         #Get smry if data_summary is temporal
         if 'data_summary' in form.keys() and form['data_summary'] == 'temporal':
             #For performance: Summary only requests for multi area requests
@@ -1445,8 +1453,10 @@ def form_to_display_list(key_order_list, form):
     '''
     keys = [k for k in key_order_list]
     display_list = [[WRCCData.DISPLAY_PARAMS[key]] for key in keys]
+    '''
     if 'user_area_id' in form.keys():
         display_list.insert(0,['Area of Interest',[form['user_area_id']]])
+    '''
     for key, val in form.iteritems():
         if str(key) not in keys:
             continue

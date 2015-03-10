@@ -118,11 +118,11 @@ class GraphDictWriter(object):
         if self.form['show_running_mean'] == 'T':
             try:
                 rm_time = str(self.form['running_mean_days'])
-                rm_title = rm_time + '-day running mean'
+                rm_title = rm_time + '-day Running Mean'
             except:
                 try:
                     rm_time = str(self.form['running_mean_years'])
-                    rm_title = rm_time + '-year running mean'
+                    rm_title = rm_time + '-year Running Mean'
                 except:
                     pass
         return rm_title
@@ -232,6 +232,8 @@ class CsvWriter(object):
         else:
             header_keys = [self.form['area_type'],'start_date', 'end_date']
             header = WRCCUtils.form_to_display_list(header_keys, self.form)
+        if 'user_area_id' in self.form.keys():
+            header_keys.insert(0,'user_area_id')
         for key_val in header:
             row = ['*' + key_val[0].replace(' ',''),' '.join(key_val[1])]
             self.writer.writerow(row)

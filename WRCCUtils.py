@@ -150,11 +150,16 @@ def set_acis_els(form):
     for el in form['elements']:
         el_strip, base_temp = get_el_and_base_temp(el)
 
-        if data_type == 'grid' and form['grid'] == '21' and form['temporal_resolution'] in ['mly','yly']:
-            #Special case prims data
-            l = {
-                'name':form['temporal_resolution'] + '_' + el_strip
-            }
+        if data_type == 'grid' and form['grid'] == '21':
+            if 'temporal_resolution' in form.keys() and form['temporal_resolution'] in ['mly','yly']:
+                #Special case prims data
+                l = {
+                    'name':form['temporal_resolution'] + '_' + el_strip
+                }
+            else:
+                l ={
+                    'vX':WRCCData.ACIS_ELEMENTS_DICT[el_strip]['vX']
+                }
         else:
             l ={
                 'vX':WRCCData.ACIS_ELEMENTS_DICT[el_strip]['vX']
@@ -421,7 +426,8 @@ def set_lister_headers(form):
         unit = WRCCData.UNITS_ENGLISH[el_strip]
         if form['units'] == 'metric':
             unit = WRCCData.UNITS_METRIC[el_strip]
-            base_temp = str(convert_to_metric('base_temp',base_temp))
+            if base_temp:
+                base_temp = str(convert_to_metric('base_temp',base_temp))
         el_name = WRCCData.MICHELES_ELEMENT_NAMES[el_strip]
         h = el_name
         #Add base temp and units
@@ -1359,6 +1365,7 @@ def extract_highcarts_data(data,el_idx, element, form):
 
     req_data = data[1:]
     hc_data = [];rm_data = []
+    num_nulls = None
     if form['show_running_mean'] == 'T':
         try:
             num_nulls = int(form['running_mean_days'])
@@ -1378,6 +1385,9 @@ def extract_highcarts_data(data,el_idx, element, form):
         int_time = 1000 * d
         try:
             val = round(float(row_data[el_idx + 1]),4)
+            #deal with ACIS non-data
+            if abs(val + 999.0) < 0.0001:
+                val = None
         except:
             val = None
         hc_data.append([int_time,val])

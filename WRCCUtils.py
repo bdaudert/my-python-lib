@@ -194,7 +194,8 @@ def set_acis_els(form):
             #Convert to english, ACIS station queries not possible in metric
             if form['units'] == 'metric':
                 l['base'] = convert_to_english('base_temp', base_temp)
-        #Add flags and time if data_type is station
+        #Add obs time if data_type is station
+        '''
         if data_type == 'station':
             if 'show_flags' in form.keys() and 'show_observation_time' in form.keys():
                 if form['show_flags'] == 'T' and form['show_observation_time'] =='F':
@@ -203,6 +204,13 @@ def set_acis_els(form):
                     l['add'] = 't'
                 if form['show_flags'] == 'T' and form['show_observation_time'] =='T':
                     l['add']= 'f,t'
+        '''
+        #Add obs time if data_type is station
+        #NOTE: flags are always showing in the data so we never query for them separately
+        if data_type == 'station':
+            if 'show_observation_time' in form.keys() and form['show_observation_time'] =='T':
+                l['add'] = 't'
+
         acis_elems.append(l)
     return acis_elems
 
@@ -403,8 +411,8 @@ def set_lister_headers(form):
     Args:
         form -- user form input dictionary
     Returns:
-        header_data -- header for the data
-        header_summary -- header for the data sumary
+        header_data -- header for the raw data
+        header_summary -- header for the data summary
     '''
     data_type = get_data_type(form)
     el_list = form['elements']
@@ -435,9 +443,11 @@ def set_lister_headers(form):
         h+=' (' + unit + ')'
         header_data+=[h]
         header_smry+=[h]
+        '''
         if data_type == 'station' and 'show_flags' in form.keys():
             if form['show_flags'] == 'T':
                 header_data+=['F']
+        '''
         if data_type == 'station' and 'show_observation_time' in form.keys():
             if form['show_observation_time'] == 'T':
                 header_data+=['T']
@@ -497,29 +507,33 @@ def format_data_single_lister(req,form):
         for el_idx, el_data in enumerate(data):
             #Format Summary
             if 'smry' in req.keys() and req['smry']:
-
                 try:
                     val = round(unit_convert(els[el_idx],float(req['smry'][el_idx])),4)
                 except:
                     val = str(req['smry'][el_idx])
                 smry_data.append(val)
-            if not isinstance(el_data,list):
-                #Put each element in its own list so that
-                #format is the same as for flag/obs requests
-                try:
-                    val = round(unit_convert(els[el_idx],float(el_data)),4)
-                except:
-                    val = str(el_data)
-                date_data.append(val)
+            #Format data, note that if obs time is asked for el_data is a list
+            obs_time = None
+            if isinstance(el_data,list):
+                val = el_data[0]
+                if len(el_data) >1:obs_time = el_data[1]
             else:
-                for d in el_data:
-                    if d =='':
-                        d=' '
-                    try:
-                        val = round(unit_convert(els[el_idx],float(d)),4)
-                    except:
-                        val = str(d)
-                    date_data.append(val)
+                val = el_data
+
+            #strip flag from data
+            strp_val, flag = strip_data(val)
+            try:
+                val = round(unit_convert(els[el_idx],float(strp_val)),4)
+            except:
+                val = strp_val
+            if 'show_flags' in form.keys() and form['show_flags'] == 'T':
+                val = show_flag_on_val(val, flag)
+            else:
+                val = remove_flag_from_val(val, flag)
+            date_data.append(val)
+            #Attach Obs time
+            if obs_time:
+                date_data.append(obs_time)
         d_data.append(date + date_data)
         new_data = d_data
         if smry_data:
@@ -603,29 +617,32 @@ def station_data_trim_and_summary(req,form):
             for el_idx, el_data in enumerate(date_data):
                 #If user asked for flags/obstime
                 #data el_data is a list and we need to pick the correct value
+                obs_time = None
+                if isinstance(el_data, list):
+                    val = el_data[0]
+                    if len(el_data) >1:
+                        obs_time = el_data[1]
+                else:
+                    val = el_data
+                #Strip flag from data
+                strp_val, flag = strip_data(val)
                 try:
-                    val = unit_convert(els[el_idx],float(el_data))
-                    d_data.append(round(val,4))
+                    val = round(unit_convert(els[el_idx],float(strp_val)),4)
                     if form['data_summary'] == 'spatial':
                         smry_data[date_idx][el_idx].append(val)
                     if form['data_summary'] == 'temporal':
                         smry_data[el_idx].append(val)
                 except:
-                    #Check flags and Obs time
-                    #Data format returned by ACIS is different
-                    if isinstance(el_data, list):
-                        val = el_data[0]
-                        try:
-                            val = unit_convert(els[el_idx],float(val))
-                            d_data.append(round(val,4))
-                        except:
-                            d_data.append(val)
-                        #Append flags ond obs time
-                        if len(el_data) >1:
-                            for fo in el_data[1:]:
-                                d_data.append(str(fo))
-                    else:
-                        d_data.append(el_data)
+                    val = strp_val
+                if 'show_flags' in form.keys() and form['show_flags'] == 'T':
+                    val = show_flag_on_val(val, flag)
+                else:
+                    val = remove_flag_from_val(val, flag)
+
+                d_data.append(val)
+                #Append obs time
+                if obs_time:
+                    d_data.append(str(obs_time))
             new_data[-1].append(d_data)
         #Wndowed Data
         if form['data_summary'] == 'windowed_data':
@@ -1126,26 +1143,28 @@ def format_station_no_summary(req,form):
         for date_idx,date_data in enumerate(stn_data['data']):
             d_data = [format_date(dates[date_idx],sep)]
             for el_idx, el_data in enumerate(date_data):
+                #If user asked for flags/obstime
+                #data el_data is a list and we need to pick the correct value
+                obs_time = None
+                if isinstance(el_data, list):
+                    val = el_data[0]
+                    if len(el_data) >1:
+                        obs_time = el_data[1]
+                else:
+                    val = el_data
+                #Strip flag from data
+                strp_val, flag = strip_data(val)
                 try:
-                    val = unit_convert(els[el_idx],float(el_data))
-                    d_data.append(round(val,4))
-
+                    val = round(unit_convert(els[el_idx],float(strp_val)),4)
                 except:
-                    #Check flags and Obs time
-                    #Data format returned by ACIS is different
-                    if isinstance(el_data, list):
-                        val = el_data[0]
-                        try:
-                            val = unit_convert(els[el_idx],float(val))
-                            d_data.append(round(val,4))
-                        except:
-                            d_data.append(val)
-                        #Append flags ond obs time
-                        if len(el_data) >1:
-                            for fo in el_data[1:]:
-                                d_data.append(str(fo))
-                    else:
-                        d_data.append(el_data)
+                    val = strp_val
+                if 'show_flags' in form.keys() and form['show_flags'] == 'T':
+                    val = show_flag_on_val(val, flag)
+                else:
+                    val = remove_flag_from_val(val, flag)
+                d_data.append(val)
+                if obs_time:
+                    d_data.append(obs_time)
             new_data[-1].append(d_data)
     resultsdict = {
         'data':new_data,
@@ -1198,25 +1217,32 @@ def format_station_windowed_data(req,form):
         for date_idx,date_data in enumerate(stn_data['data']):
             d_data = [format_date(dates[date_idx],sep)]
             for el_idx, el_data in enumerate(date_data):
+                #If user asked for flags/obstime
+                #data el_data is a list and we need to pick the correct value
+                obs_time = None
+                if isinstance(el_data, list):
+                    val = el_data[0]
+                    if len(el_data) >1:
+                        obs_time = el_data[1]
+                else:
+                    val = el_data
+                #Strip flag from data
+                strp_val, flag = strip_data(val)
                 try:
-                    val = unit_convert(els[el_idx], float(el_data))
-                    d_data.append(round(val,4))
+                    val = round(unit_convert(els[el_idx],float(strp_val)),4)
+                    if form['data_summary'] == 'spatial':
+                        smry_data[date_idx][el_idx].append(val)
+                    if form['data_summary'] == 'temporal':
+                        smry_data[el_idx].append(val)
                 except:
-                    #Check flags and Obs time
-                    #Data format returned by ACIS is different
-                    if isinstance(el_data, list):
-                        val = el_data[0]
-                        try:
-                            val = unit_convert(els[el_idx],float(val))
-                            d_data.append(round(val,4))
-                        except:
-                            d_data.append(val)
-                        #Append flags ond obs time
-                        if len(el_data) >1:
-                            for fo in el_data[1:]:
-                                d_data.append(str(fo))
-                    else:
-                        d_data.append(el_data)
+                    val = strp_val
+                if 'show_flags' in form.keys() and form['show_flags'] == 'T':
+                    val = show_flag_on_val(val, flag)
+                else:
+                    val = remove_flag_from_val(val, flag)
+                d_data.append(val)
+                if obs_time:
+                    d_data.append(obs_time)
             new_data[-1].append(d_data)
         #Windowed data
         new_data[-1] = get_windowed_data(new_data[-1], sd, ed, sw, ew)
@@ -3364,14 +3390,14 @@ def strip_data(val):
     '''
     v = str(val)
     if not v:
-        pos_val = ' '
-        flag = ' '
-    elif v[0] == '-':
+        return ' ', ' '
+
+    if v[0] == '-':
         pos_val = v[1:]
     else:
         pos_val = v
-    #Note: len(' ') =1!
-    if len(pos_val) ==1:
+    strp_val = ' ';flag = ' '
+    if len(pos_val) == 1:
         if pos_val.isdigit():
             strp_val = v
             flag = ' '
@@ -3379,8 +3405,10 @@ def strip_data(val):
             strp_val = ' '
             if pos_val in ['M', 'T', 'S', 'A', ' ']:
                 flag = pos_val
+                if flag in ['S','T']:
+                    strp_val = 0.0
+                if flag == 'M': strp_val = '-9999'
             else:
-                strp_val = ' '
                 flag = ' '
     else: #len(pos_val) >1
         if not pos_val[-1].isdigit():
@@ -3389,9 +3417,35 @@ def strip_data(val):
         else:
             flag = ' '
             strp_val = v
-
     return strp_val, flag
 
+def show_flag_on_val(val, flag):
+    '''
+    Add flags to data vals:
+    If flag A, we add A   ty data val
+    If flag M,S or T, replace data val with flag
+    '''
+    v = str(val)
+    if flag in ['M','S','T']:v = flag
+    if flag in ['A']:v = str(val) + flag
+    return v
+
+def remove_flag_from_val(val,flag):
+    '''
+    Removes flags from data vals
+    If flag M, replace with -9999
+    If flag S or T, replace val with 0.0
+    If flag A, remove A from val
+    '''
+    v = str(val)
+    if not v:
+        return ' '
+    if flag == 'M':v = -9999
+    if flag in ['S','T']:v= 0.0
+    if flag == 'A':
+        if v[-1] == 'A':
+            v = v[0:-1]
+    return v
 
 def get_dates(s_date, e_date, app_name=None):
     '''

@@ -371,8 +371,11 @@ class ExcelWriter(object):
                 except:
                     val = self.data[row_idx][val_idx]
                 ws.write(row_idx + 4 ,val_idx,val)
-            #Save workbook
-        self.wb.save(self.response)
+        #Save workbook
+        if self.f is not None:
+            self.wb.save(self.f)
+        if self.response is not None:
+            self.wb.save(self.response)
 
     def write_to_file(self):
         self.set_data_type()
@@ -2085,7 +2088,11 @@ class LargeDataRequestNew(object):
         time_stamp = datetime.datetime.now().strftime('%Y%m_%d_%H_%M_%S')
         fe = WRCCData.FILE_EXTENSIONS[self.form['data_format']]
         path_to_file = self.base_dir + self.form['output_file_name']
-        path_to_file +='_' + time_stamp + fe + '.gz'
+        #FIX ME: save excel wb to file as .gz.
+        if self.form['data_format'] == 'xl':
+            path_to_file +='_' + time_stamp + fe
+        else:
+            path_to_file +='_' + time_stamp + fe + '.gz'
         self.logger.info('Output file path: %s.' %str(path_to_file))
         return path_to_file
 

@@ -2083,16 +2083,7 @@ def generate_kml_file(area_type, state, kml_file_name, dir_location):
         return 'Need absolute path of directory. You entered: %s' %str(dir_location)
     else:
         dr = str(dir_location)
-    '''
     #Check if kml file already exists in dir_loc
-    try:
-        with open(dr + kml_file_name):
-            pass
-
-        os.remove(dr + kml_file_name)
-    except:
-        pass
-    '''
     try:
         with open(dr + kml_file_name):
             if os.stat(dr + kml_file_name).st_size==0:

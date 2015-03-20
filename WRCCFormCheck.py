@@ -18,6 +18,8 @@ def check_start_year(form):
     yr = form['start_year']
     e_yr = form['end_year']
     if yr.lower() == 'por':
+        if 'location' in form.keys():
+            return 'POR is not a valid year for gridded data.'
         return err
     if len(yr)!=4:
         return 'Year should be of form yyyy. You entered %s' %yr
@@ -58,6 +60,8 @@ def check_end_year(form):
     yr = form['end_year']
     s_yr = form['start_year']
     if yr.lower() == 'por':
+        if 'location' in form.keys():
+            return 'POR is not a valid year for gridded data.'
         return err
     if len(yr)!=4:
         return 'Year should be of form yyyy. You entered %s' %yr

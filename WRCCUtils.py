@@ -241,14 +241,20 @@ def set_acis_params(form):
     f_key = None
     #Set up area parameter
     #Convert form area key to ACIS area key
-    for area_key in area_keys:
-        if area_key not in form.keys():
-            continue
-        if area_key in form.keys():
-            p_key = WRCCData.FORM_TO_PARAMS[area_key]
-            f_key = area_key
-            params[p_key] = str(form[area_key])
-            break
+    if 'station_ids' in form.keys():
+        #Special case station finder download data
+        p_key = WRCCData.FORM_TO_PARAMS['station_ids']
+        f_key = 'station_ids'
+        params[p_key] = str(form['station_ids'])
+    else:
+        for area_key in area_keys:
+            if area_key not in form.keys():
+                continue
+            if area_key in form.keys():
+                p_key = WRCCData.FORM_TO_PARAMS[area_key]
+                f_key = area_key
+                params[p_key] = str(form[area_key])
+                break
     if not p_key:
         return {}
     #Override area parameter if necessary

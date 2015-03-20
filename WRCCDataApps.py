@@ -2556,7 +2556,7 @@ def Sodsumm(**kwargs):
     #results[i][table]
     results = defaultdict(dict)
     #Loop over stations
-    for i, stn in enumerate(kwargs['coop_station_ids']):
+    for i, stn in enumerate(kwargs['ids']):
         #Check for empty data
         flag_empty = False
         for el_data in kwargs['data'][i]:

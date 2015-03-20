@@ -912,7 +912,7 @@ class SODDataJob(object):
             'all_sodsumm':['maxt', 'mint', 'avgt', 'pcpn', 'snow'],
             'all':['maxt', 'mint', 'pcpn', 'snow', 'snwd', 'hdd', 'cdd'],
             'tmp':['maxt', 'mint', 'pcpn'],
-            'both':['max', 'mint', 'avgt', 'pcpn', 'snow'],
+            'both':['maxt', 'mint', 'avgt', 'pcpn', 'snow'],
             'temp':['maxt', 'mint', 'avgt'],
             'prsn':['pcpn', 'snow'],
             'wtr':['pcpn', 'snow', 'snwd'],
@@ -977,7 +977,7 @@ class SODDataJob(object):
         Converts string of lon, lat pairs into list of lon, lat pairs
         '''
         loc_list = []
-        for key in ['locations', 'location']:
+        for key in ['locations', 'location','loc']:
             if key in params.keys():
                 if isinstance(params[key], basestring):
                     ll_list = params[key].split(',')
@@ -1045,6 +1045,13 @@ class SODDataJob(object):
         if 'station_id' in self.params.keys():
             if not self.station_ids:
                 return s_date, e_date
+        if 'sid' in self.params.keys() and self.station_ids is None:
+            self.station_ids = [self.params['sid']]
+        if 'sids' in self.params.keys() and self.station_ids is None:
+            if isinstance(self.params['sids'], basestring):
+                self.station_ids = self.params['sids'].replace(' ','').split(',')
+            else:
+                self.station_ids = self.params['sids']
         #Format yyyy, yyyymm data into yyyymmdd
         if len(self.params['start_date']) == 4:
             s_date = self.params['start_date'] + '0101'
@@ -1208,6 +1215,9 @@ class SODDataJob(object):
         el_type = self.set_element_param()
         if self.app_name == 'Sodsumm' and self.params[el_type] == 'all':
             el_list = self.el_type_element_dict['all_sodsumm']
+            #Grid data dows not have snow
+            if 'location' in self.params.keys() or 'loc' in self.params.keys():
+                el_list = self.el_type_element_dict[self.params['element']]
         elif self.app_name == 'Soddynorm':
              el_list = self.el_type_element_dict['tmp']
         elif self.app_name == 'Sodxtrmts' and self.params[el_type] in ['hdd','cdd', 'gdd','dtr']:
@@ -1317,25 +1327,6 @@ class SODDataJob(object):
             if not 'data' in loc_request.keys():
                 error = 'No data found for parameters: %s' % str(self.params)
                 continue
-            '''
-            for el_idx, element in enumerate(elements):
-                start_idx = 0
-                yr_data = []
-                for yr_idx, yr in enumerate(year_list):
-                    length = 365
-                    #Feb 29 not recorded as M for non-leap years.
-                    # Need to insert for gouping by year
-                    if yr_idx in leap_indices:length =  366
-                    else:length=365
-                    d = loc_request['data'][start_idx:start_idx + length]
-                    start_idx = start_idx + length
-                    #Only pick relevant element data
-                    d = [d[el_idx + 1] for d in d]
-                    #Add missing leap year value if not leap year
-                    if length == 365:d.insert(59,'M')
-                    yr_data.append(d)
-                    data[loc_idx][el_idx].append(yr_data)
-            '''
             start_idx = 0
             for yr_idx, yr in enumerate(year_list):
                 yr_data = [[] for el in elements]
@@ -1497,11 +1488,17 @@ class SODApplication(object):
                     'lls':self.data['lls']
                     }
         if 'station_ids' in self.data.keys():
+            #Delete eventually
             app_params['coop_station_ids'] = self.data['station_ids']
             app_params['station_names'] = self.data['station_names']
+            #Use ids and names oin WRCCDataApps
+            app_params['ids'] = self.data['station_ids']
+            app_params['names'] = self.data['station_names']
         if 'location_list' in self.data.keys():
             app_params['location_list'] = self.data['location_list']
             app_params['station_names'] = self.data['location_list']
+            app_params['ids'] = self.data['location_list']
+            app_params['names'] = self.data['location_list']
         if self.app_specific_params:
             app_params.update(self.app_specific_params)
         #Sanity check, make sure data has data

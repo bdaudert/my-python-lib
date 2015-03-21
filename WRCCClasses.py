@@ -61,12 +61,11 @@ class GraphDictWriter(object):
             axis_min
             elUnits
     '''
-    def __init__(self, form, data, element,rm_data):
+    def __init__(self, form, data, element,rm_data = None):
         self.form = form
         self.data = data
         self.element = element
         self.rm_data = rm_data #running mean data
-
 
     def set_chartType(self):
         if self.element in ['pcpn','snow', 'snwd', 'hdd','cdd','gdd']:
@@ -99,7 +98,8 @@ class GraphDictWriter(object):
             title = WRCCData.DISPLAY_PARAMS[self.form['spatial_summary']]
         if 'temporal_summary' in self.form.keys():
             title = WRCCData.DISPLAY_PARAMS[self.form['temporal_summary']]
-
+        if 'monthly_statistic' in self.form.keys():
+            title = WRCCData.DISPLAY_PARAMS[self.form['monthly_statistic']]
         title += ' of ' + WRCCData.DISPLAY_PARAMS[el_strip]
         unit = self.set_elUnits()
         if base_temp:
@@ -1045,8 +1045,8 @@ class SODDataJob(object):
         if 'station_id' in self.params.keys():
             if not self.station_ids:
                 return s_date, e_date
-        if 'sid' in self.params.keys() and self.station_ids is None:
-            self.station_ids = [self.params['sid']]
+        if 'sid' in self.params.keys() and not self.station_ids:
+             self.station_ids = [self.params['sid']]
         if 'sids' in self.params.keys() and self.station_ids is None:
             if isinstance(self.params['sids'], basestring):
                 self.station_ids = self.params['sids'].replace(' ','').split(',')

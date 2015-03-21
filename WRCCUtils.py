@@ -1382,8 +1382,39 @@ def get_window_data(data, start_date, end_date, start_window, end_window):
             windowed_data = windowed_data + add_data
     return windowed_data
 
+################################
+# HIGHCARTS DATA EXTRACTION
+############################
+def extract_highcarts_data_monann(data,form):
+    '''
+    Format monann data for highcarts plotting
+    Args:
+        data: data list containing data for all elements
+        el_idx: index of element data in data
+        element: element short name
+    Returns:
+        highcharts series data
+        Each month is its own series
+    '''
+    hc_data = [[] for m in range(0,12)]
+    zipped = zip(*data)
+    years = zipped[0]
+    for m_idx in range(0,12):
+        data_idx = 2 * m_idx + 1
+        mon_data = zipped[data_idx]
+        for d_idx, data in enumerate(mon_data[1:-6]):
+            date = years[d_idx+1] + '-01-01'
+            d = calendar.timegm(datetime.datetime.strptime(date, '%Y-%m-%d').timetuple())
+            int_time = 1000 * d
+            try:
+                val = round(float(data),2)
+            except:
+                val = None
+            hc_data[m_idx].append([int_time,val])
+    return hc_data
 
-def extract_highcarts_data(data,el_idx, element, form):
+
+def extract_highcarts_data_spatial_summary(data,el_idx, element, form):
     '''
     Format data for highcarts plotting
     Args:
@@ -1398,7 +1429,7 @@ def extract_highcarts_data(data,el_idx, element, form):
     req_data = data[1:]
     hc_data = [];rm_data = []
     num_nulls = None
-    if form['show_running_mean'] == 'T':
+    if 'show_running_mean' in form.keys() and form['show_running_mean'] == 'T':
         try:
             num_nulls = int(form['running_mean_days'])
         except:

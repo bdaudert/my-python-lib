@@ -61,18 +61,18 @@ class GraphDictWriter(object):
             axis_min
             elUnits
     '''
-    def __init__(self, form, data, element,rm_data = None):
+    def __init__(self, form, data,element, name = None):
         self.form = form
         self.data = data
         self.element = element
-        self.rm_data = rm_data #running mean data
+        self.name = name
 
     def set_chartType(self):
         if self.element in ['pcpn','snow', 'snwd', 'hdd','cdd','gdd']:
-            self.chartType = 'column'
+            chartType = 'column'
         else:
-            self.chartType = 'spline'
-
+            chartType = 'spline'
+        return chartType
 
     def set_elUnits(self):
         el_strip, base_temp = WRCCUtils.get_el_and_base_temp(self.element)
@@ -109,8 +109,11 @@ class GraphDictWriter(object):
         return title
 
     def set_subTitle(self):
-        subTitle = WRCCData.DISPLAY_PARAMS[self.form['area_type']]
-        subTitle+= ': ' + self.form[self.form['area_type']]
+        if 'spatial_summary' in self.form.keys():
+            subTitle = WRCCData.DISPLAY_PARAMS[self.form['area_type']]
+            subTitle+= ': ' + self.form[self.form['area_type']]
+        if 'monthly_statistic' in self.form.keys():
+            subTitle = 'Station: ' + self.form['station_id']
         return subTitle
 
     def set_rm_title(self):
@@ -154,17 +157,25 @@ class GraphDictWriter(object):
         el_strip, base_temp = WRCCUtils.get_el_and_base_temp(self.element)
         return WRCCData.PLOT_COLOR[el_strip]
 
-    def set_seriesName(self):
+    def set_runningMeanColor(self):
         el_strip, base_temp = WRCCUtils.get_el_and_base_temp(self.element)
-        if self.form['units'] == 'metric':
-            base_temp = WRCCUtils.convert_to_metric('base_temp',base_temp)
-        sname = WRCCData.DISPLAY_PARAMS[el_strip]
-        if base_temp:
-            sname+=' ' + str(base_temp)
+        return WRCCData.RM_COLOR[el_strip]
+
+    def set_seriesName(self):
+        if 'spatial_summary' in self.form.keys():
+            el_strip, base_temp = WRCCUtils.get_el_and_base_temp(self.element)
+            if self.form['units'] == 'metric':
+                base_temp = WRCCUtils.convert_to_metric('base_temp',base_temp)
+            sname = WRCCData.DISPLAY_PARAMS[el_strip]
+            if base_temp:
+                sname+=' ' + str(base_temp)
+        if 'monthly_statistic' in self.form.keys():
+            sname = self.name
         return sname
 
     def write_dict(self):
         datadict = {
+            'chartType':self.set_chartType(),
             'data':self.data,
             'element':self.element,
             'elUnits':self.set_elUnits(),
@@ -176,13 +187,10 @@ class GraphDictWriter(object):
             'xLabel':self.set_xLabel(),
             'yLabel':self.set_yLabel(),
             'axisMin':self.set_axisMin(),
-            'plotColor':self.set_plotColor(),
-            'seriesName':self.set_seriesName()
+            'series_color':self.set_plotColor(),
+            'running_mean_color':self.set_runningMeanColor(),
+            'seriesName':self.set_seriesName(),
         }
-        #add running mean data
-        if self.rm_data:
-            datadict['running_mean_data'] = self.rm_data
-            datadict['running_mean_title'] = self.set_rm_title()
         return datadict
 
 class CsvWriter(object):
@@ -396,7 +404,7 @@ class DataComparer(object):
     Data is obtained for both.
 
     Keywork arguments:
-        params: Dictionary containing request parameters:
+        form: Dictionary containing request parameters:
             location: lon, lat
             grid: grid ID
             start_date/end_date of request
@@ -404,18 +412,18 @@ class DataComparer(object):
             degree_days: comma separated list of degree days with irregular base temperatures
             units: metric or english
     '''
-    def __init__(self, params):
-        self.location = params['location']
-        self.grid = params['grid']
-        self.start_date = params['start_date']
-        self.end_date = params['end_date']
-        self.elements = params['elements']
+    def __init__(self, form):
+        self.location = form['location']
+        self.grid = form['grid']
+        self.start_date = form['start_date']
+        self.end_date = form['end_date']
+        self.elements = form['elements']
         if isinstance(self.elements,list):
             self.elements  = ','.join(self.elements)
         self.degree_days = None
-        if 'degree_days' in params.keys():
-            self.degree_days = params['degree_days']
-        self.units = params['units']
+        if 'degree_days' in form.keys():
+            self.degree_days = form['degree_days']
+        self.units = form['units']
 
     def hms_to_seconds(self,date_string):
         #Convert python date string to javascript milliseconds
@@ -591,33 +599,14 @@ class DataComparer(object):
         For each element return series data [date, val] for both grid and station data.
         Returns dict {el1:[[Date1, el_val1],[Date,el_val2],...], 'el2':...}
         '''
+        graph_data = []
         els = self.combine_elements()
         gloc = str(round(gdata['meta']['lon'],2)) + ', ' + str(round(gdata['meta']['lat'],2))
         sloc = ','.join([str(round(s,2)) for s in sdata['meta']['ll']])
         sname = str(sdata['meta']['name'])
         sid = str(sdata['meta']['sids'][0].split(' ')[0])
-        graph_data = {
-            'grid_location':gloc,
-            'stn_location':sloc,
-            'stn_id': sid,
-            'state': str(sdata['meta']['state']),
-            'units':self.units,
-            'start_date':self.start_date,
-            'end_date':self.end_date,
-            'elements': els,
-            'elements_long':{},
-            'data': {}
-        }
         for el_idx,el in enumerate(els.split(',')):
             el_strip, base_temp = WRCCUtils.get_el_and_base_temp(el,units=self.units)
-            graph_data['elements_long'][el] = WRCCData.ACIS_ELEMENTS_DICT[el_strip]['name_long']
-            if self.units == 'metric':
-                graph_data['elements_long'][el] += ' (' + WRCCData.UNITS_METRIC[el_strip] + ')'
-            else:
-                graph_data['elements_long'][el] += ' (' + WRCCData.UNITS_ENGLISH[el_strip] + ')'
-            if base_temp:
-                graph_data['elements_long'][el] += ' Base Temp: ' + str(base_temp)
-
             grid_data = [];station_data = [];dates = []
             for date_idx, data in enumerate(gdata['data']):
                 try:
@@ -639,8 +628,11 @@ class DataComparer(object):
                 int_time = self.hms_to_seconds(str(data[0]))
                 grid_data.append([int(int_time),gd])
                 station_data.append([int(int_time),sd])
-            graph_data['data'][el] = [grid_data,station_data]
-        graph_data['dates'] = dates
+            SGDWriter = GraphDictWriter(form, station_data, el)
+            s_graph_dict = SGDWriter.write_dict()
+            GGDWriter =  GraphDictWriter(form, grid_data_data, el)
+            g_data_dict = GGDWriter.write_dict()
+            graph_data.append([s_graph_dict,g_graph_dict])
         return graph_data
 
 

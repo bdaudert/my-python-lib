@@ -42,7 +42,6 @@ today = set_back_date(0)
 #General
 ###################################
 ###################################
-
 FIPS_STATE_KEYS = {'al':'01','az':'02','ca':'04','co':'05','ct':'06','hi':'51', 'id':'10','mt':'24', 'nv':'26', \
              'nm':'29','pa':'91','or':'35','tx':'41', 'ut':'42', 'wa':'45','ar':'03', 'ct':'06', \
              'de':'07','fl':'08','ga':'09','il':'11', 'in':'12', 'ia':'13','ks':'14', 'ky':'15', \
@@ -292,6 +291,29 @@ PLOT_COLOR = {
     'wdmv': '#008000',
     'pet':'#008000',
 }
+RM_COLOR = {
+    'maxt':'#FF0000',
+    'mint':'#8B0000',
+    'avgt':'#FF1493',
+    'dtr': '#B22222',
+    'obst':'#FF00FF',
+    'pcpn': '#FF69B4',
+    'snow': '#CD5C5C',
+    'snwd': '#F08080',
+    'cdd': '#BA55A3',
+    'hdd': '#9370BD',
+    'gdd': '#C71585',
+    'evap': '#FF0066',
+    'wdmv': '#FF99CC',
+    'pet':'#9900FF',
+}
+
+#Blues
+SERIES_COLOR_LIST = ['#0000FF','#00FFFF','#8A2BE2','#6495ED','  #8B008B',\
+    '#00008B','008B8B','#483D8B ','#00CED1','#00BFFF','#696969','#4B0082']
+#Reds
+RUNNING_MEAN_COLOR_LIST = ['#FF0000','#8B0000','#FF1493','#B22222', '#FF00FF',\
+    '#FF69B4','#CD5C5C','#F08080','#BA55D3','#9370BD','#C71585','#DB7093']
 
 MONTH_NAMES_LONG = ['January', 'February', 'March', 'April', 'May', 'June',\
                'July', 'August', 'September', 'October', 'November', 'December']

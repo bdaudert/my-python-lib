@@ -307,6 +307,21 @@ RM_COLOR = {
     'wdmv': '#FF99CC',
     'pet':'#9900FF',
 }
+#Plot and running mean colors
+PLOT_COLOR_MONTH = {
+    'JAN':['#0000FF','#FF0000'],
+    'FEB':['#00FFFF','#8B0000'],
+    'MAR':['#8A2BE2','#FF1493'],
+    'APR':['#6495ED','#B22222'],
+    'MAY':['#8B008B','#FF00FF'],
+    'JUN':['#00008B','#FF69B4'],
+    'JUL':['#483D8B','#CD5C5C'],
+    'AUG':['#00CED1','#F08080'],
+    'SEP':['#00BFFF','#BA55D3'],
+    'OCT':['#696969','#9370BD'],
+    'NOV':['#4B0082','#C71585'],
+    'DEC':['#008B8B','#DB7093']
+}
 
 #Blues
 SERIES_COLOR_LIST = ['#0000FF','#00FFFF','#8A2BE2','#6495ED','  #8B008B',\

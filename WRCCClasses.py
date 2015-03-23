@@ -61,11 +61,13 @@ class GraphDictWriter(object):
             axis_min
             elUnits
     '''
-    def __init__(self, form, data,element, name = None):
+    def __init__(self, form, data,element = None, name = None):
         self.form = form
         self.data = data
         self.element = element
         self.name = name
+        if self.element is None:
+            self.element = form['element']
 
     def set_chartType(self):
         if self.element in ['pcpn','snow', 'snwd', 'hdd','cdd','gdd']:
@@ -116,19 +118,6 @@ class GraphDictWriter(object):
             subTitle = 'Station: ' + self.form['station_id']
         return subTitle
 
-    def set_rm_title(self):
-        rm_title = ''
-        if self.form['show_running_mean'] == 'T':
-            try:
-                rm_time = str(self.form['running_mean_days'])
-                rm_title = rm_time + '-day Running Mean'
-            except:
-                try:
-                    rm_time = str(self.form['running_mean_years'])
-                    rm_title = rm_time + '-year Running Mean'
-                except:
-                    pass
-        return rm_title
 
     def set_xLabel(self):
         xLabel = 'Start Date: '
@@ -154,12 +143,20 @@ class GraphDictWriter(object):
         return axisMin
 
     def set_plotColor(self):
-        el_strip, base_temp = WRCCUtils.get_el_and_base_temp(self.element)
-        return WRCCData.PLOT_COLOR[el_strip]
+        if 'monthly_statistic' in self.form.keys():
+            pl_color  = WRCCData.PLOT_COLOR_MONTH[self.name.upper()][0]
+        else:
+            el_strip, base_temp = WRCCUtils.get_el_and_base_temp(self.element)
+            pl_color = WRCCData.PLOT_COLOR[el_strip]
+        return pl_color
 
     def set_runningMeanColor(self):
-        el_strip, base_temp = WRCCUtils.get_el_and_base_temp(self.element)
-        return WRCCData.RM_COLOR[el_strip]
+         if 'monthly_statistic' in self.form.keys():
+            rm_color  = WRCCData.PLOT_COLOR_MONTH[self.name.upper()][1]
+         else:
+            el_strip, base_temp = WRCCUtils.get_el_and_base_temp(self.element)
+            rm_color =  WRCCData.RM_COLOR[el_strip]
+         return rm_color
 
     def set_seriesName(self):
         if 'spatial_summary' in self.form.keys():
@@ -170,7 +167,8 @@ class GraphDictWriter(object):
             if base_temp:
                 sname+=' ' + str(base_temp)
         if 'monthly_statistic' in self.form.keys():
-            sname = self.name
+            if self.name != None:
+                sname = self.name
         return sname
 
     def write_dict(self):

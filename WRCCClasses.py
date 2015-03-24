@@ -70,7 +70,8 @@ class GraphDictWriter(object):
             self.element = form['element']
 
     def set_chartType(self):
-        if self.element in ['pcpn','snow', 'snwd', 'hdd','cdd','gdd']:
+        el_strip, base_temp = WRCCUtils.get_el_and_base_temp(self.element)
+        if el_strip in ['pcpn','snow', 'snwd', 'hdd','cdd','gdd']:
             chartType = 'column'
         else:
             chartType = 'spline'

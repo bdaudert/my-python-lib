@@ -1427,21 +1427,8 @@ def extract_highcarts_data_spatial_summary(data,el_idx, element, form):
     #strip header
 
     req_data = data[1:]
-    hc_data = [];rm_data = []
+    hc_data = []
     num_nulls = None
-    if 'show_running_mean' in form.keys() and form['show_running_mean'] == 'T':
-        try:
-            num_nulls = int(form['running_mean_days'])
-        except:
-            try:
-                num_nulls = int(form['running_mean_years'])
-            except:
-                num_nulls = None
-        if num_nulls is not None:
-            if num_nulls % 2 == 0:
-                num_nulls = num_nulls /2 -1
-            else:
-                num_nulls = (num_nulls - 1) / 2
     for idx,row_data in enumerate(req_data):
         date = format_date_string(row_data[0],'dash')
         d = calendar.timegm(datetime.datetime.strptime(date, '%Y-%m-%d').timetuple())
@@ -1454,24 +1441,7 @@ def extract_highcarts_data_spatial_summary(data,el_idx, element, form):
         except:
             val = None
         hc_data.append([int_time,val])
-        #Running Mean
-        if num_nulls is not None:
-            skip = False
-            if idx > num_nulls and idx < len(req_data) -1 - num_nulls:
-                cnt = 0; summ = 0
-                for i in range(idx -  num_nulls,idx + num_nulls + 1):
-                    try:
-                        rm_val = round(float(req_data[i][el_idx + 1]),4)
-                        summ+=rm_val
-                        cnt+=1
-                    except:
-                        skip = True
-                        break
-                if not skip and cnt >0:
-
-                    rm_data.append([int_time,round(summ / float(cnt),4)])
-
-    return hc_data, rm_data
+    return hc_data
 
 ########################
 

@@ -191,7 +191,8 @@ ACIS_ELEMENTS_LIST = [['maxt','Maximum Daily Temperature (F)'], ['mint','Minimum
                       ['pcpn', 'Precipitation (in)'], ['snow', 'Snowfall (in)'], \
                       ['snwd', 'Snow Depth (in)'], ['cdd', 'Cooling Degree Days'], \
                       ['hdd','Heating Degree Days'], ['gdd', 'Growing Degree Days'], \
-                      ['evap', 'Pan Evaporation (in)'], ['gdd', 'Wind Movement (Mi)']]
+                      ['evap', 'Pan Evaporation (in)'], ['gdd', 'Wind Movement (Mi)'],\
+                      ['pet', 'Potential Evapotranspiration'], ['dtr', 'Daily Temperature Range (F)']]
 
 ELEMENT_THRESHOLDS = {
     'english':{

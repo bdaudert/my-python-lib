@@ -115,7 +115,13 @@ class GraphDictWriter(object):
             subTitle = WRCCData.DISPLAY_PARAMS[self.form['area_type']]
             subTitle+= ': ' + self.form[self.form['area_type']]
         if 'monthly_statistic' in self.form.keys():
-            subTitle = 'Station: ' + self.form['station_id']
+            if 'station_id' in self.form.keys():
+                try:
+                    subTitle = 'Station: ' + self.form['user_area_id']
+                except:
+                    subTitle = 'Station: ' + self.form['station_id']
+            if 'location' in self.form.keys():
+                subTitle = 'Location: ' + self.form['location']
         return subTitle
 
 

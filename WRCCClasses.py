@@ -764,9 +764,8 @@ class DownloadDataJob(object):
                     continue
                 #three entries per row
                 row.append(key_val[0] + self.spacer + key_val[1])
-                if (idx + 1) % 2 == 0 or idx == len(self.header) - 1:
-                    writer.writerow(row)
-                    row = []
+                writer.writerow(row)
+                row = []
             writer.writerow(row)
             writer.writerow([])
             if self.app_name == 'Sodxtrmts':

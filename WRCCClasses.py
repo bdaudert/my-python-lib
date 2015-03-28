@@ -68,6 +68,11 @@ class GraphDictWriter(object):
         self.name = name
         if self.element is None:
             self.element = form['element']
+        if 'start_year' in self.form.keys() and not 'start_date' in self.form.keys():
+            self.form['start_date'] = self.form['start_year']
+        if 'end_year' in self.form.keys() and not 'end_date' in self.form.keys():
+            self.form['end_date'] = self.form['end_year']
+
 
     def set_chartType(self):
         el_strip, base_temp = WRCCUtils.get_el_and_base_temp(self.element)
@@ -99,11 +104,16 @@ class GraphDictWriter(object):
         title = ''
         if 'spatial_summary' in self.form.keys():
             title = WRCCData.DISPLAY_PARAMS[self.form['spatial_summary']]
-        if 'temporal_summary' in self.form.keys():
+            title += ' of ' + WRCCData.DISPLAY_PARAMS[el_strip]
+        elif 'temporal_summary' in self.form.keys():
             title = WRCCData.DISPLAY_PARAMS[self.form['temporal_summary']]
-        if 'monthly_statistic' in self.form.keys():
+            title += ' of ' + WRCCData.DISPLAY_PARAMS[el_strip]
+        elif 'monthly_statistic' in self.form.keys():
             title = WRCCData.DISPLAY_PARAMS[self.form['monthly_statistic']]
-        title += ' of ' + WRCCData.DISPLAY_PARAMS[el_strip]
+            title += ' of ' + WRCCData.DISPLAY_PARAMS[el_strip]
+        elif 'location' in self.form.keys():
+            title = 'Location: ' + self.form['location']
+            title += ', Element: ' + WRCCData.DISPLAY_PARAMS[el_strip]
         unit = self.set_elUnits()
         if base_temp:
             title+= ' Base: ' + str(base_temp)
@@ -112,6 +122,7 @@ class GraphDictWriter(object):
         return title
 
     def set_subTitle(self):
+        subTitle = ''
         if 'spatial_summary' in self.form.keys():
             subTitle = WRCCData.DISPLAY_PARAMS[self.form['area_type']]
             subTitle+= ': ' + self.form[self.form['area_type']]
@@ -166,6 +177,7 @@ class GraphDictWriter(object):
          return rm_color
 
     def set_seriesName(self):
+        sname = self.name
         if 'spatial_summary' in self.form.keys():
             el_strip, base_temp = WRCCUtils.get_el_and_base_temp(self.element)
             if self.form['units'] == 'metric':
@@ -418,11 +430,17 @@ class DataComparer(object):
             units: metric or english
     '''
     def __init__(self, form):
+        self.form = form
         self.location = form['location']
         self.grid = form['grid']
         self.start_date = form['start_date']
         self.end_date = form['end_date']
-        self.elements = form['elements']
+        self.element = form['element']
+        if isinstance(self.element, list):
+            self.elements = [form['element']]
+            self.element = form['element'][0]
+        else:
+            self.elements = [form['element']]
         if isinstance(self.elements,list):
             self.elements  = ','.join(self.elements)
         self.degree_days = None
@@ -501,14 +519,14 @@ class DataComparer(object):
         '''
         length = 0.01
         stn_meta = {}
-        els = self.combine_elements()
+        #els = self.combine_elements()
         while not stn_meta:
             bbox = self.get_bbox(length)
             meta_params = {
                 'bbox':bbox,
                 "meta":"name,state,sids,ll,elev,uid,valid_daterange",
             }
-            meta_params['elems'] = els
+            meta_params['elems'] = self.element
             try:
                 req = AcisWS.StnMeta(meta_params)
                 req['meta']
@@ -571,11 +589,11 @@ class DataComparer(object):
 
     def get_data(self):
         #Grid Data
-        els =  self.combine_elements()
+        #els =  self.combine_elements()
         data_params = {
             'loc': self.location,
             'grid':self.grid,
-            'elems': els,
+            'elems': self.element,
             'sdate': self.start_date,
             'edate': self.end_date,
             'meta':'ll,elev'
@@ -605,39 +623,43 @@ class DataComparer(object):
         Returns dict {el1:[[Date1, el_val1],[Date,el_val2],...], 'el2':...}
         '''
         graph_data = []
-        els = self.combine_elements()
+        #els = self.combine_elements()
         gloc = str(round(gdata['meta']['lon'],2)) + ', ' + str(round(gdata['meta']['lat'],2))
         sloc = ','.join([str(round(s,2)) for s in sdata['meta']['ll']])
         sname = str(sdata['meta']['name'])
+        sids = ''
+        for idx, sid in enumerate(sdata['meta']['sids']):
+            sids+= sid.split(' ')[0]
+            if idx != len(sdata['meta']['sids']) - 1:
+                sids+=', '
+        s_graph_title = 'Station' + sname + ', IDs: (' + sids + ')'
+        g_graph_title =  'Location: ' +  gloc
         sid = str(sdata['meta']['sids'][0].split(' ')[0])
-        for el_idx,el in enumerate(els.split(',')):
-            el_strip, base_temp = WRCCUtils.get_el_and_base_temp(el,units=self.units)
-            grid_data = [];station_data = [];dates = []
-            for date_idx, data in enumerate(gdata['data']):
-                try:
-                    if self.units == 'english':
-                        gd = float(data[el_idx + 1])
-                    else:
-                        gd = WRCCUtils.convert_to_metric(el_strip,float(data[el_idx + 1]))
-                except:
-                    gd = None
-                try:
-                    if self.units == 'english':
-                        sd = float(sdata['data'][date_idx][el_idx + 1])
-                    else:
-                        sd = WRCCUtils.convert_to_metric(el_strip,float(sdata['data'][date_idx][el_idx + 1]))
-                except:
-                    sd = None
-                if el_idx == 0:
-                    dates.append(str(data[0]))
-                int_time = self.hms_to_seconds(str(data[0]))
-                grid_data.append([int(int_time),gd])
-                station_data.append([int(int_time),sd])
-            SGDWriter = GraphDictWriter(form, station_data, el)
+        el_strip, base_temp = WRCCUtils.get_el_and_base_temp(self.element, units=self.units)
+        grid_data = [];station_data = [];
+        for date_idx, data in enumerate(gdata['data']):
+            try:
+                if self.units == 'english':
+                    gd = float(data[1])
+                else:
+                    gd = WRCCUtils.convert_to_metric(el_strip,float(data[1]))
+            except:
+                gd = None
+            try:
+                if self.units == 'english':
+                    sd = float(sdata['data'][date_idx][1])
+                else:
+                    sd = WRCCUtils.convert_to_metric(el_strip,float(sdata['data'][date_idx][1]))
+            except:
+                sd = None
+            int_time = self.hms_to_seconds(str(data[0]))
+            grid_data.append([int(int_time),gd])
+            station_data.append([int(int_time),sd])
+            SGDWriter = GraphDictWriter(self.form, station_data, self.element, name = sname)
             s_graph_dict = SGDWriter.write_dict()
-            GGDWriter =  GraphDictWriter(form, grid_data_data, el)
-            g_data_dict = GGDWriter.write_dict()
-            graph_data.append([s_graph_dict,g_graph_dict])
+            GGDWriter =  GraphDictWriter(self.form, grid_data, self.element, name = g_graph_title)
+            g_graph_dict = GGDWriter.write_dict()
+            graph_data = [s_graph_dict,g_graph_dict]
         return graph_data
 
 

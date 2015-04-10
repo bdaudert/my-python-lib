@@ -293,10 +293,6 @@ def check_degree_days(form):
         #strip degree day digits
         el_strip = re.sub(r'(\d+)(\d+)', '', el)
         base_temp = el[3:]
-        #Check that degree days are entered in the correct units
-        if 'units' in form.keys() and form['units'] == 'metric':
-            if len(str(WRCCUtils.convert_to_english('maxt', base_temp)))>2:
-                return 'Please convert your base temperatures to celcius and round to the nearest integer. %s is not converted.' %el
         if len(base_temp) ==1:
             return 'Base temperature should be two digit number. Please prepend 0 if your temperature is a single digit.'
         if len(base_temp) !=2:

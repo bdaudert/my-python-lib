@@ -1296,17 +1296,10 @@ class SODDataJob(object):
         s_yr = int(self.params['start_date'][0:4])
         e_yr = int(self.params['end_date'][0:4])
         yrs = range(s_yr, e_yr + 1)
-        num_years = e_yr - s_yr + 1
-        max_num_leap = num_years / 4
-        idx = 0
         #Find first leap year
-        for yr in range(s_yr, e_yr + 1):
-            if WRCCUtils.is_leap_year(yr):break
-            idx+=1
-        leap_indices.append(idx)
-        while idx < len(yrs):
-            idx+=4
-            leap_indices.append(idx)
+        for idx, yr in enumerate(yrs):
+            if WRCCUtils.is_leap_year(yr):
+                leap_indices.append(idx)
         return leap_indices, yrs
 
     def format_data_grid(self, request, locations,elements):
@@ -1318,7 +1311,7 @@ class SODDataJob(object):
         request[i]['data'] = [[date_1, el1, el2,...], ['date_2', el_1, el_2,..]...]
         We need to convert to staton data request format that is grouped by year
         '''
-        leap_indices,year_list =self.find_leap_yr_indices()
+        leap_indices,year_list = self.find_leap_yr_indices()
         #Set up data output dictonary
         error = ''
         if self.app_name == 'Sodsum':
@@ -1349,10 +1342,9 @@ class SODDataJob(object):
             for yr_idx, yr in enumerate(year_list):
                 yr_data = [[] for el in elements]
                 length = 365
-                #Feb 29 not recorded as M for non-leap years.
-                # Need to insert for gouping by year
-                if yr_idx in leap_indices:length =  366
-                else:length=365
+                #Grid 1, 3 and 21 record Feb 29
+                if yr_idx in leap_indices and self.params['grid'] in ['1','3','21']:
+                    length =  366
                 d = loc_request['data'][start_idx:start_idx + length]
                 start_idx = start_idx + length
                 for el_idx, element in enumerate(elements):

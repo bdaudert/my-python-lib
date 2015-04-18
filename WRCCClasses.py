@@ -101,6 +101,7 @@ class GraphDictWriter(object):
         el_strip, base_temp = WRCCUtils.get_el_and_base_temp(self.element)
         if self.form['units'] == 'metric':
             base_temp = WRCCUtils.convert_to_metric('base_temp',base_temp)
+        unit = self.set_elUnits()
         title = ''
         if 'spatial_summary' in self.form.keys():
             title = WRCCData.DISPLAY_PARAMS[self.form['spatial_summary']]
@@ -109,12 +110,21 @@ class GraphDictWriter(object):
             title = WRCCData.DISPLAY_PARAMS[self.form['temporal_summary']]
             title += ' of ' + WRCCData.DISPLAY_PARAMS[el_strip]
         elif 'monthly_statistic' in self.form.keys():
-            title = WRCCData.DISPLAY_PARAMS[self.form['monthly_statistic']]
-            title += ' of ' + WRCCData.DISPLAY_PARAMS[el_strip]
+            if self.form['monthly_statistic'] == 'ndays':
+                title = 'Number of days where ' +  WRCCData.DISPLAY_PARAMS[el_strip]
+                if self.form['less_greater_or_between'] == 'l':
+                    title+= ' less than ' + str(self.form['threshold_for_less_than']) + ' '  + unit
+                if self.form['less_greater_or_between'] == 'g':
+                    title+= ' greater than ' + str(self.form['threshold_for_greater_than']) + ' '  + unit
+                if self.form['less_greater_or_between'] == 'b':
+                    title+= ' between ' + self.form['threshold_low_for_between'] + ' '  + unit +\
+                    ' and ' +  self.form['threshold_high_for_between'] + ' '  + unit
+            else:
+                title = WRCCData.DISPLAY_PARAMS[self.form['monthly_statistic']]
+                title += ' of ' + WRCCData.DISPLAY_PARAMS[el_strip]
         elif 'location' in self.form.keys():
             title = 'Location: ' + self.form['location']
             title += ', Element: ' + WRCCData.DISPLAY_PARAMS[el_strip]
-        unit = self.set_elUnits()
         if base_temp:
             title+= ' Base: ' + str(base_temp)
         return title
@@ -2041,7 +2051,7 @@ class LargeDataRequestNew(object):
         '''
         resultsdict = WRCCUtils.request_and_format_data(self.form)
         if 'errors' in resultsdict.keys():
-            self.logger.error('ERROR in get_data: ' + resultsdict['errors'])
+            self.logger.error('ERROR in get_data: ' + str(resultsdict['errors']))
         self.logger.info('Data request  %s completed successfully!' %str(self.form['output_file_name']))
         if not resultsdict['data'] and not resultsdict['smry']:
             self.logger.error('ERROR in get_data: empty data lists')

@@ -62,14 +62,13 @@ def get_data_type(form):
         data_type -- station or grid
     '''
     data_type = None
-    if 'station_id' in form.keys() or 'station_id' in form.keys():
+    if 'station_id' in form.keys() or 'station_ids' in form.keys():
         return 'station'
     elif 'location' in form.keys() or 'locations' in form.keys():
         return 'grid'
     else:
         if 'data_type' in form.keys():
             return str(form['data_type'])
-    return data_type
     return data_type
 
 def get_meta_keys(form):

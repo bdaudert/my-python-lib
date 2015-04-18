@@ -183,8 +183,10 @@ if __name__ == '__main__' :
     cron_job_time = settings.CRON_JOB_TIME
     now = now = datetime.datetime.now()
     x_mins_ago = now - datetime.timedelta(minutes=cron_job_time)
-    d = 60*24
-    one_day_ago = now - datetime.timedelta(minutes=d)
+    #d = 60*24
+    d = 60*12
+    #one_day_ago = now - datetime.timedelta(minutes=d)
+    time_out = now - datetime.timedelta(minutes=d)
     #Start Logging
     logger, log_file_name = start_logger(base_dir)
 
@@ -196,17 +198,20 @@ if __name__ == '__main__' :
     logger.info('Found %s parameter files.' %str(len(params_files)))
     #Loop over parameter files, get data, format and write to ftp server, notify user
     params_files_failed = []
-    for params_file in params_files:
+    for idx, params_file in enumerate(params_files):
+        logger.info('Parameter file: %s' % os.path.basename(params_file))
         time_stamp = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S_%f')
         params = WRCCUtils.load_json_data_from_file(params_file)
+        if not params:
+            logger.error('Could not load data parameter file!')
+        else:
+            logger.info('Parameters: %s' % str(params))
         #Extra directory for each request
         ftp_dir = settings.DRI_PUB_DIR + params['output_file_name'].replace(' ','')
         if not params:
             logger.error('Cannot read parameter file: %s! Exiting program.' %os.path.basename(params_file))
             params_files_failed.append(params_file)
             sys.exit(1)
-        logger.info('Parameter file: %s' % os.path.basename(params_file))
-        logger.info('Parameters: %s' % str(params))
         #Check if params file is older than
         #cron job time --> data request completed or in progress
         #Check if request in progress
@@ -214,8 +219,9 @@ if __name__ == '__main__' :
         mtime=datetime.datetime.fromtimestamp(st.st_mtime)
         if mtime <= x_mins_ago:
             logger.info('Data request for parameter file %s is in progress' %str(os.path.basename(params_file)))
-            if mtime <= one_day_ago:
+            if mtime <= time_out:
                 logger.info('24 hr processing limit reached. Removing parameter file: %s' %str(params_file))
+                compose_failed_request_email([params_file], log_file_name)
                 os.remove(params_file)
             continue
         #Define and instantiate data request class

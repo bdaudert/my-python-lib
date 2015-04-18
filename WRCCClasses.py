@@ -721,7 +721,8 @@ class DownloadDataJob(object):
             'pipe':'|'
         }
         self.column_headers = {
-            'Sodxtrmts':WRCCData.COLUMN_HEADERS['Sodxtrmts'],
+            #'Sodxtrmts':WRCCData.COLUMN_HEADERS['Sodxtrmts'],
+            'Sodxtrmts':None,
             'Sodsumm':None,
             'area_time_series':['Date      ']
         }
@@ -811,10 +812,11 @@ class DownloadDataJob(object):
                 writer.writerow(row)
 
         writer.writerow([])
-        row = column_header
-        #row = ['%8s' %str(h) for h in column_header] #Kelly's format
-        #row = ['%s' %str(h) for h in column_header]
-        writer.writerow(row)
+        if column_header:
+            row = column_header
+            #row = ['%8s' %str(h) for h in column_header] #Kelly's format
+            #row = ['%s' %str(h) for h in column_header]
+            writer.writerow(row)
         for row_idx, row in enumerate(data):
             row_formatted = []
             for idx, r in enumerate(row):
@@ -852,8 +854,11 @@ class DownloadDataJob(object):
                             ws.write(idx,0,key_val[0])
                             ws.write(idx,1,key_val[1])
                     #Column Header
-                    for idx, head in enumerate(column_header):
-                        ws.write(len(self.header), idx, head)
+                    if column_header:
+                        for idx, head in enumerate(column_header):
+                            ws.write(len(self.header), idx, head)
+                            row_number = 1;flag = 0
+                    else:
                         row_number = 1;flag = 0
                 try:
                     row_idx = len(self.header) + 1 + date_idx

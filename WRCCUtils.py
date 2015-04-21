@@ -183,16 +183,22 @@ def set_acis_els(form):
         if el_strip in ['gdd', 'hdd', 'cdd']:
             if base_temp is None and el_strip in ['hdd','cdd']:
                 base_temp = '65'
+                '''
                 if form['units'] == 'metric':
                     base_temp = '18'
+                '''
             if base_temp is None and el_strip in ['gdd']:
                 base_temp = '50'
+                '''
                 if form['units'] == 'metric':
                     base_temp = '10'
+                '''
             l['base'] = int(base_temp)
+            '''
             #Convert to english, ACIS station queries not possible in metric
             if form['units'] == 'metric':
                 l['base'] = convert_to_english('base_temp', base_temp)
+            '''
         #Add obs time if data_type is station
         '''
         if data_type == 'station':
@@ -438,14 +444,18 @@ def set_lister_headers(form):
             base_temp = str(base_temp)
         unit = WRCCData.UNITS_ENGLISH[el_strip]
         if form['units'] == 'metric':
-            unit = WRCCData.UNITS_METRIC[el_strip]
+            if el_strip not in ['gdd','hdd','cdd']:
+                unit = WRCCData.UNITS_METRIC[el_strip]
+            '''
             if base_temp:
                 base_temp = str(convert_to_metric('base_temp',base_temp))
+            '''
         el_name = WRCCData.MICHELES_ELEMENT_NAMES[el_strip]
         h = el_name
         #Add base temp and units
         if base_temp:h+=str(base_temp)
-        h+=' (' + unit + ')'
+        if unit !='':
+            h+=' (' + unit + ')'
         header_data+=[h]
         header_smry+=[h]
         '''

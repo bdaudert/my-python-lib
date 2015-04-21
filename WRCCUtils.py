@@ -1396,6 +1396,7 @@ def extract_highcarts_data_monann(data,form):
         Each month is its own series
     '''
     hc_data = [[] for m in range(0,12)]
+    #Sort data by month
     zipped = zip(*data)
     years = zipped[0]
     for m_idx in range(0,12):

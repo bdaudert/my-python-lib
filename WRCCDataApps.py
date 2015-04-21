@@ -1268,8 +1268,12 @@ def Sodxtrmts(**kwargs):
             else:
                 if kwargs['monthly_statistic'] == 'ndays':
                     results[i][num_yrs+1].append(0)
+                    #space for flags
+                    results[i][num_yrs+1].append(' ')
                 else:
                     results[i][num_yrs+1].append(0.00)
+                    #space for flags
+                    results[i][num_yrs+1].append(' ')
 
             if kwargs['monthly_statistic'] == 'ndays':
                 results[i][num_yrs+2].append('%.1f' % round(sk,1))

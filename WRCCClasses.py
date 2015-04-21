@@ -99,8 +99,10 @@ class GraphDictWriter(object):
     def set_title(self):
         #NOTE: element comes from form_cleaned as english
         el_strip, base_temp = WRCCUtils.get_el_and_base_temp(self.element)
+        '''
         if self.form['units'] == 'metric':
             base_temp = WRCCUtils.convert_to_metric('base_temp',base_temp)
+        '''
         unit = self.set_elUnits()
         title = ''
         if 'spatial_summary' in self.form.keys():

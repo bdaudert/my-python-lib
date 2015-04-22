@@ -1475,8 +1475,8 @@ def elements_to_display(elements,units,valid_daterange=None):
         if units == 'metric':
             unit = WRCCData.UNITS_METRIC[el_strip]
             #form cleaned has english units
-            base_temp = convert_to_metric(el_strip,base_temp)
-        if not base_temp:
+            #base_temp = convert_to_metric(el_strip,base_temp)
+        if not base_temp or base_temp == ' ':
             el_list_long.append(WRCCData.DISPLAY_PARAMS[el_strip] + ' (' + unit + ')')
         else:
             el_list_long.append(WRCCData.DISPLAY_PARAMS[el_strip] + ' (' + unit + '), Base: ' + str(base_temp))
@@ -1582,6 +1582,8 @@ def metadict_to_display_list(metadata, key_order_list,form):
             meta[idx].append(el_list_long)
         else:
             meta[idx].append([str(val)])
+    if 'units' in form.keys():
+        meta.append(['Units', [form['units']]])
     return meta
 
 

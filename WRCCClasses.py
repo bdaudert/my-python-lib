@@ -390,7 +390,10 @@ class ExcelWriter(object):
             #Write data
             for date_idx in range(len(p_data)):
                 for data_idx in range(len(p_data[date_idx])):
-                    ws.write(date_idx + 5 ,data_idx,p_data[date_idx][data_idx])
+                    try:
+                        ws.write(date_idx + 5 ,data_idx,float(p_data[date_idx][data_idx]))
+                    except:
+                        ws.write(date_idx + 5 ,data_idx,p_data[date_idx][data_idx])
         #Save workbook
         if self.f is not None:
             self.wb.save(self.f)

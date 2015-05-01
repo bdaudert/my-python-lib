@@ -465,7 +465,7 @@ def set_lister_headers(form):
         '''
         if data_type == 'station' and 'show_observation_time' in form.keys():
             if form['show_observation_time'] == 'T':
-                header_data+=['T']
+                header_data+=['hr']
     return header_data,header_smry
 
 
@@ -568,10 +568,9 @@ def format_data_single_lister(req,form):
 def station_data_trim_and_summary(req,form):
     '''
     Trims and summarizes station data for printing/writing to file
-    If trim == True, we also trim the data:
     Some special shapes are not supported by ACIS
-    E.G. Cumstom polygons or basin,cwa,climdiv,county for grid requests
-    req is data opbtained for the enclosing bbox of the special shape.
+    E.G. Cumstom polygons for station data requests.
+    Data is obtained for the enclosing bbox of the special shape.
     This function trims down the data of such a station
     request to the size of the custom shape.
 
@@ -646,10 +645,12 @@ def station_data_trim_and_summary(req,form):
                 strp_val, flag = strip_data(val)
                 try:
                     val = round(unit_convert(els[el_idx],float(strp_val)),4)
-                    if form['data_summary'] == 'spatial':
-                        smry_data[date_idx][el_idx].append(val)
-                    if form['data_summary'] == 'temporal':
-                        smry_data[el_idx].append(val)
+                    #Don't include -9999 (Missing) values
+                    if str(strp_val) != '-9999':
+                        if form['data_summary'] == 'spatial':
+                            smry_data[date_idx][el_idx].append(val)
+                        if form['data_summary'] == 'temporal':
+                            smry_data[el_idx].append(val)
                 except:
                     val = strp_val
                 if 'show_flags' in form.keys() and form['show_flags'] == 'T':
@@ -1101,8 +1102,12 @@ def format_station_spatial_summary(req,form):
         new_meta.append(stn_data['meta'])
         for date_idx,date_data in enumerate(stn_data['data']):
             for el_idx, el_data in enumerate(date_data):
+                strp_val, flag = strip_data(el_data)
+                #Don't include -9999 (Missing) values
+                if str(strp_val) == '-9999':strp_val = ''
                 try:
-                    val = unit_convert(els[el_idx],float(el_data))
+                    val = unit_convert(els[el_idx],float(strp_val))
+                    #val = unit_convert(els[el_idx],float(el_data))
                     smry_data[date_idx][el_idx].append(val)
                 except:
                     pass
@@ -2776,11 +2781,14 @@ def write_station_data_to_file(resultsdict, form, f=None, request=None):
                 if form['show_flags'] == 'F' and form['show_observation_time'] == 'F':
                     row.append(WRCCData.MICHELES_ELEMENT_NAMES[str(el_strip)] + str(base_temp) + '(' + el_unit + ')')
                 elif form['show_flags'] == 'T' and form['show_observation_time'] == 'F':
-                    row.append(WRCCData.MICHELES_ELEMENT_NAMES[str(el_strip)] + str(base_temp) + '(' + el_unit + ')');row.append('Flag')
+                    row.append(WRCCData.MICHELES_ELEMENT_NAMES[str(el_strip)] + str(base_temp) + '(' + el_unit + ')')
+                    row.append('Flag')
                 elif form['show_flags'] == 'F' and form['show_observation_time'] == 'T':
-                    row.append(WRCCData.MICHELES_ELEMENT_NAMES[str(el_strip)] + str(base_temp) + '(' + el_unit + ')');row.append('ObsTime')
+                    row.append(WRCCData.MICHELES_ELEMENT_NAMES[str(el_strip)] + str(base_temp) + '(' + el_unit + ')')
+                    row.append('ObsTime')
                 else:
-                    row.append(WRCCData.MICHELES_ELEMENT_NAMES[str(el_strip)] + str(base_temp) + '(' + el_unit + ')');row.append('Flag');row.append('ObsTime')
+                    row.append(WRCCData.MICHELES_ELEMENT_NAMES[str(el_strip)] + str(base_temp) + '(' + el_unit + ')')
+                    row.append('Flag');row.append('ObsTime')
             writer.writerow(row)
 
             for j, vals in enumerate(dat):
@@ -2880,7 +2888,10 @@ def write_station_data_to_file(resultsdict, form, f=None, request=None):
                         if str(val[1]) == 'T':
                             ws.write(j+7, idx, 'T')
                         else:
-                            ws.write(j+7, idx, val[0]) #row, column, label
+                            try:
+                                ws.write(j+7, idx, float(val[0])) #row, column, label
+                            except:
+                                ws.write(j+7, idx, val[0])
                         ws.write(j+7, idx+1, int(val[2]))
                         idx+=1
                     else:

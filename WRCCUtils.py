@@ -498,10 +498,13 @@ def format_data_single_lister(req,form):
     header_data, header_smry = set_lister_headers(form)
     d_data = [header_data]
     if 'station_id' in form.keys():
-        name = str(req['meta']['name'])
-        ids = ','.join([sid.split(' ')[0] for sid in req['meta']['sids']])
-        ids = ' (' + ids + ')'
-        name+=ids
+        if 'user_area_id' in form.keys():
+            name = form['user_area_id']
+        else:
+            name = str(req['meta']['name'])
+            ids = ','.join([sid.split(' ')[0] for sid in req['meta']['sids']])
+            ids = ' (' + ids + ')'
+            name+=ids
     if 'location' in form.keys():
         name=str(req['meta']['lon']) + ',' + str(req['meta']['lat'])
     #Set unit converter
@@ -1489,11 +1492,20 @@ def elements_to_display(elements,units,valid_daterange=None):
     return el_list_long
 
 def sids_to_display(sids):
+    '''
     sid_list = []
     for sid in sids:
         sid_l = sid.split()
         sid_list.append(str(sid_l[0]) + '/' + WRCCData.NETWORK_CODES[str(sid_l[1])])
     return sid_list
+    '''
+    sid_str = ''
+    for sid in sids:
+        sid_l = sid.split()
+        sid_str+=str(sid_l[0]) + '/' + WRCCData.NETWORK_CODES[str(sid_l[1])] + ', '
+    #Remove last comma
+    sid_str = sid_str.rstrip(', ')
+    return sid_str
 
 def form_to_display_list(key_order_list, form):
     '''
@@ -1506,10 +1518,6 @@ def form_to_display_list(key_order_list, form):
     '''
     keys = [k for k in key_order_list]
     display_list = [[WRCCData.DISPLAY_PARAMS[key]] for key in keys]
-    '''
-    if 'user_area_id' in form.keys():
-        display_list.insert(0,['Area of Interest',[form['user_area_id']]])
-    '''
     for key, val in form.iteritems():
         if str(key) not in keys:
             continue
@@ -1518,10 +1526,10 @@ def form_to_display_list(key_order_list, form):
             if 'data_summary' in form.keys() and form['data_summary'] !='none':
                 s_type = WRCCData.DISPLAY_PARAMS[form['data_summary']]
                 if form['data_summary'] == 'windowed_data':
-                    s = ''
+                    display_list[idx]= ['Window',[form['start_window'] + ' - ' + form['end_window']]]
                 else:
                     s = WRCCData.DISPLAY_PARAMS[form[form['data_summary']+'_summary']]
-                display_list[idx]= ([s_type, [s]])
+                    display_list[idx]= [s_type, [s]]
         elif key == 'elements':
             el_list_long = elements_to_display(form['elements'],form['units'])
             display_list[idx].append([', '.join(el_list_long)])
@@ -1572,8 +1580,9 @@ def metadict_to_display_list(metadata, key_order_list,form):
         except:
             continue
         if key == 'sids':
-            sid_list = sids_to_display(metadata['sids'])
-            meta[idx].append(sid_list)
+            #sid_list = sids_to_display(metadata['sids'])
+            sid_str = sids_to_display(metadata['sids'])
+            meta[idx].append([sid_str])
         elif key == 'valid_daterange':
             els = form['elements']
             units = form['units']

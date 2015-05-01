@@ -53,8 +53,13 @@ def check_output_file(out_file):
         return 'No file found.'
 
 def get_user_info(params):
-    if 'user_name' in params.keys():user_name = params['user_name']
-    else : user_name = 'bdaudert'
+    if 'user_name' in params.keys():
+        user_name = params['user_name']
+    else:
+        if 'user_email' in params.keys():
+            user_name = params['user_email'].split('@')[0]
+        else:
+            user_name = 'bdaudert'
     if 'user_email' in params.keys():user_email = params['user_email']
     else : user_email = 'bdaudert@dri.edu'
     return user_name, user_email

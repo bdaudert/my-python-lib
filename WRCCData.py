@@ -628,7 +628,7 @@ DISPLAY_PARAMS = {
     'select_grid_by':'Grid Data Request',
     'select_stations_by': 'Station Data Request',
     #search areas
-    'user_area_id': '',
+    'user_area_id': 'Point/Area',
     'stnid': 'Station ID',
     'stnids': 'Station IDs',
     'station_id': 'Station ID',

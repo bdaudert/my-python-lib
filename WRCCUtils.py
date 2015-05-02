@@ -515,6 +515,8 @@ def format_data_single_lister(req,form):
     format_date = getattr(thismodule,'format_date_string')
     sep = form['date_format']
     #Data Loop
+    #Keep track of missing data
+    flag_missing = True
     for date_idx,data in enumerate(req['data']):
         date = [format_date(str(data[0]),sep)]
         data = data[1:]
@@ -552,7 +554,14 @@ def format_data_single_lister(req,form):
             #Attach Obs time
             if obs_time:
                 date_data.append(obs_time)
-        d_data.append(date + date_data)
+        #check if all data is missing
+        if all(v==-9999  for v in date_data) and flag_missing:
+            pass
+        else:
+            #Record first data value and set flag_missing to false
+            d_data.append(date + date_data)
+            flag_missing = False
+
         new_data = d_data
         if smry_data:
             smry_data.insert(0,name)

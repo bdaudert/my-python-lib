@@ -75,11 +75,13 @@ def compose_email(params, ftp_server, ftp_dir, out_files):
         date = now.strftime( '%Y-%m-%d %H:%M' )
         pick_up_latest = (now + datetime.timedelta(days=25)).strftime( '%Y-%m-%d' )
         display_keys = [params['area_type'],'elements','units', 'start_date', 'end_date']
-        display_params_list = WRCCUtils.form_to_display_list(display_keys, params)
+        if 'data_type' in params.keys():
+            display_keys.insert(0,'data_type')
+        params_display_list = WRCCUtils.form_to_display_list(display_keys, params)
         dp = '';files=''
-        for item in display_params_list:
+        for item in params_display_list:
             key = item[0]
-            val = item[1][0]
+            val = item[1]
             dp+=key + ': ' + val  +'\n' + '      '
         for f in out_files:
             files+= f + '\n' + '      '

@@ -265,12 +265,13 @@ class CsvWriter(object):
         #Search params header:
         if self.smry and self.form['data_summary'] != 'None':
             header_keys = [self.form['area_type'],'data_summary','start_date', 'end_date']
-            header = WRCCUtils.form_to_display_list(header_keys, self.form)
         else:
             header_keys = [self.form['area_type'],'start_date', 'end_date']
-            header = WRCCUtils.form_to_display_list(header_keys, self.form)
+        if 'data_type' in self.form.keys():
+            header_keys.insert(0,'data_type')
         if 'user_area_id' in self.form.keys():
             header_keys.insert(0,'user_area_id')
+        header = WRCCUtils.form_to_display_list(header_keys, self.form)
         for key_val in header:
             row = ['*' + key_val[0].replace(' ',''),' '.join(key_val[1])]
             self.writer.writerow(row)
@@ -361,6 +362,7 @@ class ExcelWriter(object):
         self.wb = Workbook()
 
     def write_header(self,ws):
+        '''
         if self.smry:
             header_keys = [self.form['area_type'],'data_summary','start_date', 'end_date']
             header = WRCCUtils.form_to_display_list(header_keys, self.form)
@@ -368,7 +370,21 @@ class ExcelWriter(object):
             header = []
         for k_idx, key_val in enumerate(header):
             ws.write(0,k_idx,key_val[0].replace(' ',''))
-            ws.write(1,k_idx,' '.join(key_val[1]))
+            ws.write(1,k_idx,key_val[1])
+        '''
+        #Search params header:
+        if self.smry and self.form['data_summary'] != 'None':
+            header_keys = [self.form['area_type'],'data_summary','start_date', 'end_date']
+        else:
+            header_keys = [self.form['area_type'],'start_date', 'end_date']
+        if 'data_type' in self.form.keys():
+            header_keys.insert(0,'data_type')
+        if 'user_area_id' in self.form.keys():
+            header_keys.insert(0,'user_area_id')
+        header = WRCCUtils.form_to_display_list(header_keys, self.form)
+        for k_idx, key_val in enumerate(header):
+            ws.write(0,k_idx,key_val[0].replace(' ',''))
+            ws.write(1,k_idx,key_val[1])
 
     def write_data(self):
         #Loop over data points
@@ -377,23 +393,24 @@ class ExcelWriter(object):
             meta_display_params = WRCCUtils.metadict_to_display_list(self.req['meta'][p_idx], self.meta_keys, self.form)
             #New sheet for each point
             ws = self.wb.add_sheet('Point' + str(p_idx))
+            self.write_header(ws)
             #Write header
             for m_idx,key_val in enumerate(meta_display_params):
-                ws.write(0,m_idx,meta_display_params[m_idx][0])
-                ws.write(1,m_idx,' '.join(meta_display_params[m_idx][1]))
+                ws.write(3,m_idx,meta_display_params[m_idx][0])
+                ws.write(4,m_idx,' '.join(meta_display_params[m_idx][1]))
             if self.data_type =='station':
-                ws.write(3,0,'DataFlags')
-                ws.write(3,1,'M=Missing')
-                ws.write(3,2,'T=Trace')
-                ws.write(3,3,'S=Subsequent')
-                ws.write(3,4,'A=Accumulated')
+                ws.write(6,0,'DataFlags')
+                ws.write(6,1,'M=Missing')
+                ws.write(6,2,'T=Trace')
+                ws.write(6,3,'S=Subsequent')
+                ws.write(6,4,'A=Accumulated')
             #Write data
             for date_idx in range(len(p_data)):
                 for data_idx in range(len(p_data[date_idx])):
                     try:
-                        ws.write(date_idx + 5 ,data_idx,float(p_data[date_idx][data_idx]))
+                        ws.write(date_idx + 8, data_idx, float(p_data[date_idx][data_idx]))
                     except:
-                        ws.write(date_idx + 5 ,data_idx,p_data[date_idx][data_idx])
+                        ws.write(date_idx + 8, data_idx, p_data[date_idx][data_idx])
         #Save workbook
         if self.f is not None:
             self.wb.save(self.f)
@@ -697,7 +714,7 @@ class DownloadDataJob(object):
     '''
     def __init__(self,app_name, data_format, delimiter, output_file_name, request=None, json_in_file=None, data=[], flags=None):
         self.app_name = app_name
-        self.header = None
+        self.header = []
         self.data = data
         self.data_format = data_format
         self.delimiter = delimiter
@@ -711,7 +728,8 @@ class DownloadDataJob(object):
         self.app_data_dict = {
             'Sodxtrmts':'data',
             'Sodsumm':'table_data',
-            'area_time_series':'download_data'
+            'area_time_series':'download_data',
+            'spatial_summary':'smry_data'
         }
         self.file_extension = {
             'dlm': '.dat',
@@ -729,7 +747,8 @@ class DownloadDataJob(object):
             #'Sodxtrmts':WRCCData.COLUMN_HEADERS['Sodxtrmts'],
             'Sodxtrmts':None,
             'Sodsumm':None,
-            'area_time_series':['Date      ']
+            'area_time_series':['Date      '],
+            'spatial_summary':None
         }
 
 
@@ -771,6 +790,8 @@ class DownloadDataJob(object):
             self.header = json_data['display_params_list']
             for el in json_data['search_params']['element_list']:
                 self.column_headers['area_time_series'].append(el)
+        if self.app_name == 'spatial_summary':
+            self.header = json_data['params_display_list']
         if self.app_data_dict[self.app_name] in json_data.keys():
             data = json_data[self.app_data_dict[self.app_name]]
         else:

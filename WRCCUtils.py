@@ -1540,19 +1540,19 @@ def form_to_display_list(key_order_list, form):
             if 'data_summary' in form.keys() and form['data_summary'] !='none':
                 s_type = WRCCData.DISPLAY_PARAMS[form['data_summary']]
                 if form['data_summary'] == 'windowed_data':
-                    display_list[idx]= ['Window',[form['start_window'] + ' - ' + form['end_window']]]
+                    display_list[idx]= ['Window',form['start_window'] + ' - ' + form['end_window']]
                 else:
                     s = WRCCData.DISPLAY_PARAMS[form[form['data_summary']+'_summary']]
-                    display_list[idx]= [s_type, [s]]
+                    display_list[idx]= [s_type, s]
         elif key == 'elements':
             el_list_long = elements_to_display(form['elements'],form['units'])
-            display_list[idx].append([', '.join(el_list_long)])
+            display_list[idx].append(', '.join(el_list_long))
         elif key in ['data_type','units']:
-            display_list[idx].append([WRCCData.DISPLAY_PARAMS[form[key]]])
+            display_list[idx].append(WRCCData.DISPLAY_PARAMS[form[key]])
         elif key == 'grid':
-            display_list[idx].append([WRCCData.GRID_CHOICES[form['grid']][0]])
+            display_list[idx].append(WRCCData.GRID_CHOICES[form['grid']][0])
         else:
-            display_list[idx].append([str(val)])
+            display_list[idx].append(str(val))
     return display_list
 
 def metadict_to_display_list(metadata, key_order_list,form):

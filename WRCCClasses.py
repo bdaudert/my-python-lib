@@ -273,7 +273,7 @@ class CsvWriter(object):
             header_keys.insert(0,'user_area_id')
         header = WRCCUtils.form_to_display_list(header_keys, self.form)
         for key_val in header:
-            row = ['*' + key_val[0].replace(' ',''),' '.join(key_val[1])]
+            row = ['*' + key_val[0].replace(' ',''),key_val[1]]
             self.writer.writerow(row)
 
         if self.data_type == 'station' and not self.smry:
@@ -2133,7 +2133,7 @@ class LargeDataRequestNew(object):
         return chunks
 
     def set_out_file_path(self):
-        time_stamp = datetime.datetime.now().strftime('%Y%m_%d_%H_%M_%S')
+        time_stamp = datetime.datetime.now().strftime('%Y%m_%d_%H_%M_%S.%f')
         fe = WRCCData.FILE_EXTENSIONS[self.form['data_format']]
         path_to_file = self.base_dir + self.form['output_file_name']
         #FIX ME: save excel wb to file as .gz.

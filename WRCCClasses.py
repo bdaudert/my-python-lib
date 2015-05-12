@@ -783,9 +783,11 @@ class DownloadDataJob(object):
                 pass
         if self.app_name == 'Sodsumm':
             self.header = []
-            labels = ['Station Name', 'Station ID', 'Station Network', 'Station State', 'Start Year', 'End Year', 'Climate Variables']
-            for idx, key in enumerate(['stn_name', 'stn_id', 'stn_network', 'stn_state', 'record_start', 'record_end', 'table_name_long']):
+            labels = ['*','*Start Year', '*End Year']
+            for idx, key in enumerate(['title','record_start', 'record_end']):
                 self.header.append([labels[idx], json_data[key]])
+            if json_data['subtitle'] != '' and json_data['subtitle'] != ' ':
+                self.header.insert(1,['*', json_data['subtitle']])
         if self.app_name == 'area_time_series':
             self.header = json_data['display_params_list']
             for el in json_data['search_params']['element_list']:
@@ -817,14 +819,13 @@ class DownloadDataJob(object):
                 response = 'Error! Cant open file' + str(e)
         #Write header if it exists
         if self.header:
-            row = []
             for idx,key_val in enumerate(self.header):
                 if len(key_val) != 2:
                     continue
                 #three entries per row
-                row.append(key_val[0] + self.spacer + key_val[1])
+                #row = ['*'+key_val[0],key_val[1]]
+                row =[key_val[0] + self.spacer + key_val[1]]
                 writer.writerow(row)
-                row = []
             writer.writerow(row)
             writer.writerow([])
             if self.app_name == 'Sodxtrmts':

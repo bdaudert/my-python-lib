@@ -108,7 +108,7 @@ class GraphDictWriter(object):
         if 'spatial_summary' in self.form.keys():
             title = WRCCData.DISPLAY_PARAMS[self.form['spatial_summary']]
             title += ' of ' + WRCCData.DISPLAY_PARAMS[el_strip]
-        elif 'temporal_summary' in self.form.keys():
+        elif 'temporal_summary' in self.form.keys() and not 'start_month' in self.form.keys():
             title = WRCCData.DISPLAY_PARAMS[self.form['temporal_summary']]
             title += ' of ' + WRCCData.DISPLAY_PARAMS[el_strip]
         elif 'monthly_statistic' in self.form.keys():
@@ -146,14 +146,27 @@ class GraphDictWriter(object):
                     subTitle = 'Station: ' + self.form['station_id']
             if 'location' in self.form.keys():
                 subTitle = 'Location: ' + self.form['location']
+        if 'start_month' in self.form.keys() and 'start_day' in self.form.keys():
+            if 'end_month' in self.form.keys() and 'end_day' in self.form.keys():
+                subTitle = 'From ' + WRCCData.NUMBER_TO_MONTH_NAME[self.form['start_month']]
+                subTitle+= ', ' + self.form['start_day'] + ' To '
+                subTitle+= WRCCData.NUMBER_TO_MONTH_NAME[self.form['end_month']]
+                subTitle+= ', ' + self.form['end_day']
         return subTitle
 
 
     def set_xLabel(self):
-        xLabel = 'Start Date: '
-        xLabel+= WRCCUtils.format_date_string(self.form['start_date'],'dash')
-        xLabel+= ' End Date: '
-        xLabel+= WRCCUtils.format_date_string(self.form['end_date'],'dash')
+        xLabel = ''
+        if 'start_date' in self.form.keys() and 'end_date' in self.form.keys():
+            xLabel = 'Start Date: '
+            xLabel+= WRCCUtils.format_date_string(self.form['start_date'],'dash')
+            xLabel+= ' End Date: '
+            xLabel+= WRCCUtils.format_date_string(self.form['end_date'],'dash')
+        if 'start_year' in self.form.keys() and 'end_year' in self.form.keys():
+            xLabel = 'Start Year: '
+            xLabel+= self.form['start_year']
+            xLabel+= ' End Year: '
+            xLabel+= self.form['end_year']
         return xLabel
 
     def set_yLabel(self):

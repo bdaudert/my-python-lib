@@ -46,7 +46,7 @@ grid_reduction_areas = ['state','bounding_box']
 #CLEANED FUNCTIONS
 #####################################
 ###################################
-#DATA MODULES
+#DATA  LSITER MODULES
 ###################################
 def get_data_type(form):
     '''
@@ -1407,6 +1407,88 @@ def get_window_data(data, start_date, end_date, start_window, end_window):
             add_data = data[start_indices[j]:end_indices[j]+1]
             windowed_data = windowed_data + add_data
     return windowed_data
+
+################################
+# INTERANNUAL DATA MODULES
+############################
+def get_single_interannaul_data(form):
+    '''
+    Interannual data
+    Args: cleaned form field entries
+    Returns: yearly summarized values and highcarts data
+    '''
+    year_data = []; hc_data = []
+    today_str = set_back_date(0)
+    today_year = today_str[0:4]
+    start_date = form['start_year'] + '0101'
+    if form['units'] == 'metric':
+        unit_convert = getattr(tismodule, 'convert_to_metric')
+    else:
+        unit_convert =  getattr(thismodule,'convert_nothing')
+    if today_year == form['end_year'] :
+        end_date = ''.join(today_str.split('-'))
+    else:
+        end_date = form['end_year'] + '1231'
+    el_vX = WRCCData.ACIS_ELEMENTS_DICT[form['element']]['vX']
+    acis_params = {
+        'sdate':start_date,
+        'edate':end_date,
+        'elems': [{'vX':el_vX}],
+    }
+    #Data request
+    if 'station_id' in form.keys():
+        acis_params['sid'] = form['station_id']
+        req = AcisWS.StnData(acis_params)
+    if 'location' in form.keys():
+        acis_params['loc'] = form['location']
+        acis_params['grid'] = form['grid']
+        req = AcisWS.GridData(acis_params)
+    if 'data' not in req.keys():
+        return year_data, hc_data
+    data = req['data']
+    #Format windows, need to be four characters long
+    sm = form['start_month'];sd = form['start_day']
+    em = form['end_month'];ed = form['end_day']
+    if len(sm) == 1:sm='0' + sm
+    if len(em) == 1:em='0' + em
+    if len(sd) == 1:sd='0' + sd
+    if len(ed) == 1:ed='0' + ed
+    start_window = sm + sd; end_window = em + ed
+    #check if we skip a year
+    year_change = False
+    doy_start = compute_doy_leap(start_window[0:2], start_window[0:4])
+    doy_end = compute_doy_leap(end_window[0:2], end_window[0:4])
+    if doy_end < doy_start:year_change = True
+    #Get windowed data
+    windowed_data = get_windowed_data(data, start_date, end_date, start_window, end_window)
+    #Sort data by year
+    smry_data = []
+    yr = windowed_data[0][0][0:4]
+    for d in windowed_data:
+        date = d[0]
+        data_yr = d[0][0:4]
+        val = d[1]
+        if not year_change and int(data_yr) == int(yr):
+            try:smry_data.append(float(d[1]))
+            except:pass
+            continue
+        if year_change and (int(data_yr) == int(yr)  or int(data_yr) == int(yr) + 1):
+            try:smry_data.append(float(d[1]))
+            except:pass
+            continue
+        #Compute Summary for this year
+        smry = compute_data_summary(smry_data,form['temporal_summary'])
+        if smry:
+            s_val = unit_convert(form['element'],smry)
+            year_data.append([data_yr,s_val])
+            date = data_yr + '-01-01'
+            d = calendar.timegm(datetime.datetime.strptime(date, '%Y-%m-%d').timetuple())
+            int_time = 1000 * d
+            hc_data.append([int_time, s_val])
+        #reset
+        smry_data = []
+        yr = data_yr
+    return year_data, hc_data
 
 ################################
 # HIGHCARTS DATA EXTRACTION

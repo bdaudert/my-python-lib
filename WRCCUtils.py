@@ -1461,30 +1461,44 @@ def get_single_interannaul_data(form):
     if doy_end < doy_start:year_change = True
     #Get windowed data
     windowed_data = get_windowed_data(data, start_date, end_date, start_window, end_window)
+    print windowed_data
     #Sort data by year
-    smry_data = []
+    smry_data = []; smry = None
     yr = windowed_data[0][0][0:4]
     for d in windowed_data:
         date = d[0]
+        date_eight = date_to_eight(date)
         data_yr = d[0][0:4]
+        data_doy = compute_doy_leap(date_eight[4:6],date_eight[6:8])
         val = d[1]
         if not year_change and int(data_yr) == int(yr):
             try:smry_data.append(float(d[1]))
             except:pass
             continue
-        if year_change and (int(data_yr) == int(yr)  or int(data_yr) == int(yr) + 1):
-            try:smry_data.append(float(d[1]))
-            except:pass
-            continue
+        if year_change:
+            if  int(data_yr) == int(yr):
+                try:smry_data.append(float(d[1]))
+                except:pass
+                continue
+            if int(data_yr) == int(yr) + 1 and 1 <= data_doy  and data_doy < doy_end:
+                try:smry_data.append(float(d[1]))
+                except:pass
+                continue
+            if int(data_yr) == int(yr) + 1 and data_doy == doy_end:
+                try:smry_data.append(float(d[1]))
+                except:pass
         #Compute Summary for this year
-        smry = compute_data_summary(smry_data,form['temporal_summary'])
+        if smry_data:
+            smry = compute_data_summary(smry_data,form['temporal_summary'])
         if smry:
             s_val = unit_convert(form['element'],smry)
-            year_data.append([data_yr,s_val])
-            date = data_yr + '-01-01'
+            year_data.append([yr,s_val])
+            date = yr + '-01-01'
             d = calendar.timegm(datetime.datetime.strptime(date, '%Y-%m-%d').timetuple())
             int_time = 1000 * d
             hc_data.append([int_time, s_val])
+        else:
+            year_data.append([yr,-9999])
         #reset
         smry_data = []
         yr = data_yr
@@ -1587,6 +1601,22 @@ def elements_to_display(elements,units,valid_daterange=None):
             el_list_long[-1]+= ' ' + str(vd)
     return el_list_long
 
+def elements_to_table_headers(elements,units):
+    el_list = convert_elements_to_list(elements)
+    el_list_header = []
+    for el_idx,el in enumerate(el_list):
+        el_strip,base_temp = get_el_and_base_temp(el)
+        unit = WRCCData.UNITS_ENGLISH[el_strip]
+        if units == 'metric':
+            unit = WRCCData.UNITS_METRIC[el_strip]
+            #form cleaned has english units
+            #base_temp = convert_to_metric(el_strip,base_temp)
+        if not base_temp or base_temp == ' ':
+            el_list_header.append(WRCCData.MICHELES_ELEMENT_NAMES[el_strip] + ' (' + unit + ')')
+        else:
+            el_list_header.append(WRCCData.MICHELES_ELEMENT_NAMES[el_strip] + ' (' + unit + '), Base: ' + str(base_temp))
+    return el_list_header
+
 def sids_to_display(sids):
     '''
     sid_list = []
@@ -1614,6 +1644,12 @@ def form_to_display_list(key_order_list, form):
     '''
     keys = [k for k in key_order_list]
     display_list = [[WRCCData.DISPLAY_PARAMS[key]] for key in keys]
+    #Special case window for interannual
+    if 'window' in keys:
+        idx = keys.index(str(key))
+        window = 'From ' + WRCCData.NUMBER_TO_MONTH_NAME[str(form['start_month'])] + '-' + str(form['start_day'])
+        window+=' to ' + WRCCData.NUMBER_TO_MONTH_NAME[str(form['end_month'])] + '-' + str(form['end_day'])
+        display_list[idx].append(window)
     for key, val in form.iteritems():
         if str(key) not in keys:
             continue
@@ -1626,8 +1662,10 @@ def form_to_display_list(key_order_list, form):
                 else:
                     s = WRCCData.DISPLAY_PARAMS[form[form['data_summary']+'_summary']]
                     display_list[idx]= [s_type, s]
-        elif key == 'elements':
-            el_list_long = elements_to_display(form['elements'],form['units'])
+        elif key in ['spatial_summary','temporal_summary']:
+            display_list[idx].append(WRCCData.DISPLAY_PARAMS[form[key]])
+        elif key in ['elements', 'element']:
+            el_list_long = elements_to_display(form[key],form['units'])
             display_list[idx].append(', '.join(el_list_long))
         elif key in ['data_type','units']:
             display_list[idx].append(WRCCData.DISPLAY_PARAMS[form[key]])

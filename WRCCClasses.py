@@ -124,9 +124,21 @@ class GraphDictWriter(object):
             else:
                 title = WRCCData.DISPLAY_PARAMS[self.form['monthly_statistic']]
                 title += ' of ' + WRCCData.DISPLAY_PARAMS[el_strip]
-        elif 'location' in self.form.keys():
-            title = 'Location: ' + self.form['location']
-            title += ', Element: ' + WRCCData.DISPLAY_PARAMS[el_strip]
+        elif 'station_id' in self.form.keys() or 'location' in self.form.keys():
+            if 'user_area_id' in self.form.keys():
+                title = self.form['user_area_id']
+            elif 'station_id' in self.form.keys():
+                title = 'Station ID: ' + self.form['station_id']
+            elif 'location' in self.form.keys():
+                 title = 'Location: ' + self.form['location']
+            title += ', '
+            if 'temporal_summary' in self.form.keys():
+                title += WRCCData.DISPLAY_PARAMS[self.form['temporal_summary']] + ' of '
+            elif 'spatial_summary' in self.form.keys():
+                title += WRCCData.DISPLAY_PARAMS[self.form['spatial_summary']] + ' of '
+            title += WRCCData.DISPLAY_PARAMS[el_strip]
+            if self.name is None:
+                self.name = title.split(', ')[-1]
         if base_temp:
             title+= ' Base: ' + str(base_temp)
         return title

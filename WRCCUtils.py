@@ -7,7 +7,9 @@ Module WRCCUtils
 import datetime, calendar, time, sys, os
 import re
 import json
-import numpy,math
+import numpy as np
+import scipy
+import math
 import re
 from collections import defaultdict, Mapping, Iterable
 import smtplib
@@ -289,7 +291,7 @@ def set_acis_params(form):
     return params
 
 
-def compute_data_summary(vals,statistic):
+def compute_statistic(vals,statistic):
     '''
     Args:
         statistic -- max,min, mean, median or  sum
@@ -299,17 +301,25 @@ def compute_data_summary(vals,statistic):
     '''
     if vals == []:
         return None
-    np_array = numpy.array(vals)
+    np_array = np.array(vals, dtype = np.float)
+    #remove nan
+    np_array = np_array[np.logical_not(np.isnan(np_array))]
+    #np_array = np_array[np_array != -9999]
     if statistic == 'max':
-        return round(numpy.amax(np_array),4)
+        return round(np.nanmax(np_array),4)
     if statistic == 'min':
-        return round(numpy.amin(np_array),4)
+        return round(np.nanmin(np_array),4)
     if statistic == 'mean':
-        return round(numpy.mean(np_array),4)
+        return round(np.nanmean(np_array),4)
     if statistic == 'sum':
-        return round(numpy.sum(np_array),4)
+        return round(np.nansum(np_array),4)
     if statistic == 'median':
-        return round(numpy.median(np_array),4)
+        #return round(np.median(np_array),4)
+        return round(scipy.stats.nanmedian(np_array),4);
+    if statistic == 'std':
+        return round(np.nanstd(np_array),4)
+    if statistic == 'skew':
+        return round(scipy.stats.skew(np_array),4)
 
 def request_and_format_data(form):
     '''
@@ -690,13 +700,13 @@ def station_data_trim_and_summary(req,form):
             row = [stn_name + stn_ids]
             if point_in:
                 for el_idx, el in enumerate(els):
-                    row.append(compute_data_summary(smry_data[el_idx],form['temporal_summary']))
+                    row.append(compute_statistic(smry_data[el_idx],form['temporal_summary']))
                 new_smry.append(row)
     #Compute spatial summary
     if form['data_summary'] == 'spatial':
         for date_idx in range(len(dates)):
             for el_idx in range(len(els)):
-                new_smry[date_idx].append(compute_data_summary(smry_data[date_idx][el_idx],form['spatial_summary']))
+                new_smry[date_idx].append(compute_statistic(smry_data[date_idx][el_idx],form['spatial_summary']))
     #Insert summary header
     if new_smry:
         new_smry.insert(0,header_smry)
@@ -804,14 +814,14 @@ def grid_data_trim_and_summary(req,form):
                 row = [str(round(lon,4)) + ',' + str(round(lat,4))]
                 if point_in:
                     for el_idx, el in enumerate(els):
-                        row.append(compute_data_summary(smry_data[el_idx],form['temporal_summary']))
+                        row.append(compute_statistic(smry_data[el_idx],form['temporal_summary']))
                 new_smry.append(row)
 
     #Compute spatial summary
     if form['data_summary'] == 'spatial':
         for date_idx in range(len(data)):
             for el_idx in range(len(form['elements'])):
-                new_smry[date_idx].append(compute_data_summary(smry_data[date_idx][el_idx],form['spatial_summary']))
+                new_smry[date_idx].append(compute_statistic(smry_data[date_idx][el_idx],form['spatial_summary']))
     #Insert summary header
     if new_smry:
         new_smry.insert(0,header_smry)
@@ -873,7 +883,7 @@ def format_grid_spatial_summary(req,form):
                     #Compute spatial summary at last gridpoint iteration
                     if grid_idx == len(lats) -1 and lon_idx == len(lons[grid_idx]) -1:
                         s = smry_data[date_idx][el_idx]
-                        new_smry[date_idx].append(compute_data_summary(s,form['spatial_summary']))
+                        new_smry[date_idx].append(compute_statistic(s,form['spatial_summary']))
     #Insert summary header
     if new_smry:
         new_smry.insert(0,header_smry)
@@ -1059,7 +1069,7 @@ def format_grid_temporal_summary(req,form):
             #Temporal summary
             row = [str(lon) + ',' + str(lat)]
             for el_idx, el in enumerate(els):
-                row.append(compute_data_summary(smry_data[el_idx],form['temporal_summary']))
+                row.append(compute_statistic(smry_data[el_idx],form['temporal_summary']))
             new_smry.append(row)
     if new_smry:
         new_smry.insert(0,header_smry)
@@ -1122,7 +1132,7 @@ def format_station_spatial_summary(req,form):
                     pass
                 #Compute spatial summary at last station iteration
                 if stn_idx == len(req['data']) -1:
-                    new_smry[date_idx].append(compute_data_summary(smry_data[date_idx][el_idx],form['spatial_summary']))
+                    new_smry[date_idx].append(compute_statistic(smry_data[date_idx][el_idx],form['spatial_summary']))
     if new_smry:
         new_smry.insert(0,header_smry)
     resultsdict = {
@@ -1489,7 +1499,7 @@ def get_single_interannaul_data(form):
                 except:pass
         #Compute Summary for this year
         if smry_data:
-            smry = compute_data_summary(smry_data,form['temporal_summary'])
+            smry = compute_statistic(smry_data,form['temporal_summary'])
         if smry:
             s_val = unit_convert(form['element'],smry)
             year_data.append([yr,s_val])
@@ -4156,7 +4166,7 @@ def Capiii(xdata, numdat, piii, piiili,npiili, pnlist,numpn):
         ave = 0.0
     if count > 1.5:
         try:
-            stdev = numpy.sqrt((summ2 - summ*summ/count)/(count - 1.0))
+            stdev = np.sqrt((summ2 - summ*summ/count)/(count - 1.0))
         except:
             stdev = 0.0
     else:
@@ -4174,7 +4184,7 @@ def Capiii(xdata, numdat, piii, piiili,npiili, pnlist,numpn):
         xm3 = h3 - 3.0*h1*h2 + 2.0*h1*h1*h1
         if abs(xm2) > 0.000001:
             try:
-                sk = xm3 / (xm2*numpy.sqrt(xm2))
+                sk = xm3 / (xm2*np.sqrt(xm2))
             except:
                 sk = 0.0
         else:
@@ -4288,14 +4298,14 @@ def Dlgama(x):
         pass
     #Use small-x approximation if x is near 0,1 or 2
     if abs(x - 2)  <= 1.0e-7:
-        dlgama = numpy.log(x - one)
+        dlgama = np.log(x - one)
         xx = x - 2
         dlgama+=xx*(s1+xx*s2)
     elif abs(x - 1) <= 1.0e-7:
         xx = x - 1
         dlgama+=xx*(s1+xx*s2)
     elif abs(x) <= 1.0e-7:
-        dlgama = -numpy.log(x) + s1*x
+        dlgama = -np.log(x) + s1*x
     else:
         #Reduce to dlgama(x+n) where x+n >= 13
         sum1 = 0
@@ -4305,9 +4315,9 @@ def Dlgama(x):
             while y < 13:
                 z*=y
                 y+=1
-            sum1+= - numpy.log(z)
+            sum1+= - np.log(z)
         #Use asymtotic expansion if y >=13
-        sum1+=(y - 0.5)* numpy.log(y) -y +c[0]
+        sum1+=(y - 0.5)* np.log(y) -y +c[0]
         sum2 = 0
         if y < 1.0e9:
             z = 1 / y*y
@@ -4342,7 +4352,7 @@ def Pelgev(xmom):
         #Newton-Raphson, if required
 
         if t3 < - 0.1 or t3 > 0.5:
-            if t3 < -0.9: g = 1 - numpy.log(1 + t3) / dl2
+            if t3 < -0.9: g = 1 - np.log(1 + t3) / dl2
             t0 = (t3 + 3) / 2
             for it in range(1, maxit+1):
                 x2 = 2**(-g)
@@ -4358,7 +4368,7 @@ def Pelgev(xmom):
         para = [0, 0, 0]
         if abs(g) >= 1.0e-5:
             para[2] = g
-            gam = numpy.exp(Dlgama(1+g))
+            gam = np.exp(Dlgama(1+g))
             para[1] = xmom[1]*g / (gam*(1 - 2**(-g)))
             para[0] = xmom[0] -para[1]*(1 - gam) / g
         else:
@@ -4376,9 +4386,9 @@ def Quagev(f,para):
     g = para[2]
     if a > 0:
         if f > 0 and f < 1:
-            y = -numpy.log(f)
+            y = -np.log(f)
             if g != 0:
-                y = 1.0 - numpy.exp(-g*y) / g
+                y = 1.0 - np.exp(-g*y) / g
                 quagev = u + a*y
             else:
                 quagev = 0
@@ -4445,11 +4455,11 @@ def Dda(alpha, theta, beta, n, x, ndim):
     dda = rn/alpha
     for i in range(n):
         xb = x[i]/beta
-        if numpy.log(xb) <= 85.0/theta:
+        if np.log(xb) <= 85.0/theta:
             xbt = float(xb)**theta
-            dda-= float(numpy.log(1.0 + xbt))
+            dda-= float(np.log(1.0 + xbt))
         else:
-            dda-=theta*numpy.log(xb)
+            dda-=theta*np.log(xb)
     return dda
 
 def Ddt(alpha, theta, beta, n, x, ndim):
@@ -4457,11 +4467,11 @@ def Ddt(alpha, theta, beta, n, x, ndim):
     ddt = rn/beta
     for i in range(n):
         xb = float(x[i]/beta)
-        if numpy.log(xb) <= 85.0/theta:
+        if np.log(xb) <= 85.0/theta:
             xbt = xb**theta
-            ddt+=float(numpy.log(xb)) - (alpha + 1.0)*float(numpy.log(xb)/(1.0 + xbt))*float(xbt)
+            ddt+=float(np.log(xb)) - (alpha + 1.0)*float(np.log(xb)/(1.0 + xbt))*float(xbt)
         else:
-            ddt-=alpha*float(numpy.log(xb))
+            ddt-=alpha*float(np.log(xb))
     return ddt
 
 def Ddb(alpha, theta, beta, n, x, ndim):
@@ -4469,7 +4479,7 @@ def Ddb(alpha, theta, beta, n, x, ndim):
     ddb = -rn
     for i in range(n):
         xb = x[i]/beta
-        if numpy.log(xb) <= 85.0/theta:
+        if np.log(xb) <= 85.0/theta:
             xbt = float(xb)**theta
             ddb+= (alpha + 1.0)*float(xbt/(1.0 + xbt))
         else:
@@ -4479,14 +4489,14 @@ def Ddb(alpha, theta, beta, n, x, ndim):
 
 
 def Betapll(alpha, theta, beta, n, x, ndim):
-    betapll = float(n)*numpy.log(alpha*theta/beta)
+    betapll = float(n)*np.log(alpha*theta/beta)
     for i in range(n):
         xb = x[i]/beta
-        if numpy.log(xb) <= 85.0/theta:
+        if np.log(xb) <= 85.0/theta:
             xbt = float(xb)**theta
-            betapll+=(theta - 1.0)*numpy.log(xb) - (alpha + 1.0)*float(numpy.log(1+xbt))
+            betapll+=(theta - 1.0)*np.log(xb) - (alpha + 1.0)*float(np.log(1+xbt))
         else:
-            betapll-=(1.0 + alpha*theta)*numpy.log(xb)
+            betapll-=(1.0 + alpha*theta)*np.log(xb)
     return betapll
 
 
@@ -4503,7 +4513,7 @@ def Fitbetap(x, n, ndim):
     trllbst = -1.0e20
     tbeta = 1.01*x[0]
     ig = int(round(0.8*float(n+1)))
-    factor = -numpy.log(1.0 - 0.8)/numpy.log(x[ig-1]/tbeta)
+    factor = -np.log(1.0 - 0.8)/np.log(x[ig-1]/tbeta)
     alpha0 = 0.0
     beta0 = 0.0
     theta0 = 0.0
@@ -4526,7 +4536,7 @@ def Fitbetap(x, n, ndim):
     dlambda = 0.001
     score = [0.0 for k in range(3)]
     #finf = [[0.0 for j in range(3)] for k in range(3)]
-    finf = numpy.zeros((3,3))
+    finf = np.zeros((3,3))
     adj = [0.0 for k in range(3)]
     for it in range(itmax):
         itact = it
@@ -4569,7 +4579,7 @@ def Fitbetap(x, n, ndim):
             finf[i][i]*=(1.0 + dlambda)
 
         #invert
-        finv = numpy.linalg.inv(finf)
+        finv = np.linalg.inv(finf)
         for i in range(3):
             for j in range(3):
                 adj[j] = adj[i] + finv[i][j]*score[j]
@@ -4625,8 +4635,8 @@ def Fitbetap(x, n, ndim):
 
 def Pintbetap(alpha, beta, theta, prob):
     #Check for conditions that will lead to floating overflow
-    check1 = -1.0*numpy.log(1.0 - prob)
-    check2 = 31.0*alpha*numpy.log(2.0)
+    check1 = -1.0*np.log(1.0 - prob)
+    check2 = 31.0*alpha*np.log(2.0)
     if check1 < check2:
         psd = (1.0 - prob)**(-1.0/alpha)
         psd = (psd - 1.0)**(1.0/theta)
@@ -4664,14 +4674,14 @@ def Gammln(z):
         xx = z
     x = xx - 1.0
     tmp = x + fpf
-    tmp = (x + 0.5)*numpy.log(tmp) - tmp
+    tmp = (x + 0.5)*np.log(tmp) - tmp
     ser = 10
     for j in range(6):
         x+=1.0
         ser+=cof[j]/x
-    gammln = tmp + numpy.log(stp*ser)
+    gammln = tmp + np.log(stp*ser)
     if z < 1.0:
-        gammln-=numpy.log(z)
+        gammln-=np.log(z)
     return gammln
 
 def Gcf(a,x):
@@ -4697,7 +4707,7 @@ def Gcf(a,x):
             g = b1*fac
             if abs((g - gold)/g) >= eps:
                 gold = g
-    gammfc = numpy.exp(-z + a*numpy.log(x) - gln)*g
+    gammfc = np.exp(-z + a*np.log(x) - gln)*g
     return gammfc
 
 
@@ -4715,7 +4725,7 @@ def Gser(a,x):
             dl*=x/ap
             summ+=dl
             if abs(dl) < abs(summ)*eps:
-                gamser = summ*numpy.exp(-x + a*numpy.log(x) -gln)
+                gamser = summ*np.exp(-x + a*np.log(x) -gln)
                 break
     return gamser
 
@@ -4796,8 +4806,8 @@ def Rloglike(nc, nw,sumx, sumlnx, a, b):
         ff = Gammp(a, nc/b)
     except:
         ff = 1.0
-    rloglike = -nw*(a*numpy.log(b) + Gammln(a)) + (a - 1.0)*sumlnx - sumx/b
-    if nc > 0.0: rloglike+=float(nc)*numpy.log(ff)
+    rloglike = -nw*(a*np.log(b) + Gammln(a)) + (a - 1.0)*sumlnx - sumx/b
+    if nc > 0.0: rloglike+=float(nc)*np.log(ff)
     return rloglike
 
 def Psi(shape):
@@ -4806,7 +4816,7 @@ def Psi(shape):
         a = z + 1.0
     else:
        a = z
-    psi = numpy.log(a)-1.0/(2.0*a)-1.0/(12.0*a**2)+1.0/(120.0*a**4) - \
+    psi = np.log(a)-1.0/(2.0*a)-1.0/(12.0*a**2)+1.0/(120.0*a**4) - \
     1.0/(256.0*a**6)+1.0/(240.0*a**8)
     return psi
 
@@ -4845,7 +4855,7 @@ def Dcdf(c, shape, scale, iflag):
     return  ff,dfda,dfdb,d2fda2,d2fdb2,d2fdab,dp
 
 def Dlda(nc, nw, sumlnx, shape, scale, ff, dfda): #dfda, ff extra coming from Dcdf
-    dlda=sumlnx-float(nw)*(numpy.log(scale)+Psi(shape))
+    dlda=sumlnx-float(nw)*(np.log(scale)+Psi(shape))
     if nc < 0.0:dlda== float(nc)*dfda/ff
     return dlda
 
@@ -4883,14 +4893,14 @@ def Cengam(nc, nw, c, sumx, sumlnx):
         slx = sumlnx
     else:
         sx = sumx + float(nc)*c/10.0
-        slx = sumlnx + float(nc)*numpy.log(c/10)
+        slx = sumlnx + float(nc)*np.log(c/10)
     amean = sx/float(nc + nw)
-    gmean = numpy.exp(slx/float(nc + nw))
-    y = numpy.log(amean/gmean)
+    gmean = np.exp(slx/float(nc + nw))
+    y = np.log(amean/gmean)
     if y > 17.0:
         shape = 0.05
     elif y <= 0:
-        shape = numpy.sqrt(amean)
+        shape = np.sqrt(amean)
     elif y <= 0.5772:
         shape = (.5000876+.1648852*y-.0544274*y**2)/y
     else:
@@ -4966,7 +4976,7 @@ def Cagamma(rdata, numdat, pnlist, numpn):
     for i in range(numdat):
         if rdata[i] > cen_level:
             sumx+=rdata[i]
-            sumlnx+= numpy.log(rdata[i])
+            sumlnx+= np.log(rdata[i])
             num_wet+=1
         else:
             num_cen+=1

@@ -8,6 +8,8 @@ Defines classes used in the my_acis project
 # import modules required by Acis
 #import  pprint, time
 import time, datetime, re, os
+import numpy as np
+import scipy
 import json
 from cStringIO import StringIO
 try:
@@ -719,7 +721,56 @@ class DataComparer(object):
             graph_data = [s_graph_dict,g_graph_dict]
         return graph_data
 
-
+    def get_statistics(self,s_graph_dict, g_graph_dict):
+        stats = {
+            'max':[None, None],
+            'min':[None, None],
+            'mean':[None, None],
+            'median':[None, None],
+            'std':[None, None],
+            'skew':[None, None],
+            'pearsonc':None,
+            'pearsonp': None,
+            'ksc':None,
+            'ksp':None,
+        }
+        sdata = s_graph_dict['data']
+        gdata = g_graph_dict['data']
+        svals =[];gvals = []
+        #need separate data arrays to compute correlations
+        #data arrays need to be of same size even when data is missing
+        scorrvals = [];gcorrvals = []
+        for idx, date_val in enumerate(sdata):
+            try:
+                svals.append(float(date_val[1]))
+            except:
+                svals.append(None)
+            try:
+                gvals.append(float(gdata[idx][1]))
+            except:
+                gvals.append(None)
+            try:
+                scorrvals.append(float(date_val[1]))
+                gcorrvals.append(float(gdata[idx][1]))
+            except:
+                pass
+        compute_stat = getattr(WRCCUtils,'compute_statistic')
+        stats['max'] = [compute_stat(svals,'max'),compute_stat(gvals,'max')]
+        stats['min'] = [compute_stat(svals,'min'),compute_stat(gvals,'min')]
+        stats['mean'] = [compute_stat(svals,'mean'),compute_stat(gvals,'mean')]
+        stats['median'] = [compute_stat(svals,'median'),compute_stat(gvals,'median')]
+        stats['std'] = [compute_stat(svals,'std'),compute_stat(gvals,'std')]
+        stats['skew'] = [compute_stat(svals,'skew'),compute_stat(gvals,'skew')]
+        #Single value stats
+        snp = np.array(scorrvals, dtype = np.float)
+        gnp = np.array(gcorrvals, dtype = np.float)
+        pearson_stats = scipy.stats.pearsonr(snp, gnp)
+        stats['pearsonc'] = round(pearson_stats[0],4)
+        stats['pearsonp'] =  round(pearson_stats[1],4)
+        ks_stats = scipy.stats.ks_2samp(snp, gnp)
+        stats['ksc'] = round(ks_stats[0],4)
+        stats['ksp'] =  round(ks_stats[1],4)
+        return stats
 class DownloadDataJob(object):
     '''
     Download data to excel, .dat or .txt

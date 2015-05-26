@@ -232,7 +232,7 @@ if __name__ == '__main__' :
                 os.remove(params_file)
             continue
         #Define and instantiate data request class
-        LDR = WRCCClasses.LargeDataRequestNew(params, logger, base_dir, ftp_server, ftp_dir, max_lines_per_file)
+        LDR = WRCCClasses.LargeDataRequest(params, logger, base_dir, ftp_server, ftp_dir, max_lines_per_file)
         error, out_files = LDR.process_request()
         if error is not None:
             logger.error('Data request error: %s! Parameter file: %s' %( error,os.path.basename(params_file)))

@@ -354,6 +354,8 @@ def request_and_format_data(form):
         request_data = getattr(AcisWS,'GridData')
     #Make data request
     req = request_data(params)
+    print params
+
     '''
     try:
         req = request_data(params)

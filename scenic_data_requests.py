@@ -83,7 +83,8 @@ def compose_email(params, ftp_server, ftp_dir, out_files):
             key = item[0]
             val = item[1]
             dp+=key + ': ' + val  +'\n' + '      '
-        for f in out_files:
+        zip_file = out_files[0]
+        for f in out_files[1:]:
             files+= f + '\n' + '      '
         message_text ='''
         Date: %s
@@ -98,7 +99,10 @@ def compose_email(params, ftp_server, ftp_dir, out_files):
 
         Please connect as Guest. You will not need a password.
 
-        The file names/file sizes are:
+        The data is stored in the zip archive:
+        %s
+
+        The individual file names are:
         %s
 
         You can pick up your data until: %s.
@@ -106,10 +110,10 @@ def compose_email(params, ftp_server, ftp_dir, out_files):
         Your parameters were:
 
         %s
-        '''%(date, user_name,'ftp://' + ftp_server + ftp_dir, files,str(pick_up_latest), dp)
+        '''%(date, user_name,'ftp://' + ftp_server + ftp_dir, zip_file, files, str(pick_up_latest), dp)
         return subj, message_text
 
-def compose_failed_request_email(params_files_failed, log_file):
+def compose_failed_request_email(params, params_files_failed, log_file):
     failed_params = ''
     for p in params_files_failed:
         try:
@@ -124,10 +128,17 @@ def compose_failed_request_email(params_files_failed, log_file):
     subj = 'Failed data requests'
     now = datetime.datetime.now()
     date = now.strftime( '%d/%m/%Y %H:%M' )
+    user_name, user_email = get_user_info(params)
     message='''
         Date: %s
         Dear Me,
         Following data requests have failed:
+        %s
+
+        User name:
+        %s
+
+        User email:
         %s
 
         Parameters were:
@@ -135,7 +146,7 @@ def compose_failed_request_email(params_files_failed, log_file):
 
         Please consult logfile:
         %s
-        '''%(date,','.join(params_files_failed), failed_params,log_file)
+        '''%(date,','.join(params_files_failed), user_name, user_email, failed_params,log_file)
     return subj, message
 
 def check_dir_path(path,rwx=False):
@@ -228,7 +239,7 @@ if __name__ == '__main__' :
             logger.info('Data request for parameter file %s is in progress' %str(os.path.basename(params_file)))
             if mtime <= time_out:
                 logger.info('24 hr processing limit reached. Removing parameter file: %s' %str(params_file))
-                compose_failed_request_email([params_file], log_file_name)
+                compose_failed_request_email(params, [params_file], log_file_name)
                 os.remove(params_file)
             continue
         #Define and instantiate data request class
@@ -262,7 +273,7 @@ if __name__ == '__main__' :
     #Check for failed requests
     if params_files_failed:
         #Send emal to me
-        subject, message = compose_failed_request_email(params_files_failed, log_file_name)
+        subject, message = compose_failed_request_email(params, params_files_failed, log_file_name)
         EMAIL = WRCCClasses.Mail(mail_server,fromaddr,'bdaudert@dri.edu',subject, message,logger)
         error = EMAIL.write_email()
         if error:

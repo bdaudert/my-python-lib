@@ -18,14 +18,17 @@ except:
     import cairocffi as cairo
 import base64
 import csv
-try:
-    from xlwt import Workbook
-except:
-    pass
+from xlwt import Workbook
 import logging
 from ftplib import FTP
 import smtplib
-import gzip
+
+import zipfile
+try:
+    import zlib
+    compression = zipfile.ZIP_DEFLATED
+except:
+    compression = zipfile.ZIP_STORED
 
 try:
     #Settings
@@ -276,8 +279,7 @@ class CsvWriter(object):
     def set_writer(self):
         import csv
         if self.f is not None:
-            #self.csvfile = open(self.f, 'w+')
-            self.csvfile = gzip.open(self.f, 'wb')
+            self.csvfile = open(self.f, 'w+')
             self.writer = csv.writer(self.csvfile, delimiter=self.delim )
         if self.response is not None:
             self.writer = csv.writer(self.response, delimiter=self.delim)
@@ -1901,6 +1903,7 @@ class LargeDataRequest(object):
         resultsdict = WRCCUtils.request_and_format_data(self.form)
         if 'errors' in resultsdict.keys():
             self.logger.error('ERROR in get_data: ' + str(resultsdict['errors']))
+            return {}
         self.logger.info('Data request  %s completed successfully!' %str(self.form['output_file_name']))
         if not resultsdict['data'] and not resultsdict['smry']:
             self.logger.error('ERROR in get_data: empty data lists')
@@ -1950,15 +1953,20 @@ class LargeDataRequest(object):
         self.logger.info('Split data into %s chunks.' %str(c_idx))
         return chunks
 
-    def set_out_file_path(self):
+    def set_zip_file_path(self):
         time_stamp = datetime.datetime.now().strftime('%Y%m_%d_%H_%M_%S.%f')
         fe = WRCCData.FILE_EXTENSIONS[self.form['data_format']]
+        path_to_file = self.base_dir + self.form['output_file_name'] +  '_' + time_stamp +  '.zip'
+        self.logger.info('zip archive path: %s.' %str(path_to_file))
+        return path_to_file
+
+    def set_out_file_path(self, chunk_idx):
+        fe = WRCCData.FILE_EXTENSIONS[self.form['data_format']]
         path_to_file = self.base_dir + self.form['output_file_name']
-        #FIX ME: save excel wb to file as .gz.
         if self.form['data_format'] == 'xl':
-            path_to_file +='_' + time_stamp + fe
+            path_to_file +='_' + str(chunk_idx) + fe
         else:
-            path_to_file +='_' + time_stamp + fe + '.gz'
+            path_to_file +='_' + str(chunk_idx) + fe
         self.logger.info('Output file path: %s.' %str(path_to_file))
         return path_to_file
 
@@ -2010,33 +2018,24 @@ class LargeDataRequest(object):
         if not chunks:
             error = 'ERROR: Data request could not be slpit into chunks.'
             return error, out_files
+        #create zip archive
+        path_to_file = self.set_zip_file_path()
+        zf = zipfile.ZipFile(path_to_file, mode='w')
+        out_files.append(path_to_file)
         for c_idx,data_chunk in enumerate(chunks):
-            path_to_file = self.set_out_file_path()
-            f_name = path_to_file
+            f_name = self.set_out_file_path(c_idx)
             self.logger.info('Processing chunk %s' %str(c_idx))
-            error = self.write_to_file(data_chunk,path_to_file)
+            error = self.write_to_file(data_chunk,f_name)
             if error is not None:
                 return error, []
             #Compress file
-            '''
-            try:
-                f = gzip.open(f_name, 'wb')
-            except:
-                error = 'ERROR: Cannot open file %s' %f_name
-                return error, []
-            try:
-                with open(path_to_file, 'r') as temp:
-                    f.write(temp.read())
-                f.close()
-            except:
-                error = 'ERROR: Cannot read file %s' %path_to_file
-                return error, out_files
-            self.logger.info('Output file compressed.')
-            '''
-            error = self.load_file(f_name, self.ftp_server, self.ftp_dir)
-            if error is not None:
-                return error,[]
-            self.logger.info('File %s successfully loaded to FTP server' %f_name)
+            self.logger.info('Adding ' + f_name + ' to zip archive' + path_to_file)
+            zf.write(f_name, compress_type=compression)
             out_files.append(f_name)
-        self.logger.info('All files successfully loaded to FTP server')
+        #close zip file and load zip file to ftp server
+        zf.close()
+        error = self.load_file(path_to_file, self.ftp_server, self.ftp_dir)
+        if error is not None:
+            return error,[]
+        self.logger.info('Output file %s successfully loaded to FTP server' %path_to_file)
         return error, out_files

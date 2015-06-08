@@ -18,15 +18,6 @@ import WRCCUtils, AcisWS, WRCCData
 
 #Settings
 #from django.conf import settings
-'''
-try:
-    import my_acis.settings as settings
-except:
-    try:
-        import my_acis_settings as settings
-    except:
-        pass
-'''
 try:
     import my_acis.settings as settings
 except ImportError:

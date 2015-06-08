@@ -273,7 +273,9 @@ UNITS_LONG={
     'Mi':'Miles',
     'km':'Kilometer',
     'ft':'Feet',
-    'm':'Meter'
+    'm':'Meter',
+    #Degree days are unit less
+    '':''
 }
 
 PLOT_COLOR = {

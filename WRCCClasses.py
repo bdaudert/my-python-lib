@@ -1377,14 +1377,14 @@ class SODApplication(object):
         #    return {}
         Application = getattr(WRCCDataApps, self.app_name)
         if self.app_name == 'Sodxtrmts':
-            results, fa_results = Application(**app_params)
-            return results, fa_results
+            #results, fa_results = Application(**app_params)
+            #return results, fa_results
+            results = WRCCDataApps.SodxtrmtsNew(**app_params)
         elif self.app_name == 'Soddyrec':
             results = Application(app_params['data'],app_params['dates'], app_params['elements'], app_params['coop_station_ids'], app_params['station_names'])
-            return results
         else:
             results = Application(**app_params)
-            return results
+        return results
 
 class SodGraphicsJob(object):
     '''

@@ -110,8 +110,8 @@ class GraphDictWriter(object):
         elif 'temporal_summary' in self.form.keys() and not 'start_month' in self.form.keys():
             title = WRCCData.DISPLAY_PARAMS[self.form['temporal_summary']]
             title += ' of ' + WRCCData.DISPLAY_PARAMS[el_strip]
-        elif 'monthly_statistic' in self.form.keys():
-            if self.form['monthly_statistic'] == 'ndays':
+        elif 'statistic' in self.form.keys():
+            if self.form['statistic'] == 'ndays':
                 title = 'Number of days where ' +  WRCCData.DISPLAY_PARAMS[el_strip]
                 if self.form['less_greater_or_between'] == 'l':
                     title+= ' less than ' + str(self.form['threshold_for_less_than']) + ' '  + unit
@@ -121,7 +121,7 @@ class GraphDictWriter(object):
                     title+= ' between ' + self.form['threshold_low_for_between'] + ' '  + unit +\
                     ' and ' +  self.form['threshold_high_for_between'] + ' '  + unit
             else:
-                title = WRCCData.DISPLAY_PARAMS[self.form['monthly_statistic']]
+                title = WRCCData.DISPLAY_PARAMS[self.form['statistic']]
                 title += ' of ' + WRCCData.DISPLAY_PARAMS[el_strip]
         elif 'station_id' in self.form.keys() or 'location' in self.form.keys():
             if 'user_area_id' in self.form.keys():
@@ -149,7 +149,7 @@ class GraphDictWriter(object):
         if 'spatial_summary' in self.form.keys():
             subTitle = WRCCData.DISPLAY_PARAMS[self.form['area_type']]
             subTitle+= ': ' + self.form[self.form['area_type']]
-        if 'monthly_statistic' in self.form.keys():
+        if 'statistic' in self.form.keys():
             if 'station_id' in self.form.keys():
                 try:
                     subTitle = 'Station: ' + self.form['user_area_id']
@@ -197,7 +197,7 @@ class GraphDictWriter(object):
         return axisMin
 
     def set_plotColor(self):
-        if 'monthly_statistic' in self.form.keys():
+        if 'statistic' in self.form.keys():
             pl_color  = WRCCData.PLOT_COLOR_MONTH[self.name.upper()][0]
         else:
             el_strip, base_temp = WRCCUtils.get_el_and_base_temp(self.element)
@@ -205,7 +205,7 @@ class GraphDictWriter(object):
         return pl_color
 
     def set_runningMeanColor(self):
-         if 'monthly_statistic' in self.form.keys():
+         if 'statistic' in self.form.keys():
             rm_color  = WRCCData.PLOT_COLOR_MONTH[self.name.upper()][1]
          else:
             el_strip, base_temp = WRCCUtils.get_el_and_base_temp(self.element)
@@ -221,7 +221,7 @@ class GraphDictWriter(object):
             sname = WRCCData.DISPLAY_PARAMS[el_strip]
             if base_temp:
                 sname+=' ' + str(base_temp)
-        if 'monthly_statistic' in self.form.keys():
+        if 'statistic' in self.form.keys():
             if self.name != None:
                 sname = self.name
         return sname
@@ -1360,7 +1360,7 @@ class SODApplication(object):
                     }
         if 'station_ids' in self.data.keys():
             #Delete eventually
-            app_params['coop_station_ids'] = self.data['station_ids']
+            app_params['station_ids'] = self.data['station_ids']
             app_params['station_names'] = self.data['station_names']
             #Use ids and names oin WRCCDataApps
             app_params['ids'] = self.data['station_ids']
@@ -1381,7 +1381,7 @@ class SODApplication(object):
             #return results, fa_results
             results = WRCCDataApps.SodxtrmtsNew(**app_params)
         elif self.app_name == 'Soddyrec':
-            results = Application(app_params['data'],app_params['dates'], app_params['elements'], app_params['coop_station_ids'], app_params['station_names'])
+            results = Application(app_params['data'],app_params['dates'], app_params['elements'], app_params['station_ids'], app_params['station_names'])
         else:
             results = Application(**app_params)
         return results

@@ -17,6 +17,7 @@ import sys
 import WRCCUtils, AcisWS, WRCCDataApps, WRCCClasses, WRCCData
 
 today = WRCCUtils.set_back_date(0)
+today_year = today[0:4]
 
 import logging
 logger = logging.getLogger('WrapperLogger')
@@ -36,12 +37,12 @@ class Wrapper:
         self.app_specific_params = app_specific_params
         self.app_name = app_name
         self.data = []; self.dates = []
-        self.elements  = [];self.coop_station_ids = []
+        self.elements  = [];self.station_ids = []
         self.station_names  = []
         self.station_states = []
 
     def get_data(self):
-        #(self.data, self.dates, self.elements, self.coop_station_ids, self.station_names) = \
+        #(self.data, self.dates, self.elements, self.station_ids, self.station_names) = \
         #AcisWS.get_sod_data(self.params, self.app_name)
         DJ = WRCCClasses.SODDataJob(self.app_name,self.params)
         #self.station_ids, self.station_names = DJ.get_station_ids_names()
@@ -63,6 +64,120 @@ class Wrapper:
         results = SSApp.run_app()
         return results
 
+####################
+#Parameter checks
+####################
+def check_sid(sid):
+    '''
+    Checks that sid is in ACIS metatdata
+    '''
+    err = None
+    meta = AcisWS.StnMeta({'sid':sid})
+    if not meta or 'meta' not in meta.keys() or not meta['meta']:
+        err = '%s is not a valid station ID!' %sid
+    return err
+
+def check_date(date):
+    err = None
+    date_eight = WRCCUtils.date_to_eight(date)
+    if date_eight.upper() == 'POR':
+        return err
+    if len(date_eight) != 8:
+        return '%s is not a valid date!' %str(date)
+    if any(c.isalpha() for c in date_eight):
+        return '%s is not a valid date!' %str(date)
+    date_dt = WRCCUtils.date_to_datetime(date_eight)
+    today_dt = WRCCUtils.date_to_datetime(today)
+    earliest = WRCCUtils.date_to_datetime('18500101')
+    if date_dt < earliest or date_dt > today_dt:
+        return '%s is not a valid date!' %str(date)
+    return err
+
+def check_date_range(start_date, end_date):
+    err = None
+    s_eight =  WRCCUtils.date_to_eight(start_date)
+    e_eight = WRCCUtils.date_to_eight(end_date)
+    start_dt = WRCCUtils.date_to_datetime(s_eight)
+    end_dt = WRCCUtils.date_to_datetime(e_eight)
+    if start_dt > end_dt:
+        return 'End date needs to be later than start date!'
+    return err
+
+def check_year(year):
+    err = None
+    yr = str(year)
+    if yr.upper() == 'POR':
+        return err
+    if len(yr) != 4:
+        return '%s is not a valid date!' %yr
+    if any(c.isalpha() for c in year):
+        return '%s is not a valid date!' %yr
+    try:
+        int(yr)
+    except:
+        return '%s is not a valid date!' %yr
+    if int(yr)< 1850 or int(yr) > today.year:
+        return '%s is not a valid date!' %yr
+    return err
+
+def check_year_range(start_year, end_year):
+    err = None
+    if int(start_year) > int(end_year):
+        return 'End year needs to be later than start year!'
+    return err
+
+def check_element(element, app_name):
+    err = None
+    el_list = {
+        'sodsum':['snow','snwd','maxt','mint', 'obst','pcpn','multi'],
+        'sodxtrmts':['pcpn', 'snow', 'snwd', 'maxt', 'mint', 'avgt', 'dtr', 'hdd', 'cdd', 'gdd','evap','wdmv'],
+        'sodsumm':['all', 'temp', 'prsn', 'both', 'hc', 'g'],
+        'soddyrec':['all','tmp','wtr','pcpn','snow','snwd','maxt','mint','hdd','cdd'],
+        'soddynorm':[]
+    }
+    if element not in el_list[app_name]:
+        return '%s is not a valid element for the %s application!' %(element, app_name)
+    return err
+
+def check_max_missing_days(mmd):
+    err = None
+    try:
+        max_missing_days = int(mmd)
+    except:
+        return 'Max Missing Days should be an integer!'
+    return err
+
+def check_start_month(sm):
+    err = None
+    try:
+        int(sm)
+    except:
+        return 'Start month should be an integer!'
+    if int(sm) < 1 or int(sm) > 12:
+        return '%s is not a valid start month!' % str(sm)
+    return err
+
+def check_T_F(bln):
+    err = None
+    if bln not in ['T','F']:
+        return '%s should be F (false) or T (true)' %str(bln)
+    return err
+
+def check_base_temp(base_temp):
+    err = None
+    try:
+        int(base_temp)
+    except:
+        if base_temp!='none':
+            return 'Invalid Base Temperature: %s' %base_temp
+    return err
+
+def check_sx_stat(stat):
+    err = None
+    if stat not in ['mmax','mmin','mave','sd','rmon','msum']:
+        return '%s is not a valid statistic' %stat
+    return err
+
 ################################################
 #Wrapper functions for Kelly's SOD applications
 ################################################
@@ -70,13 +185,13 @@ def sodxtrmts_wrapper(argv):
     '''
     NOTES: Runs without frequency analysis,
            ndays analysis not implemented here
-    argv -- stn_id start_year end_year element base_temperature monthly_statistic
+    argv -- sid start_year end_year element base_temperature statistic
             max_missing_days start_month departure_from_averages
     Input Options:
             element choices:
                 pcpn, snow, snwd, maxt, mint, avgt, dtr, hdd, cdd, gdd
             base_temperature: for hdd, cdd, gdd
-            monthly_statistic choices:
+            statistic choices:
                 mmax --> Monthly Maximum
                 mmin --> Monthly Minimum
                 mave --> Monthly Avergage
@@ -97,84 +212,64 @@ def sodxtrmts_wrapper(argv):
         format_sodxtrmts_results_web([], [], {'error':'Invalid Request'}, {}, {}, '0000', '0000')
         sys.exit(1)
     #Assign input parameters:
-    stn_id = str(argv[0])
+    sid = str(argv[0])
     start_year = str(argv[1]);end_year = str(argv[2])
     element = str(argv[3]);
     base_temp=str(argv[4])
-    monthly_statistic = str(argv[5])
+    statistic = str(argv[5])
     max_missing_days = argv[6]
     start_month = str(argv[7])
     departures_from_averages=str(argv[8])
-    ##
     #Sanity checks on input parameters
-    ##
-    #Station ID check, if not alpha numeric, people coming from old pages and
-    #we need to redirect them
-    try:
-        int(stn_id)
-    except:
-        format_sodxtrmts_results_web([], [], {'redirect':''}, {}, {}, '0000', '0000')
+    err = check_sid(sid)
+    if err:
+        format_sodxtrmts_results_web([], [], {'error':err}, {}, {}, '0000', '0000')
         sys.exit(1)
-    #start/end year checks
-    if start_year.upper() != 'POR':
-        try:
-            int(start_year)
-        except:
-            format_sodxtrmts_results_web([], [], {'error':'Invalid Start Year: %s' %start_year}, {}, {}, '0000', '0000')
-            sys.exit(1)
-        if len(start_year) != 4:
-            format_sodxtrmts_results_web([], [], {'error':'Invalid Start Year: %s' %start_year}, {}, {}, '0000', '0000')
-            sys.exit(1)
-    if end_year.upper() != 'POR':
-        try:
-            int(end_year)
-        except:
-            format_sodxtrmts_results_web([], [], {'error':'Invalid End Year: %s' %endt_year}, {}, {}, '0000', '0000')
-            sys.exit(1)
-        if len(end_year) !=4:
-            format_sodxtrmts_results_web([], [], {'error':'Invalid End Year: %s' %end_year}, {}, {}, '0000', '0000')
-            sys.exit(1)
-    user_start_year = str(argv[1]);user_end_year = str(argv[2])
-    #More sanity checks
-    try:
-        max_missing_days = int(max_missing_days)
-    except:
-        format_sodxtrmts_results_web([], [], {'error':'Invalid Max Missing Days: %s' %argv[5] }, {}, {}, '0000', '0000')
+    err = check_year(start_year)
+    if err:
+        format_sodxtrmts_results_web([], [], {'error':err}, {}, {}, '0000', '0000')
         sys.exit(1)
-    if len(start_month) == 1:
-        start_montrh = '0' +start_month
-    if departures_from_averages not in ['T','F']:
-        format_sodxtrmts_results_web([], [], {'error':'Invalid Departures from Averages: %s' %str(argv[7])}, {}, {}, '0000', '0000')
+    err = check_year(end_year)
+    if err:
+        format_sodxtrmts_results_web([], [], {'error':err}, {}, {}, '0000', '0000')
         sys.exit(1)
+    err = check_max_missing_days(max_missing_days)
+    if err:
+        format_sodxtrmts_results_web([], [], {'error':err}, {}, {}, '0000', '0000')
+        sys.exit(1)
+    err = check_start_month(start_month)
+    if err:
+        format_sodxtrmts_results_web([], [], {'error':err}, {}, {}, '0000', '0000')
+        sys.exit(1)
+    if len(start_month) == 1:start_montrh = '0' +start_month
+    err = check_T_F(departures_from_averages)
+    if err:
+        format_sodxtrmts_results_web([], [], {'error':err}, {}, {}, '0000', '0000')
+        sys.exit(1)
+    err = check_sx_stat(statistic)
+    if err:
+        format_sodxtrmts_results_web([], [], {'error':err}, {}, {}, '0000', '0000')
+        sys.exit(1)
+    err = check_element(element, 'sodxtrmts')
+    if err:
+        format_sodxtrmts_results_web([], [], {'error':err}, {}, {}, '0000', '0000')
+        sys.exit(1)
+    err = check_base_temp(base_temp)
+    if err:
+        format_sodxtrmts_results_web([], [], {'error':err}, {}, {}, '0000', '0000')
+        sys.exit(1)
+    if base_temp == 'none':base_temp = 65
+    #End sanity checks
     #Change POR start/end year to 8 digit start/end dates
     if start_year.upper() == 'POR' or end_year.upper() == 'POR':
-        valid_daterange = por_to_valid_daterange(stn_id)
+        valid_daterange = por_to_valid_daterange(sid)
         if start_year.upper() == 'POR':
             start_year = valid_daterange[0][0:4]
         if end_year.upper() == 'POR':
             end_year = valid_daterange[1][0:4]
-    #more sanity check
-    if monthly_statistic not in ['mmax','mmin','mave','sd','rmon','msum']:
-        format_sodxtrmts_results_web([], [], {'error':'Invalid Analysis: %s' % monthly_statistic}, {}, {}, '0000', '0000')
-        sys.exit(1)
-    if element not in ['pcpn', 'snow', 'snwd', 'maxt', 'mint', 'avgt', 'dtr', 'hdd', 'cdd', 'gdd','evap','wdmv']:
-        format_sodxtrmts_results_web([], [], {'error':'Invalid Element: %s' %element }, {}, {}, '0000', '0000')
-        sys.exit(1)
-    try:
-        int(base_temp)
-    except:
-        if base_temp!='none':
-            format_sodxtrmts_results_web([], [], {'error':'Invalid Base Temperature: %s' %base_temp}, {}, {}, '0000', '0000')
-            sys.exit(1)
-        else:
-            base_temp = '65'
-    if start_month not in ['01','02','03','04','05','06','07','08','09','10','11','12']:
-        format_sodxtrmts_results_web([], [], {'error':'Invalid Start Month: %s' %start_month }, {}, {}, '0000', '0000')
-        sys.exit(1)
-    #End sanity checks
     #Define parameters
     data_params = {
-                'sid':stn_id,
+                'sid':sid,
                 'start_date':start_year,
                 'end_date':end_year,
                 'element':element,
@@ -187,7 +282,8 @@ def sodxtrmts_wrapper(argv):
                 'units':'english',
                 'max_missing_days':max_missing_days,
                 'start_month':start_month,
-                'monthly_statistic': monthly_statistic,
+                'statistic_period':'monthly',
+                'statistic':statistic,
                 'frequency_analysis': 'F',
                 'departures_from_averages':departures_from_averages
                 }
@@ -201,11 +297,12 @@ def sodxtrmts_wrapper(argv):
         results = []
         fa_results = []
         data = []
+    user_start_year = str(argv[1]);user_end_year = str(argv[2])
     format_sodxtrmts_results_web(results, data, data_params, app_params, SX_wrapper, user_start_year, user_end_year)
 
 def sodsum_wrapper(argv):
     '''
-    argv -- stn_id start_date end_date element
+    argv -- sid start_date end_date element
 
     Input Options:
             element choices:
@@ -223,43 +320,27 @@ def sodsum_wrapper(argv):
         format_sodsum_results_web({}, {}, {'error':'Invalid Request'},{})
         sys.exit(1)
     #Define parameters
-    stn_id = str(argv[0])
+    sid = str(argv[0])
     start_date = format_date(str(argv[1]));end_date = format_date(str(argv[2]))
-    #Station ID check, if not alpha numeric, people coming from old pages and
-    #we need to redirect them
-    try:
-        int(stn_id)
-    except:
-        format_sodsum_results_web({}, {}, {'redirect':''}, {})
+    #Input parameter check
+    err = check_sid(sid)
+    if err:
+        format_sodsum_results_web({}, {}, {'error':'Invalid Station ID'},{})
         sys.exit(1)
-    #Sanity Check on dates
-    if start_date.upper() != 'POR':
-        if len(start_date)!=8:
-            format_sodsum_results_web({}, {}, {'error':'Invalid Start Date: %s' %start_date}, {})
-            sys.exit(1)
-        else:
-            try:
-                int(start_date)
-            except:
-                format_sodsum_results_web({}, {}, {'error':'Invalid Start Date: %s' %start_date}, {})
-                sys.exit(1)
-    if end_date.upper() != 'POR':
-        if len(end_date)!=8:
-            format_sodsum_results_web({}, {}, {'error':'Invalid End Date: %s' %end_date}, {})
-            sys.exit(1)
-        else:
-            try:
-                int(end_date)
-            except:
-                format_sodsum_results_web({}, {}, {'error':'Invalid End Date: %s' %end_date}, {})
-                sys.exit(1)
+    err = check_date(start_date)
+    if err:
+        format_sodsum_results_web({}, {}, {'error':err}, {})
+        sys.exit(1)
+    err = check_date(end_date)
+    if err:
+        format_sodsum_results_web({}, {}, {'error':err}, {})
+        sys.exit(1)
     element = str(argv[3])
-    #Sanity Check on element
-    if element not in ['snow','snwd','maxt','mint', 'obst','pcpn','multi']:
-        format_sodsum_results_web({}, {}, {'error':'Invalid Element: %s' %element}, {})
-        sys.exit(1)
+    err = check_element(element, 'sodsum')
+    if err:
+        format_sodsum_results_web({}, {}, {'error':err}, {})
     data_params = {
-                'sid':stn_id,
+                'sid':sid,
                 'start_date':start_date,
                 'end_date':end_date,
                 'element':element
@@ -276,7 +357,7 @@ def sodsum_wrapper(argv):
         data = {}
         results = {}
     #Format results
-    vd = WRCCUtils.find_valid_daterange(stn_id, start_date='por', end_date='por', el_list=['maxt','pcpn','snow','evap','wdmv'], max_or_min='max')
+    vd = WRCCUtils.find_valid_daterange(sid, start_date='por', end_date='por', el_list=['maxt','pcpn','snow','evap','wdmv'], max_or_min='max')
     if vd and len(vd)==2:
         station_dates = vd
     else:
@@ -285,10 +366,10 @@ def sodsum_wrapper(argv):
 
 def sodsumm_wrapper(argv):
     '''
-    argv -- stn_id table_name start_year end_year max_missing_days tabular_summary
+    argv -- sid table_name start_year end_year max_missing_days tabular_summary
 
     Arguments:
-            stn_id:
+            sid:
                 6 digit coop id recognized by ACIS
             table_name choices:
                 temp, prsn, hdd, cdd, gdd, corn,ts_tps,ts_tp
@@ -315,7 +396,7 @@ def sodsumm_wrapper(argv):
         format_sodsumm_results_web([],'',{'error':'Invalid Request'}, '0000', '0000', '', '','')
         sys.exit(1)
     #Assign input parameters:
-    stn_id = str(argv[0]);table_name = str(argv[1])
+    sid = str(argv[0]);table_name = str(argv[1])
     if table_name in ['hdd','cdd']:
         tbls = 'hc'
     elif table_name == 'gdd':
@@ -328,7 +409,7 @@ def sodsumm_wrapper(argv):
     #Station ID check, if not alpha numeric, people coming from old pages and
     #we need to redirect them
     try:
-        int(stn_id)
+        int(sid)
     except:
         format_sodsumm_results_web([],'',{'redirect':''}, '0000', '0000', '', '','')
         sys.exit(1)
@@ -353,7 +434,7 @@ def sodsumm_wrapper(argv):
             sys.exit(1)
     #Change POR start/end year to 8 digit start/end dates
     if start_year.upper() == 'POR' or end_year.upper() == 'POR':
-        valid_daterange = por_to_valid_daterange(stn_id)
+        valid_daterange = por_to_valid_daterange(sid)
         if start_year.upper() == 'POR':
             start_year = valid_daterange[0][0:4]
         if end_year.upper() == 'POR':
@@ -369,7 +450,7 @@ def sodsumm_wrapper(argv):
         sys.exit(1)
     #Define parameters
     data_params = {
-                'sid':stn_id,
+                'sid':sid,
                 'units':'english',
                 'start_date':start_year,
                 'end_date':end_year,
@@ -388,7 +469,7 @@ def sodsumm_wrapper(argv):
         results = SS_wrapper.run_app(data)
     except:
         SS_wrapper = {
-            'station_ids':[stn_id],
+            'station_ids':[sid],
             'station_names':['No Data'],
             'station_states':['No State']
         }
@@ -396,7 +477,7 @@ def sodsumm_wrapper(argv):
         data = {}
     #Format results
     if not data or ('error' in data.keys() and data['error']) or not results:
-        format_sodsumm_results_web([],table_name, {'error': 'No Data found!'}, start_year, end_year, stn_id, 'No Data found for Station ID: ' + stn_id,'')
+        format_sodsumm_results_web([],table_name, {'error': 'No Data found!'}, start_year, end_year, sid, 'No Data found for Station ID: ' + sid,'')
         #results = []
         print_sodsumm_footer_web(app_params)
         sys.exit(1)
@@ -410,10 +491,10 @@ def sodsumm_wrapper(argv):
 
 def soddyrec_wrapper(argv):
     '''
-    argv -- stn_id element_type start_date end_date
+    argv -- sid element_type start_date end_date
 
     Input Options:
-            stn_id -- station identifier
+            sid -- station identifier
             start/end date are 8 digits long, e.g 20100102
             element_type choices:
                 all  -- generates tables for  maxt, mint, pcpn, snow, snwd, hdd, cdd,
@@ -441,7 +522,7 @@ def soddyrec_wrapper(argv):
         format_soddyrec_results_web([],{},{'error':'Invalid Request'})
         sys.exit(1)
     #Assign input parameters:
-    stn_id = str(argv[0]);element = str(argv[1])
+    sid = str(argv[0]);element = str(argv[1])
     start_date = format_date(str(argv[2]));end_date = format_date(str(argv[3]))
     start_user = format_date(str(argv[2]));end_user = format_date(str(argv[3]))
     output_format = str(argv[4])
@@ -449,12 +530,12 @@ def soddyrec_wrapper(argv):
     #Station ID check, if not alpha numeric, people coming from old pages and
     #we need to redirect them
     try:
-        int(stn_id)
+        int(sid)
     except:
         format_soddyrec_results_web([],{},{'redirect':''})
         sys.exit(1)
     #Find valid daterange
-    valid_daterange = por_to_valid_daterange(stn_id)
+    valid_daterange = por_to_valid_daterange(sid)
 
     #Change POR start/end year to 8 digit start/end dates
     #Check if yuser dates lie outside of por for station
@@ -474,7 +555,7 @@ def soddyrec_wrapper(argv):
 
     #Define parameters
     data_params = {
-                'sid':stn_id,
+                'sid':sid,
                 'start_date':start_date,
                 'end_date':end_date,
                 'start_user':start_user,
@@ -494,7 +575,7 @@ def soddyrec_wrapper(argv):
 
 def soddynorm_wrapper(argv):
     '''
-    argv -- stn_id start_year end_year filter_type filter_days
+    argv -- sid start_year end_year filter_type filter_days
 
     Input Options:
             start/end year --> start/end year of analysis
@@ -510,7 +591,7 @@ def soddynorm_wrapper(argv):
         format_soddynorm_results_web([],{},{'error':'Invalid Request'})
         sys.exit(1)
     #Assign input parameters:
-    stn_id = str(argv[0])
+    sid = str(argv[0])
     start_year = format_date(str(argv[1]));end_year = format_date(str(argv[2]))
     filter_type = str(argv[3])
     filter_days = str(argv[4])
@@ -518,12 +599,12 @@ def soddynorm_wrapper(argv):
     #Station ID check, if not alpha numeric, people coming from old pages and
     #we need to redirect them
     try:
-        int(stn_id)
+        int(sid)
     except:
         format_soddynorm_results_web([],{},{'redirect':''})
         sys.exit(1)
     #Find valid daterange
-    valid_daterange = por_to_valid_daterange(stn_id)
+    valid_daterange = por_to_valid_daterange(sid)
     #Change POR start/end year to 8 digit start/end dates
     #Check if yuser dates lie outside of por for station
     if start_year.upper() == 'POR' or WRCCUtils.date_to_datetime(start_year + '0101') < WRCCUtils.date_to_datetime(valid_daterange[0]):
@@ -542,7 +623,7 @@ def soddynorm_wrapper(argv):
 
     #Define parameters
     data_params = {
-                'sid':stn_id,
+                'sid':sid,
                 'start_date':start_year,
                 'end_date':end_year,
                 }
@@ -1065,7 +1146,7 @@ def format_sodxtrmts_results_txt(results, data, data_params, app_params, wrapper
     Generates sodxtrmts text output that matches Kelly's commandline output
     '''
     #Header
-    print 'STATION NUMBER %s  ELEMENT : %s           QUANTITY :        %s' %(data_params['sid'], WRCCData.ACIS_ELEMENTS_DICT[element]['name_long'],WRCCData.SXTR_ANALYSIS_CHOICES[app_params['monthly_statistic']])
+    print 'STATION NUMBER %s  ELEMENT : %s           QUANTITY :        %s' %(data_params['sid'], WRCCData.ACIS_ELEMENTS_DICT[element]['name_long'],WRCCData.SXTR_ANALYSIS_CHOICES[app_params['statistic']])
     try:
         print ' STATION : %s' %wrapper.station_names[0]
     except:
@@ -1112,7 +1193,7 @@ def format_sodxtrmts_results_web(results, data, data_params, app_params, wrapper
     elif'error' in data_params.keys() and data_params['error'] != 'Redirect':
         print_error(data_params['error'])
     else:
-        print '<HEAD><TITLE>' + WRCCData.SXTR_ANALYSIS_CHOICES_DICT[app_params['monthly_statistic']] + ' of ' + \
+        print '<HEAD><TITLE>' + WRCCData.SXTR_ANALYSIS_CHOICES_DICT[app_params['statistic']] + ' of ' + \
         WRCCData.DISPLAY_PARAMS[data_params['element']] +', Station id: ' + data_params['sid'] +'</TITLE></HEAD>'
         print '<BODY BGCOLOR="#FFFFFF">'
         print '<CENTER>'
@@ -1121,7 +1202,7 @@ def format_sodxtrmts_results_web(results, data, data_params, app_params, wrapper
         else:
             print '<H1> No Station Name</H1>'
 
-        header2 = '<H2>' + WRCCData.SXTR_ANALYSIS_CHOICES_DICT[app_params['monthly_statistic']] +  ' of '+ WRCCData.DISPLAY_PARAMS[data_params['element']]
+        header2 = '<H2>' + WRCCData.SXTR_ANALYSIS_CHOICES_DICT[app_params['statistic']] +  ' of '+ WRCCData.DISPLAY_PARAMS[data_params['element']]
         if WRCCData.UNITS_ENGLISH[data_params['element']]!= '':
             header2+=' ('+ WRCCData.UNITS_LONG[WRCCData.UNITS_ENGLISH[data_params['element']]] +')'
         header2+= '</H2>'
@@ -1352,8 +1433,8 @@ def print_redirect():
     print '</BODY>'
     print '</HTML>'
 
-def por_to_valid_daterange(stn_id):
-    valid_daterange = WRCCUtils.find_valid_daterange(stn_id)
+def por_to_valid_daterange(sid):
+    valid_daterange = WRCCUtils.find_valid_daterange(sid)
     if not valid_daterange or valid_daterange == ['','']:
         valid_daterange = ['00000000','00000000']
     return valid_daterange

@@ -657,30 +657,30 @@ def get_sod_data(form_input, program):
     dates = WRCCUtils.get_dates(s_date, e_date, program)
     elements = WRCCUtils.get_element_list(form_input, program)
     els = [dict(name='%s' % el) for el in elements]
-    if 'coop_station_id' in form_input.keys():
-        coop_station_ids =[form_input['coop_station_id']]
-    elif 'coop_station_ids' in form_input.keys():
-        coop_station_ids = form_input['coop_station_ids']
+    if 'station_id' in form_input.keys():
+        station_ids =[form_input['station_id']]
+    elif 'station_ids' in form_input.keys():
+        station_ids = form_input['station_ids']
     elif 'county' in form_input.keys():
-        coop_station_ids = get_station_list('county', form_input['county'])
+        station_ids = get_station_list('county', form_input['county'])
     elif 'climate_division' in form_input.keys():
-        coop_station_ids = get_station_list('climate_division', form_input['climate_division'])
+        station_ids = get_station_list('climate_division', form_input['climate_division'])
     elif 'county_warning_area' in form_input.keys():
-        coop_station_ids = get_station_list('county_warning_area', form_input['county_warning_area'])
+        station_ids = get_station_list('county_warning_area', form_input['county_warning_area'])
     elif 'basin' in form_input.keys():
-        coop_station_ids = get_station_list('basin', form_input['basin'])
+        station_ids = get_station_list('basin', form_input['basin'])
     elif 'state' in form_input.keys():
-        coop_station_ids = get_station_list('state', form_input['state'])
+        station_ids = get_station_list('state', form_input['state'])
     elif 'bounding_box' in form_input.keys():
-        coop_station_ids = get_station_list('bounding_box', form_input['bounding_box'])
+        station_ids = get_station_list('bounding_box', form_input['bounding_box'])
     else:
-        coop_station_ids =[]
+        station_ids =[]
     #sort station id in ascending order
-    coop_station_ids = WRCCUtils.strip_n_sort(coop_station_ids)
-    station_names=['No Name found' for i in range(len(coop_station_ids))]
+    station_ids = WRCCUtils.strip_n_sort(station_ids)
+    station_names=['No Name found' for i in range(len(station_ids))]
     #Since Acis may not return results for some stations, we need to initialize output dictionary
     datadict = defaultdict(list)
-    for i, stn in enumerate(coop_station_ids):
+    for i, stn in enumerate(station_ids):
         if program == 'Soddyrec':
             #yr_list = [[['#', '#', '#', '#', '#', '#','#', '#'] for k in range(366)] for el in elements]
             #yr_list = [[['#', '#', '#', '#', '#', '#','#', '#'] for k in range(366)] for i in range(3*len(elements))]
@@ -698,17 +698,17 @@ def get_sod_data(form_input, program):
             for sry in smry_opts:
                 #elts.append(dict(name=str(el),smry=sry, groupby='year'))
                 elts.append(dict(vX=WRCCData.ACIS_ELEMENTS_DICT[el]['vX'],smry=sry, groupby='year'))
-        params = dict(sids=coop_station_ids, sdate=s_date, edate=e_date, elems=elts)
+        params = dict(sids=station_ids, sdate=s_date, edate=e_date, elems=elts)
     elif program in ['Soddynorm', 'Soddd', 'Sodpad', 'Sodsumm', 'Sodpct', 'Sodthr', 'Sodxtrmts', 'Sodpiii']:
-        params = dict(sids=coop_station_ids, sdate=s_date, edate=e_date, \
+        params = dict(sids=station_ids, sdate=s_date, edate=e_date, \
         #elems=[dict(name=el,interval='dly',duration='dly',groupby='year')for el in elements])
         elems=[dict(vX=WRCCData.ACIS_ELEMENTS_DICT[el]['vX'],interval='dly',duration='dly',groupby='year') for el in elements])
     elif program in ['Sodlist', 'Sodcnv']:
-        params = dict(sids=coop_station_ids, sdate=s_date, edate=e_date, \
+        params = dict(sids=station_ids, sdate=s_date, edate=e_date, \
         #elems=[dict(name=el,add='t')for el in elements])
         elems=[dict(vX=WRCCData.ACIS_ELEMENTS_DICT[el]['vX'],add='t') for el in elements])
     else:
-        params = dict(sids=coop_station_ids, sdate=s_date, edate=e_date, \
+        params = dict(sids=station_ids, sdate=s_date, edate=e_date, \
         #elems=[dict(name=el)for el in elements])
         elems=[dict(vX=WRCCData.ACIS_ELEMENTS_DICT[el]['vX']) for el in elements])
     request = MultiStnData(params)
@@ -719,12 +719,12 @@ def get_sod_data(form_input, program):
         request['data']#list of data for the stations
     except:
         if request['error']:
-            return datadict, dates, elements, coop_station_ids, station_names
+            return datadict, dates, elements, station_ids, station_names
             #sys.exit(1)
         else:
             #Unknown error ocurred when getting data
             #sys.exit(1)
-            return datadict, dates, elements, coop_station_ids, station_names
+            return datadict, dates, elements, station_ids, station_names
 
     for stn, stn_data in enumerate(request['data']):
         try:
@@ -737,13 +737,13 @@ def get_sod_data(form_input, program):
                     #station_id = str(stn_data['meta']['sids'][1].split()[0])
                     station_id = str(sid_split[0])
                     try:
-                        index = coop_station_ids.index(str(station_id))
+                        index = station_ids.index(str(station_id))
                         break
                     except:
                         continue
-            index = coop_station_ids.index(str(station_id))
+            index = station_ids.index(str(station_id))
             try:
-                index = coop_station_ids.index(str(station_id))
+                index = station_ids.index(str(station_id))
                 station_names[index] = str(stn_data['meta']['name'])
                 if program == 'Soddyrec':
                     try:
@@ -777,7 +777,7 @@ def get_sod_data(form_input, program):
         #need to get averages separately; add: date, mcnt fails if we ask for mean, max together
         elts_x = [dict(name='%s' % el, interval='dly', duration='dly', smry={'reduce':'mean'}, \
         groupby="year") for el in elements]
-        params_x = dict(sids=coop_station_ids, sdate=s_date, edate=e_date, elems=elts_x)
+        params_x = dict(sids=station_ids, sdate=s_date, edate=e_date, elems=elts_x)
         request_x = MultiStnData(params_x)
         if not request_x:
             request_x = {'error':'Bad request, check parameters.'}
@@ -799,7 +799,7 @@ def get_sod_data(form_input, program):
                     continue
 
                 try:
-                    indx_x = coop_station_ids.index(station_id)
+                    indx_x = station_ids.index(station_id)
                     try:
                         for el_id, ave_list in enumerate(stn_data['smry']):
                             for date_id,ave in enumerate(ave_list):
@@ -820,7 +820,7 @@ def get_sod_data(form_input, program):
                 'Unknown error ocurred when getting data'
                 sys.exit(1)
         '''
-    return datadict, dates, elements, coop_station_ids, station_names
+    return datadict, dates, elements, station_ids, station_names
 
 
 def get_sodsum_data(form_input):
@@ -830,18 +830,18 @@ def get_sodsum_data(form_input):
     Keyword arguments:
     form_input -- parameter file for data request obtained from user of WRCC SOD pages
     '''
-    if 'element' not in form_input.keys() or 'coop_station_ids' not in form_input.keys():
-        print 'element and coop_station_id options required!'
+    if 'element' not in form_input.keys() or 'station_ids' not in form_input.keys():
+        print 'element and station_id options required!'
         sys.exit(0)
-    if not form_input['element'] or not form_input['coop_station_ids']:
-        print 'element and coop_station_id options required!'
+    if not form_input['element'] or not form_input['station_ids']:
+        print 'element and station_id options required!'
         sys.exit(0)
     s_date, e_date = WRCCUtils.start_end_date_to_eight(form_input)
-    coop_station_ids = form_input['coop_station_ids'] #list of stn ids (converted to list in form)
+    station_ids = form_input['station_ids'] #list of stn ids (converted to list in form)
     #sort coop ids in ascending order, strip left zeros first, sort and reattach zeros
-    coop_station_ids = WRCCUtils.strip_n_sort(coop_station_ids)
+    station_ids = WRCCUtils.strip_n_sort(station_ids)
     datadict = defaultdict(list)
-    station_names=[' ' for i in range(len(coop_station_ids))]
+    station_names=[' ' for i in range(len(station_ids))]
     if form_input['element']!= 'multi':
         elements = [form_input['element']]
         #evap, wdmv, wesf not fully implemented into Acis_WS yet
@@ -851,7 +851,7 @@ def get_sodsum_data(form_input):
     else:
         elements = ['pcpn', 'snow', 'snwd', 'maxt', 'mint', 'obst']
     #request data on a station by station basis
-    for i, stn_id in enumerate(coop_station_ids):
+    for i, stn_id in enumerate(station_ids):
         if form_input['element']!= 'multi':
             params = dict(sid=stn_id, sdate=s_date, edate=e_date, elems=[dict(name='%s' % form_input['element'])])
         else:
@@ -875,7 +875,7 @@ def get_sodsum_data(form_input):
         except:
             datadict[i]=[]
 
-    return datadict, elements, coop_station_ids, station_names
+    return datadict, elements, station_ids, station_names
 
 
 def get_sodlist_data(form_input, program):
@@ -887,21 +887,21 @@ def get_sodlist_data(form_input, program):
     program -- specifies program that is making the request.
     '''
     s_date, e_date = WRCCUtils.start_end_date_to_eight(form_input)
-    coop_station_id = form_input['coop_station_id']
+    station_id = form_input['station_id']
     if program in ['sodlist', 'sodcnv']:
         if 'include_tobs_evap' in form_input.keys():
-            params = dict(sid='%s' % coop_station_id, sdate=s_date, edate=e_date, \
+            params = dict(sid='%s' % station_id, sdate=s_date, edate=e_date, \
             elems=[dict(name='pcpn', add='f,t'), dict(name='snow', add='f,t'), dict(name='snwd', add='f,t'),
             dict(name='maxt', add='f,t'), dict(name='mint', add='f,t'), dict(name='obst', add='f,t')])
 
-            params_e = dict(sid='%s' % coop_station_id, sdate=s_date, edate=e_date, elems=[dict(vX=7,add='f,t', prec=2)])
+            params_e = dict(sid='%s' % station_id, sdate=s_date, edate=e_date, elems=[dict(vX=7,add='f,t', prec=2)])
         else:
             if not program == 'sodcnv':
-                params = dict(sid='%s' % coop_station_id, sdate=s_date, edate=e_date, \
+                params = dict(sid='%s' % station_id, sdate=s_date, edate=e_date, \
                 elems=[dict(name='pcpn', add='f,t'), dict(name='snow', add='f,t'), dict(name='snwd', add='f,t'),
                 dict(name='maxt', add='f,t'), dict(name='mint', add='f,t')])
             else:
-                params = dict(sid='%s' % coop_station_id, sdate=s_date, edate=e_date, \
+                params = dict(sid='%s' % station_id, sdate=s_date, edate=e_date, \
                 elems=[dict(name='pcpn', add='f,t'), dict(name='snow', add='f,t'), dict(name='snwd', add='f,t'),
                 dict(name='maxt', add='f,t'), dict(name='mint', add='f,t'), dict(name='obst', add='f,t')])
     elif program in ['sodmonline', 'sodmonlinemy']:
@@ -916,11 +916,11 @@ def get_sodlist_data(form_input, program):
             vXvN = 13
 
         if form_input['element'] in ['evap','wdmv', 'wesf' ]: #need to work with var major (vX) and var minor (vN)
-            params = dict(sid='%s' % coop_station_id, sdate=s_date, edate=e_date, elems=[vXvN])
+            params = dict(sid='%s' % station_id, sdate=s_date, edate=e_date, elems=[vXvN])
         elif form_input['element'] in ['dtr', 'mmt']:
-            params = dict(sid='%s' % coop_station_id, sdate=s_date, edate=e_date, elems=[dict(name='maxt'), dict(name='mint')])
+            params = dict(sid='%s' % station_id, sdate=s_date, edate=e_date, elems=[dict(name='maxt'), dict(name='mint')])
         else:
-            params = dict(sid='%s' % coop_station_id, sdate=s_date, edate=e_date, elems=[dict(name='%s' % form_input['element'])])
+            params = dict(sid='%s' % station_id, sdate=s_date, edate=e_date, elems=[dict(name='%s' % form_input['element'])])
     else:
         print 'Program %s not supported in get_sodlist_data. Program should be one out of [sodlist, sodcnv, sodmonline, sodmonlinemy]!' % program
         sys.exit(0)

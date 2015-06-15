@@ -15,10 +15,7 @@ to a list and pass this list pack to the perl script
 '''
 import sys
 import WRCCUtils, AcisWS, WRCCDataApps, WRCCClasses, WRCCData
-
-today = WRCCUtils.set_back_date(0)
-today_year = today[0:4]
-
+#Logging
 import logging
 logger = logging.getLogger('WrapperLogger')
 logger.setLevel(logging.DEBUG)
@@ -27,6 +24,27 @@ sh.setLevel(logging.DEBUG)
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(lineno)d in %(filename)s - %(message)s')
 sh.setFormatter(formatter)
 logger.addHandler(sh)
+
+###########
+#STATICS
+##########
+thismodule =  sys.modules[__name__]
+today = WRCCUtils.set_back_date(0)
+today_year = today[0:4]
+param_check_function = {
+    'station_id':'check_station_id',
+    'start_date':'check_date',
+    'end_date':'check_date',
+    'start_year':'check_year',
+    'end_year':'check_year',
+    'element':'check_element',
+    'start_month':'check_start_month',
+    'base_temperature':'check_base_temp',
+    'statistic':'check_sx_stat',
+    'departures_from_averages':'check_T_F',
+    'max_missing_days':'check_max_missing_days'
+}
+
 
 #########
 # CLASSES
@@ -67,14 +85,14 @@ class Wrapper:
 ####################
 #Parameter checks
 ####################
-def check_sid(sid):
+def check_station_id(sid):
     '''
     Checks that sid is in ACIS metatdata
     '''
     err = None
     meta = AcisWS.StnMeta({'sid':sid})
     if not meta or 'meta' not in meta.keys() or not meta['meta']:
-        err = '%s is not a valid station ID!' %sid
+        err = 'StationIDError: %s is not a valid station ID!' %sid
     return err
 
 def check_date(date):
@@ -83,14 +101,14 @@ def check_date(date):
     if date_eight.upper() == 'POR':
         return err
     if len(date_eight) != 8:
-        return '%s is not a valid date!' %str(date)
+        return 'DateError: %s is not a Invalid date!'
     if any(c.isalpha() for c in date_eight):
-        return '%s is not a valid date!' %str(date)
+        return 'DateError: %s is not a valid date!' %str(date)
     date_dt = WRCCUtils.date_to_datetime(date_eight)
     today_dt = WRCCUtils.date_to_datetime(today)
     earliest = WRCCUtils.date_to_datetime('18500101')
     if date_dt < earliest or date_dt > today_dt:
-        return '%s is not a valid date!' %str(date)
+        return 'DateError: %s is not a valid date!' %str(date)
     return err
 
 def check_date_range(start_date, end_date):
@@ -100,7 +118,7 @@ def check_date_range(start_date, end_date):
     start_dt = WRCCUtils.date_to_datetime(s_eight)
     end_dt = WRCCUtils.date_to_datetime(e_eight)
     if start_dt > end_dt:
-        return 'End date needs to be later than start date!'
+        return 'DateError: End date needs to be later than start date!'
     return err
 
 def check_year(year):
@@ -109,21 +127,21 @@ def check_year(year):
     if yr.upper() == 'POR':
         return err
     if len(yr) != 4:
-        return '%s is not a valid date!' %yr
+        return 'DateError: %s is not a valid date!' %yr
     if any(c.isalpha() for c in year):
-        return '%s is not a valid date!' %yr
+        return 'DateError: %s is not a valid date!' %yr
     try:
         int(yr)
     except:
-        return '%s is not a valid date!' %yr
+        return 'DateError: %s is not a valid date!' %yr
     if int(yr)< 1850 or int(yr) > today.year:
-        return '%s is not a valid date!' %yr
+        return 'DateError: %s is not a valid date!' %yr
     return err
 
 def check_year_range(start_year, end_year):
     err = None
     if int(start_year) > int(end_year):
-        return 'End year needs to be later than start year!'
+        return 'DateError: End year needs to be later than start year!'
     return err
 
 def check_element(element, app_name):
@@ -136,7 +154,7 @@ def check_element(element, app_name):
         'soddynorm':[]
     }
     if element not in el_list[app_name]:
-        return '%s is not a valid element for the %s application!' %(element, app_name)
+        return 'ElementError: %s is not a valid element for the %s application!' %(element, app_name)
     return err
 
 def check_max_missing_days(mmd):
@@ -144,7 +162,7 @@ def check_max_missing_days(mmd):
     try:
         max_missing_days = int(mmd)
     except:
-        return 'Max Missing Days should be an integer!'
+        return 'InputParameterError: Max Missing Days should be an integer!'
     return err
 
 def check_start_month(sm):
@@ -152,15 +170,15 @@ def check_start_month(sm):
     try:
         int(sm)
     except:
-        return 'Start month should be an integer!'
+        return 'InputParameterError: Start month should be an integer!'
     if int(sm) < 1 or int(sm) > 12:
-        return '%s is not a valid start month!' % str(sm)
+        return 'InputParameterError: %s is not a valid start month!' % str(sm)
     return err
 
 def check_T_F(bln):
     err = None
     if bln not in ['T','F']:
-        return '%s should be F (false) or T (true)' %str(bln)
+        return 'InputParameterError: %s should be F (false) or T (true)' %str(bln)
     return err
 
 def check_base_temp(base_temp):
@@ -169,14 +187,24 @@ def check_base_temp(base_temp):
         int(base_temp)
     except:
         if base_temp!='none':
-            return 'Invalid Base Temperature: %s' %base_temp
+            return 'InputParameterError: Invalid Base Temperature: %s' %base_temp
     return err
 
 def check_sx_stat(stat):
     err = None
     if stat not in ['mmax','mmin','mave','sd','rmon','msum']:
-        return '%s is not a valid statistic' %stat
+        return 'StatisticError: %s is not a valid statistic' %stat
     return err
+
+######################
+#CUSTOM EXCEPTION
+######################
+class InputParameterError(Exception):
+    def __init__(self, value):
+        self.value = value
+    def __str__(self):
+        return repr(self.value)
+
 
 ################################################
 #Wrapper functions for Kelly's SOD applications
@@ -185,7 +213,7 @@ def sodxtrmts_wrapper(argv):
     '''
     NOTES: Runs without frequency analysis,
            ndays analysis not implemented here
-    argv -- sid start_year end_year element base_temperature statistic
+    argv -- station_id start_year end_year element base_temperature statistic
             max_missing_days start_month departure_from_averages
     Input Options:
             element choices:
@@ -212,81 +240,64 @@ def sodxtrmts_wrapper(argv):
         format_sodxtrmts_results_web([], [], {'error':'Invalid Request'}, {}, {}, '0000', '0000')
         sys.exit(1)
     #Assign input parameters:
-    sid = str(argv[0])
-    start_year = str(argv[1]);end_year = str(argv[2])
-    element = str(argv[3]);
-    base_temp=str(argv[4])
-    statistic = str(argv[5])
-    max_missing_days = argv[6]
-    start_month = str(argv[7])
-    departures_from_averages=str(argv[8])
+    args = {
+        'station_id':str(argv[0]),
+        'start_year':str(argv[1]),
+        'end_year':str(argv[2]),
+        'element':str(argv[3]),
+        'base_temperature':str(argv[4]),
+        'statistic':str(argv[5]),
+        'max_missing_days':argv[6],
+        'start_month':str(argv[7]),
+        'departures_from_averages':str(argv[8])
+    }
     #Sanity checks on input parameters
-    err = check_sid(sid)
-    if err:
-        format_sodxtrmts_results_web([], [], {'error':err}, {}, {}, '0000', '0000')
-        sys.exit(1)
-    err = check_year(start_year)
-    if err:
-        format_sodxtrmts_results_web([], [], {'error':err}, {}, {}, '0000', '0000')
-        sys.exit(1)
-    err = check_year(end_year)
-    if err:
-        format_sodxtrmts_results_web([], [], {'error':err}, {}, {}, '0000', '0000')
-        sys.exit(1)
-    err = check_max_missing_days(max_missing_days)
-    if err:
-        format_sodxtrmts_results_web([], [], {'error':err}, {}, {}, '0000', '0000')
-        sys.exit(1)
-    err = check_start_month(start_month)
-    if err:
-        format_sodxtrmts_results_web([], [], {'error':err}, {}, {}, '0000', '0000')
-        sys.exit(1)
-    if len(start_month) == 1:start_montrh = '0' +start_month
-    err = check_T_F(departures_from_averages)
-    if err:
-        format_sodxtrmts_results_web([], [], {'error':err}, {}, {}, '0000', '0000')
-        sys.exit(1)
-    err = check_sx_stat(statistic)
-    if err:
-        format_sodxtrmts_results_web([], [], {'error':err}, {}, {}, '0000', '0000')
-        sys.exit(1)
-    err = check_element(element, 'sodxtrmts')
-    if err:
-        format_sodxtrmts_results_web([], [], {'error':err}, {}, {}, '0000', '0000')
-        sys.exit(1)
-    err = check_base_temp(base_temp)
-    if err:
-        format_sodxtrmts_results_web([], [], {'error':err}, {}, {}, '0000', '0000')
-        sys.exit(1)
-    if base_temp == 'none':base_temp = 65
+    err = None
+    for param in args.keys():
+        param_check = getattr(thismodule,param_check_function[param])
+        err = param_check(args[param])
+        if err:
+            format_sodxtrmts_results_web([], [], {'error':err}, {}, {}, '0000', '0000')
+            raise InputParameterError(err)
+            sys.exit(1)
+
+    if len(args['start_month']) == 1:args['start_month'] = '0' + args['start_month']
+    if args['base_temp'] == 'none':args['base_temp'] = 65
     #End sanity checks
+
     #Change POR start/end year to 8 digit start/end dates
-    if start_year.upper() == 'POR' or end_year.upper() == 'POR':
-        valid_daterange = por_to_valid_daterange(sid)
-        if start_year.upper() == 'POR':
-            start_year = valid_daterange[0][0:4]
-        if end_year.upper() == 'POR':
-            end_year = valid_daterange[1][0:4]
+    if args['start_year'].upper() == 'POR' or args['end_year'].upper() == 'POR':
+        valid_daterange = por_to_valid_daterange(args['station_id'])
+        if args['start_year'].upper() == 'POR':
+            args['start_year'] = valid_daterange[0][0:4]
+        if args['end_year'].upper() == 'POR':
+            args['end_year'] = valid_daterange[1][0:4]
+    err = check_year_range(args['start_year'], args['end_year'])
+    #Sanity check on year range
+    if err:
+        format_sodxtrmts_results_web([], [], {'error':err}, {}, {}, '0000', '0000')
+        raise InputParameterError(err)
+        sys.exit(1)
     #Define parameters
     data_params = {
-                'sid':sid,
-                'start_date':start_year,
-                'end_date':end_year,
-                'element':element,
-                'units':'english',
-                'base_temperature':base_temp
-                }
+        'sid':args['station_id'],
+        'start_date':args['start_year'],
+        'end_date':args['end_year'],
+        'element':args['element'],
+        'units':'english',
+        'base_temperature':args['base_temperature']
+    }
     app_params = {
-                'el_type':element,
-                'base_temperature':base_temp,
-                'units':'english',
-                'max_missing_days':max_missing_days,
-                'start_month':start_month,
-                'statistic_period':'monthly',
-                'statistic':statistic,
-                'frequency_analysis': 'F',
-                'departures_from_averages':departures_from_averages
-                }
+        'el_type':args['element'],
+        'base_temperature':args['base_temperature'],
+        'units':'english',
+        'max_missing_days':args['max_missing_days'],
+        'start_month':args['start_month'],
+        'statistic_period':'monthly',
+        'statistic':args['statistic'],
+        'frequency_analysis': 'F',
+        'departures_from_averages':args['departures_from_averages']
+    }
     try:
         SX_wrapper = Wrapper('Sodxtrmts',data_params, app_specific_params=app_params)
         #Get data
@@ -320,30 +331,27 @@ def sodsum_wrapper(argv):
         format_sodsum_results_web({}, {}, {'error':'Invalid Request'},{})
         sys.exit(1)
     #Define parameters
-    sid = str(argv[0])
-    start_date = format_date(str(argv[1]));end_date = format_date(str(argv[2]))
-    #Input parameter check
-    err = check_sid(sid)
-    if err:
-        format_sodsum_results_web({}, {}, {'error':'Invalid Station ID'},{})
-        sys.exit(1)
-    err = check_date(start_date)
-    if err:
-        format_sodsum_results_web({}, {}, {'error':err}, {})
-        sys.exit(1)
-    err = check_date(end_date)
-    if err:
-        format_sodsum_results_web({}, {}, {'error':err}, {})
-        sys.exit(1)
-    element = str(argv[3])
-    err = check_element(element, 'sodsum')
-    if err:
-        format_sodsum_results_web({}, {}, {'error':err}, {})
+    args = {
+        'station_id':str(argv[0]),
+        'start_date':format_date(str(argv[1])),
+        'end_date':format_date(str(argv[2])),
+        'element':str(argv[3])
+    }
+    #Sanity check on input parameters
+    err = None
+    for param in args.keys():
+        param_check = getattr(thismodule,param_check_function[param])
+        err = param_check(args[param])
+        if err:
+            format_sodsum_results_web({}, {}, {'error':'Invalid Station ID'},{})
+            raise InputParameterError(err)
+            sys.exit(1)
+
     data_params = {
-                'sid':sid,
-                'start_date':start_date,
-                'end_date':end_date,
-                'element':element
+                'sid':args['station_id'],
+                'start_date':args['start_date'],
+                'end_date':args['end_date'],
+                'element':args['element']
                 }
     app_params = {}
     try:
@@ -357,7 +365,7 @@ def sodsum_wrapper(argv):
         data = {}
         results = {}
     #Format results
-    vd = WRCCUtils.find_valid_daterange(sid, start_date='por', end_date='por', el_list=['maxt','pcpn','snow','evap','wdmv'], max_or_min='max')
+    vd = WRCCUtils.find_valid_daterange(args['station_id'], start_date='por', end_date='por', el_list=['maxt','pcpn','snow','evap','wdmv'], max_or_min='max')
     if vd and len(vd)==2:
         station_dates = vd
     else:

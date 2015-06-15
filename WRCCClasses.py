@@ -1376,11 +1376,12 @@ class SODApplication(object):
         #if 'error' in self.data.keys() or not self.data['data']:
         #    return {}
         Application = getattr(WRCCDataApps, self.app_name)
+        '''
         if self.app_name == 'Sodxtrmts':
-            #results, fa_results = Application(**app_params)
-            #return results, fa_results
-            results = WRCCDataApps.SodxtrmtsNew(**app_params)
-        elif self.app_name == 'Soddyrec':
+            results, fa_results = WRCCDataApps.SodxtrmtsOld(**app_params)
+            return results, fa_results
+        '''
+        if self.app_name == 'Soddyrec':
             results = Application(app_params['data'],app_params['dates'], app_params['elements'], app_params['station_ids'], app_params['station_names'])
         else:
             results = Application(**app_params)

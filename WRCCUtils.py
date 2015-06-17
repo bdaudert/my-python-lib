@@ -1523,11 +1523,15 @@ def extract_highcarts_data_monann(data,form):
         highcharts series data
         Each month is its own series
     '''
-    hc_data = [[] for m in range(0,12)]
+    if form['statistic_period'] == "monthly":
+        per_len = 12
+    if form['statistic_period'] == "weekly":
+        per_len = 52
+    hc_data = [[] for m in range(per_len)]
     #Sort data by month
     zipped = zip(*data)
     years = zipped[0]
-    for m_idx in range(0,12):
+    for m_idx in range(per_len):
         data_idx = 2 * m_idx + 1
         mon_data = zipped[data_idx]
         for d_idx, data in enumerate(mon_data[1:-6]):

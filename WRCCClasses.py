@@ -12,6 +12,7 @@ import numpy as np
 import scipy
 import json
 from cStringIO import StringIO
+import random
 try:
     import cairo
 except:
@@ -196,9 +197,34 @@ class GraphDictWriter(object):
             axisMin = None
         return axisMin
 
+    #Random plat color generator
+    def get_random_color(self,pastel_factor = 0.5):
+        return [(x+pastel_factor)/(1.0+pastel_factor) for x in [random.uniform(0,1.0) for i in [1,2,3]]]
+
+    def color_distance(self,c1,c2):
+        return sum([abs(x[0]-x[1]) for x in zip(c1,c2)])
+
+    def generate_new_color(self,existing_colors,pastel_factor = 0.5):
+        max_distance = None
+        best_color = None
+        for i in range(0,100):
+            color = self.get_random_color(pastel_factor = pastel_factor)
+            if not existing_colors:
+                return color
+            best_distance = min([self.color_distance(color,c) for c in existing_colors])
+            if not max_distance or best_distance > max_distance:
+                max_distance = best_distance
+                best_color = color
+        return best_color
+
     def set_plotColor(self):
+        self.plot_colors = []
         if 'statistic' in self.form.keys():
-            pl_color  = WRCCData.PLOT_COLOR_MONTH[self.name.upper()][0]
+            if self.form['statistic_period'] == 'monthly':
+                pl_color  = WRCCData.PLOT_COLOR_MONTH[self.name.upper()][0]
+            if self.form['statistic_period'] == 'weekly':
+                pl_color  = self.generate_new_color([],pastel_factor = 0.9)
+                self.plot_colors.append(pl_color)
         else:
             el_strip, base_temp = WRCCUtils.get_el_and_base_temp(self.element)
             pl_color = WRCCData.PLOT_COLOR[el_strip]
@@ -206,7 +232,10 @@ class GraphDictWriter(object):
 
     def set_runningMeanColor(self):
          if 'statistic' in self.form.keys():
-            rm_color  = WRCCData.PLOT_COLOR_MONTH[self.name.upper()][1]
+            if self.form['statistic_period'] == 'monthly':
+                rm_color  = WRCCData.PLOT_COLOR_MONTH[self.name.upper()][1]
+            if self.form['statistic_period'] == 'weekly':
+                rm_color = self.generate_new_color(self.plot_colors,pastel_factor = 0.9)
          else:
             el_strip, base_temp = WRCCUtils.get_el_and_base_temp(self.element)
             rm_color =  WRCCData.RM_COLOR[el_strip]

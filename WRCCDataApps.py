@@ -864,7 +864,6 @@ def Sodxtrmts(**kwargs):
                 xmax = -9999.0
                 #Day loop
                 for nda in range(per_len):
-                    #FIX ME: comopute day of year from week number and day number
                     #Find day of year
                     if kwargs['statistic_period'] == 'monthly':
                         doy = WRCCUtils.compute_doy_leap(str(p_idx + 1),str(nda + 1))
@@ -878,7 +877,7 @@ def Sodxtrmts(**kwargs):
                         else:
                             try:
                                 value = float(val)
-                                if abs(float(val) + 999.0)<0.001:
+                                if abs(float(val) + 999.0)<0.001 or  abs(float(val) + 9999.0)<0.001:
                                     value = xmiss
                             except:
                                 value = xmiss
@@ -894,15 +893,18 @@ def Sodxtrmts(**kwargs):
                         elif flag == 'A':
                             try:
                                 value = float(val)
-                                value = value +100
-                                if abs(float(val) + 999.0)<0.001:
+                                if abs(float(val) + 9999.0)<0.001:
                                     value = xmiss
+                                else:
+                                    value = value +100
+                                    if abs(float(val) + 999.0)<0.001 or  abs(float(val) + 9999.0)<0.001:
+                                        value = xmiss
                             except:
                                 value = xmiss
                         else:
                             try:
                                 value = float(val)
-                                if abs(float(val) + 999.0)<0.001:
+                                if abs(float(val) + 999.0)<0.001 or  abs(float(val) + 9999.0)<0.001:
                                     value = xmiss
                             except:
                                 value = xmiss
@@ -919,6 +921,8 @@ def Sodxtrmts(**kwargs):
                                 nval_x = int(val_x)
                                 nval_n = int(val_n)
                                 if abs(float(nval_n) + 999.0)<0.001 or abs(float(nval_x) + 999.0)<0.001:
+                                    value = xmiss
+                                elif abs(float(nval_n) + 9999.0)<0.001 or abs(float(nval_x) + 9999.0)<0.001:
                                     value = xmiss
                                 else:
                                     if element == 'dtr':
@@ -1033,7 +1037,10 @@ def Sodxtrmts(**kwargs):
                             if value < annmin:annmin = value
 
                         if nda  == per_len - 1:
-                            table_1[yr][p_idx] = xmax - xmin
+                            if xmax > -9998.0 and xmin > -9998.0:
+                                table_1[yr][p_idx] = xmax - xmin
+                            else:
+                                table_1[yr][p_idx] = xmiss
                             table_2[yr][p_idx] = per_len - sumda
                             annran = annmax - annmin
 
@@ -1243,6 +1250,7 @@ def Sodxtrmts(**kwargs):
                         results[i][yr].append('-----')
                         results[i][yr].append('z')
                         continue
+
                 if kwargs['departures_from_averages']  == 'F':
                     #results[i][yr].append('%.2f%s' % (ucv(element, table_1[yr][p_idx]), outchr[p_idx]))
                     if kwargs['statistic'] == 'ndays':

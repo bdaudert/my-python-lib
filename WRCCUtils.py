@@ -1814,16 +1814,14 @@ def datetime_to_date(dt, seperator):
         return '0000' + str(seperator) + '00' + str(seperator) + '00'
     try:y = str(dt.year)
     except:y = '0000'
-    try:
-        m =str(dt.month)
-        if len(m) ==1:m = '0' + m
-    except:
-        m = '00'
-    try:
-        d =str(dt.day)
-        if len(d) ==1:d = '0' + m
-    except:
-        d = '00'
+
+    try:m =str(dt.month)
+    except:m = '00'
+    if len(m) == 1:m = '0' + m
+
+    try:d =str(dt.day)
+    except:d = '00'
+    if len(d) == 1:d = '0' + d
     return y + str(seperator) + m + str(seperator) + d
 
 def get_start_date(time_unit, end_date, number):
@@ -2041,8 +2039,6 @@ def find_valid_daterange(sid, start_date='por', end_date='por', el_list=None, ma
             break
     if vd_start is None or vd_end is None:
         return ['', '']
-    vd_start_date = ''
-    vd_end_date = ''
     #loop over valid dateranges for each elements and find max or min valid daterange
     for el_idx, el_vdr in enumerate(request['meta'][0]['valid_daterange'][idx_start:]):
         vd_start_test = None;vd_end_test = None
@@ -2064,21 +2060,15 @@ def find_valid_daterange(sid, start_date='por', end_date='por', el_list=None, ma
                 vd_end = vd_end_test
     #convert back to date string
     if s_date.lower() == 'por':
-        yr_start = str(vd_start.year);mon_start=str(vd_start.month);day_start = str(vd_start.day)
+        vd_start = datetime_to_date(vd_start,'')
     else:
-        yr_start = s_date[0:4];mon_start = s_date[4:6];day_start = s_date[6:8]
+        vd_start = s_date[0:4] + s_date[4:6] + s_date[6:8]
     if e_date.lower() == 'por':
-        yr_end = str(vd_end.year);mon_end=str(vd_end.month);day_end = str(vd_end.day)
+        vd_end = datetime_to_date(vd_end,'')
     else:
-        yr_end = e_date[0:4];mon_end = e_date[4:6];day_end = e_date[6:8]
+        vd_end = e_date[0:4] + e_date[4:6] + e_date[6:8]
 
-    if len(mon_start) ==1:mon_start='0' + mon_start
-    if len(day_start) ==1:day_start='0' + day_start
-    if len(mon_end) ==1:mon_end='0' + mon_end
-    if len(day_end) ==1:day_end='0' + day_end
-    vd_start_date = '%s%s%s' %(yr_start, mon_start, day_start)
-    vd_end_date = '%s%s%s' %(yr_end, mon_end, day_end)
-    return [vd_start_date, vd_end_date]
+    return [vd_start, vd_end]
 
 def get_dates(s_date, e_date, app_name=None):
     '''

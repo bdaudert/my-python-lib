@@ -42,7 +42,11 @@ param_check_function = {
     'base_temperature':'check_base_temp',
     'statistic':'check_sx_stat',
     'departures_from_averages':'check_T_F',
-    'max_missing_days':'check_max_missing_days'
+    'max_missing_days':'check_max_missing_days',
+    'table_name':'check_sodsumm_table_name',
+    'output_format':'check_output_format',
+    'filter_type':'check_filter_type',
+    'filter_days':'check_max_missing_days'
 }
 
 
@@ -196,6 +200,20 @@ def check_sx_stat(stat):
         return 'StatisticError: %s is not a valid statistic' %stat
     return err
 
+def check_sodsumm_table_name(table_name):
+    err = None
+    if table_name not in ['temp', 'prsn', 'hdd', 'cdd', 'gdd', 'corn', 'ts_tps','ts_tp']:
+        return 'TableNameError: %s is not a valid table name!' %table_name
+    return err
+
+def check_output_format(of):
+    return None
+
+def check_filter_type(ft):
+    err = None
+    if ft not in ['rm','gauss']:
+        return 'FilterError: %s is not a valid filter!' %ft
+    return err
 ######################
 #CUSTOM EXCEPTION
 ######################
@@ -343,7 +361,7 @@ def sodsum_wrapper(argv):
         param_check = getattr(thismodule,param_check_function[param])
         err = param_check(args[param])
         if err:
-            format_sodsum_results_web({}, {}, {'error':'Invalid Station ID'},{})
+            format_sodsum_results_web({}, {}, {'error':err},{})
             raise InputParameterError(err)
             sys.exit(1)
 
@@ -404,42 +422,27 @@ def sodsumm_wrapper(argv):
         format_sodsumm_results_web([],'',{'error':'Invalid Request'}, '0000', '0000', '', '','')
         sys.exit(1)
     #Assign input parameters:
-    sid = str(argv[0]);table_name = str(argv[1])
-    if table_name in ['hdd','cdd']:
-        tbls = 'hc'
-    elif table_name == 'gdd':
-        tbls = 'g'
-    elif table_name in ['ts_tps','ts_tp']:
-        tbls = 'both'
-    else:
-        tbls =  table_name
-    start_year = str(argv[2]);end_year = str(argv[3])
-    #Station ID check, if not alpha numeric, people coming from old pages and
-    #we need to redirect them
-    try:
-        int(sid)
-    except:
-        format_sodsumm_results_web([],'',{'redirect':''}, '0000', '0000', '', '','')
-        sys.exit(1)
-    #Sanity check on start/end year
-    if start_year.upper() != 'POR':
-        try:
-            int(start_year)
-        except:
-            format_sodsumm_results_web([],'',{'error':'Invalid Start Year: %s' %start_year }, '0000', '0000', '','','')
+    args = {
+        'station_id':str(argv[0]),
+        'table_name':str(argv[1]),
+        'start_year':str(argv[2]),
+        'end_year':str(argv[3]),
+        'max_missing_days':int(argv[4])
+    }
+    #Sanity check on input parameters
+    err = None
+    for param in args.keys():
+        param_check = getattr(thismodule,param_check_function[param])
+        err = param_check(args[param])
+        if err:
+            format_sodsumm_results_web([],'',{'error':err}, '0000', '0000', '','','')
+            raise InputParameterError(err)
             sys.exit(1)
-        if len(start_year)!=4:
-            format_sodsumm_results_web([],'',{'error':'Invalid Start Year: %s' %start_year }, '0000', '0000', '','','')
-            sys.exit(1)
-    if end_year.upper() != 'POR':
-        try:
-            int(end_year)
-        except:
-            format_sodsumm_results_web([],'',{'error':'Invalid End Year: %s' %end_year }, '0000', '0000', '', '','')
-            sys.exit(1)
-        if len(end_year)!=4:
-            format_sodsumm_results_web([],'',{'error':'Invalid End Year: %s' %end_year }, '0000', '0000', '', '','')
-            sys.exit(1)
+    #Format table names
+    if args['table_name'] in ['hdd','cdd']:tbls = 'hc'
+    elif args['table_name'] == 'gdd':tbls = 'g'
+    elif args['table_name'] in ['ts_tps','ts_tp']:tbls = 'both'
+    else:tbls =  args['table_name']
     #Change POR start/end year to 8 digit start/end dates
     if start_year.upper() == 'POR' or end_year.upper() == 'POR':
         valid_daterange = por_to_valid_daterange(sid)
@@ -447,28 +450,20 @@ def sodsumm_wrapper(argv):
             start_year = valid_daterange[0][0:4]
         if end_year.upper() == 'POR':
             end_year = valid_daterange[1][0:4]
-    try:
-        max_missing_days = int(argv[4])
-    except:
-        format_sodsumm_results_web([],'',{'error':'Invalid Max Missing Days: %s' %argv[4] }, '0000', '0000', '', '','')
-        sys.exit(1)
-    #More Sanity checks
-    if table_name not in ['temp', 'prsn', 'hdd', 'cdd', 'gdd', 'corn', 'ts_tps','ts_tp']:
-        format_sodsumm_results_web([],'',{'error':'Invalid Table Name: %s' %table_name }, '0000', '0000','','','')
-        sys.exit(1)
+
     #Define parameters
     data_params = {
-                'sid':sid,
-                'units':'english',
-                'start_date':start_year,
-                'end_date':end_year,
-                'element':'all'
-                }
+        'sid':args['station_id'],
+        'units':'english',
+        'start_date':args['start_year'],
+        'end_date':args['end_year'],
+        'element':'all'
+    }
     app_params = {
-                'el_type':tbls,
-                'units':'english',
-                'max_missing_days':max_missing_days,
-                }
+        'el_type':tbls,
+        'units':'english',
+        'max_missing_days':args['max_missing_days'],
+    }
     try:
         SS_wrapper = Wrapper('Sodsumm', data_params, app_specific_params=app_params)
         #Get data
@@ -530,52 +525,49 @@ def soddyrec_wrapper(argv):
         format_soddyrec_results_web([],{},{'error':'Invalid Request'})
         sys.exit(1)
     #Assign input parameters:
-    sid = str(argv[0]);element = str(argv[1])
-    start_date = format_date(str(argv[2]));end_date = format_date(str(argv[3]))
-    start_user = format_date(str(argv[2]));end_user = format_date(str(argv[3]))
-    output_format = str(argv[4])
-    #Sanity checks
-    #Station ID check, if not alpha numeric, people coming from old pages and
-    #we need to redirect them
-    try:
-        int(sid)
-    except:
-        format_soddyrec_results_web([],{},{'redirect':''})
-        sys.exit(1)
-    #Find valid daterange
-    valid_daterange = por_to_valid_daterange(sid)
-
+    args = {
+        'station_id':str(argv[0]),
+        'element':str(argv[1]),
+        'start_date':str(argv[2]),
+        'end_date':str(argv[3]),
+        'output_format':int(argv[4])
+    }
+    #Sanity check on input parameters
+    err = None
+    for param in args.keys():
+        param_check = getattr(thismodule,param_check_function[param])
+        err = param_check(args[param])
+        if err:
+            format_soddyrec_results_web([],{},{'error':err})
+            raise InputParameterError(err)
+            sys.exit(1)
     #Change POR start/end year to 8 digit start/end dates
     #Check if yuser dates lie outside of por for station
-    if start_date.upper() == 'POR' or WRCCUtils.date_to_datetime(start_date) < WRCCUtils.date_to_datetime(valid_daterange[0]):
-        start_date = valid_daterange[0]
-    if end_date.upper() == 'POR' or WRCCUtils.date_to_datetime(end_date) > WRCCUtils.date_to_datetime(valid_daterange[1]):
-        end_date = valid_daterange[1]
-    if element not in ['all','tmp','wtr','pcpn','snow','snwd','maxt','mint','hdd','cdd']:
-        format_soddyrec_results_web([],{},{'error':'Invalid element: %s' %element})
-        sys.exit(1)
-    if len(start_date) != 8:
-        format_soddyrec_results_web([],{},{'error':'Invalid start_date: %s' %start_date})
-        sys.exit(1)
-    if len(end_date) != 8:
-        format_soddyrec_results_web([],{},{'error':'Invalid end_date: %s' %end_date})
-        sys.exit(1)
+    valid_daterange = por_to_valid_daterange(args['station_id'])
+    if args['start_date'].upper() == 'POR':
+        args['start_date'] = valid_daterange[0]
+    if WRCCUtils.date_to_datetime(args['start_date']) < WRCCUtils.date_to_datetime(valid_daterange[0]):
+        args['start_date'] = valid_daterange[0]
+    if end_date.upper() == 'POR':
+        args['end_date'] = valid_daterange[1]
+    if WRCCUtils.date_to_datetime(args['end_date']) > WRCCUtils.date_to_datetime(valid_daterange[1]):
+        args['end_date'] = valid_daterange[1]
 
     #Define parameters
     data_params = {
-                'sid':sid,
-                'start_date':start_date,
-                'end_date':end_date,
-                'start_user':start_user,
-                'end_user':end_user,
-                'element':element,
+                'sid':args['station_id'],
+                'start_date':args['start_date'],
+                'end_date':args['end_date'],
+                'start_user':args['start_user'],
+                'end_user':args['end_user'],
+                'element':args['element'],
                 }
     SR_wrapper = Wrapper('Soddyrec', data_params)
     #Get data
     data = SR_wrapper.get_data()
     #run app
     results = SR_wrapper.run_app(data)
-    if output_format == 'txt':
+    if args['output_format'] == 'txt':
         #NOTE: header not generated with text output
         format_soddyrec_results_txt(results,SR_wrapper,data_params)
     else:
@@ -599,45 +591,43 @@ def soddynorm_wrapper(argv):
         format_soddynorm_results_web([],{},{'error':'Invalid Request'})
         sys.exit(1)
     #Assign input parameters:
-    sid = str(argv[0])
-    start_year = format_date(str(argv[1]));end_year = format_date(str(argv[2]))
-    filter_type = str(argv[3])
-    filter_days = str(argv[4])
-    #Sanity checks
-    #Station ID check, if not alpha numeric, people coming from old pages and
-    #we need to redirect them
-    try:
-        int(sid)
-    except:
-        format_soddynorm_results_web([],{},{'redirect':''})
-        sys.exit(1)
-    #Find valid daterange
-    valid_daterange = por_to_valid_daterange(sid)
+    args = {
+        'station_id':str(argv[0]),
+        'start_year':format_date(str(argv[1])),
+        'end_year':format_date(str(argv[2])),
+        'filter_type':str(argv[3]),
+        'filter_days':str(argv[4])
+    }
+    #Sanity check on input parameters
+    err = None
+    for param in args.keys():
+        param_check = getattr(thismodule,param_check_function[param])
+        err = param_check(args[param])
+        if err:
+            format_soddynorm_results_web([],{},{'error':err})
+            raise InputParameterError(err)
+            sys.exit(1)
     #Change POR start/end year to 8 digit start/end dates
     #Check if yuser dates lie outside of por for station
-    if start_year.upper() == 'POR' or WRCCUtils.date_to_datetime(start_year + '0101') < WRCCUtils.date_to_datetime(valid_daterange[0]):
-        start_year = valid_daterange[0][0:4]
-    if end_year.upper() == 'POR' or WRCCUtils.date_to_datetime(end_year + '1231') > WRCCUtils.date_to_datetime(valid_daterange[1]):
-        end_year = valid_daterange[1][0:4]
-    if filter_type not in ['rm','gauss']:
-        format_soddynorm_results_web([],{},{'error':'Invalid filter type: %s' %filter_type})
-        sys.exit(1)
-    if len(start_year) != 4:
-        format_soddynorm_results_web([],{'error':'Invalid start_year: %s' %start_year},{})
-        sys.exit(1)
-    if len(end_year) != 4:
-        format_soddynorm_results_web([],{},{'error':'Invalid end_year: %s' %end_year})
-        sys.exit(1)
+    valid_daterange = por_to_valid_daterange(sid)
+    if args['start_year'].upper() == 'POR':
+        args['start_year'] = valid_daterange[0][0:4]
+    if WRCCUtils.date_to_datetime(args['start_year'] + '0101') < WRCCUtils.date_to_datetime(valid_daterange[0]):
+        args['start_year'] = valid_daterange[0][0:4]
+    if args['end_year'].upper() == 'POR':
+        args['end_year'] = valid_daterange[1][0:4]
+    if WRCCUtils.date_to_datetime(args['end_year'] + '1231') > WRCCUtils.date_to_datetime(valid_daterange[1]):
+        args['end_year'] = valid_daterange[1][0:4]
 
     #Define parameters
     data_params = {
-                'sid':sid,
-                'start_date':start_year,
-                'end_date':end_year,
+                'sid':args['station_id'],
+                'start_date':args['start_year'],
+                'end_date':args['end_year'],
                 }
     app_params = {
-        'filter_type':filter_type,
-        'filter_days':filter_days
+        'filter_type':args['filter_type'],
+        'filter_days':args['filter_days']
     }
     SN_wrapper = Wrapper('Soddynorm', data_params, app_specific_params=app_params)
     #Get data
@@ -656,9 +646,10 @@ def soddynorm_wrapper(argv):
         sys.exit(1)
     '''
     format_soddynorm_results_web(results,SN_wrapper,data_params)
-########
-#Utils
-#######
+
+###################
+#FORMATTING UTILS
+####################
 def format_soddynorm_results_txt(results, wrapper,data_params):
     print ' DOY  MON DY  TMAX  #YRS  TMIN  #YRS PRECIP #YRS SD MAX SD MIN'
     for doy_data in results[0][3:]:

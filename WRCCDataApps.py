@@ -4056,7 +4056,7 @@ def Soddynorm(**kwargs):
                     results[i][-1].append(k)
     return results
 
-def Soddyrec(data, dates, elements, station_ids, station_names):
+def Soddyrec(**kwargs):
     '''
     FINDS DAILY AVERAGES AND RECORD FOR EACH DAY OF THE YEAR
     FOR EACH STATION OVER A MULTI YEAR PERIOD
@@ -4065,9 +4065,9 @@ def Soddyrec(data, dates, elements, station_ids, station_names):
     #result[stn_id][el] = [[month=1, day=1, ave, no, high_or_low, yr], [month=1, day=2, ave,..]..]
     #for all 365 days a year
     results = defaultdict(dict)
-    for i, stn in enumerate(station_ids):
+    for i, stn in enumerate(kwargs['station_ids']):
         #results[i] = [[] for el in elements]
-        for j, el in enumerate(elements):
+        for j, el in enumerate(kwargs['elements']):
             smry_start_idx = 3*j
             smry_end_idx = 3*j +3
             results[i][j] = []
@@ -4077,16 +4077,16 @@ def Soddyrec(data, dates, elements, station_ids, station_names):
                 row=[mon, day]
                 #Loop over summaries: mean, max, min
                 for smry_idx in range(smry_start_idx, smry_end_idx):
-                    if not data[i]:
+                    if not kwargs['data'][i]:
                         row.append(-9999)
                         row.append(0)
                         continue
-                    val = data[i][smry_idx][k][0]
+                    val = kwargs['data'][i][smry_idx][k][0]
                     if smry_idx % 3 == 0:
                         #we are on mean summary, record years missing and compute number of years with records
-                        num_years = int(dates[-1][0:4]) - int(dates[0][0:4])
+                        num_years = int(kwargs['dates'][-1][0:4]) - int(kwargs['dates'][0][0:4])
                         try:
-                            mcnt = int(data[i][smry_idx][k][2])
+                            mcnt = int(kwargs['data'][i][smry_idx][k][2])
                         except:
                             mcnt = num_years
                         if el in ['maxt', 'mint']:
@@ -4100,9 +4100,9 @@ def Soddyrec(data, dates, elements, station_ids, station_names):
                     else:
                         #high and low, record year of occurrence
                         try:
-                            year = data[i][smry_idx][k][1][0:4]
+                            year = kwargs['data'][i][smry_idx][k][1][0:4]
                         except:
-                            year = data[i][smry_idx][k][1]
+                            year = kwargs['data'][i][smry_idx][k][1]
                         if el in ['maxt', 'mint']:
                             try:
                                 row.append(str(int(round(float(val)))))

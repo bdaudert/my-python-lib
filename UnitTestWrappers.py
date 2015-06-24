@@ -3,8 +3,36 @@ import unittest
 import WRCCWrappers
 import copy
 
-class TestSodxtrmts(unittest.TestCase):
+###########
+#STATICS
+###########
+WRAPPERS = {
+    'Sodxtrmts':'sodxtrmts_wrapper',
+    'Sodsum':'sodsum_wrapper',
+    'Sodsumm':'sodsumm_wrapper',
+    'Soddyrec':'soddyrec_wrapper',
+    'Soddynorm':'soddynorm_wrapper'
+}
 
+def run_wrapper(app, data_params, app_params):
+    '''
+    Runs wrapper for application app
+    '''
+    wrapper = WRCCWrappers.Wrapper(app,
+            data_params=data_params,
+            app_specific_params=app_params)
+    data = wrapper.get_data()
+    results = wrapper.run_app(data)
+    '''
+    All apps area set up for multiple ids,
+    All wrappers run on a single station
+    Pick results for first and only station
+    '''
+    results = results[0]
+    return results
+
+
+class TestSodxtrmts(unittest.TestCase):
     def setUp(self):
         self.data_params = {
             'sid':'266779',
@@ -29,12 +57,7 @@ class TestSodxtrmts(unittest.TestCase):
         """
         Test that Sodxtrmts wrapper works an the normal path.
         """
-        sodxtrmts = WRCCWrappers.Wrapper('Sodxtrmts',
-            data_params=self.data_params,
-            app_specific_params=self.app_params)
-        data = sodxtrmts.get_data()
-        results = sodxtrmts.run_app(data)
-        results = results[0]
+        results = run_wrapper('Sodxtrmts', self.data_params, self.app_params)
         self.assertIsInstance(results, list)
         self.assertIsNot(results, [])
 
@@ -54,12 +77,7 @@ class TestSodsum(unittest.TestCase):
         """
         Test that Sodsum wrapper works on the normal path.
         """
-        sodsum = WRCCWrappers.Wrapper('Sodsum',
-            data_params=self.data_params,
-            app_specific_params=self.app_params)
-        data = sodsum.get_data()
-        results = sodsum.run_app(data)
-        results = results[0]
+        results = results = run_wrapper('Sodsum', self.data_params, self.app_params)
         # results is a defaultdict(<type 'dict'>,
         # {0: {
         #    'station_id': '266779',
@@ -83,11 +101,12 @@ class TestSodsum(unittest.TestCase):
         """
         Test that Sodsum handles bad `start_date` and `end_date`.
         """
+        #test_bad_dates('Sodsum', self.data_params, argv)
         bad_params = copy.deepcopy(self.data_params)
         bad_params['start_date'] = 'ABCDEFGH'
         bad_params['end_date'] = '1234'
-        argv = [bad_params['sid'], bad_params['start_date'], \
-            bad_params['end_date'], bad_params['element']]
+        ordered_keys = ['sid','start_date', 'end_date', 'element']
+        argv = [bad_params[o] for o in ordered_keys]
         #self.assertRaises(WRCCWrappers.InputParameterError,WRCCWrappers.sodsum_wrapper(argv))
         with self.assertRaises(WRCCWrappers.InputParameterError) as e:
             WRCCWrappers.sodsum_wrapper(argv)
@@ -99,8 +118,8 @@ class TestSodsum(unittest.TestCase):
         """
         bad_params = copy.deepcopy(self.data_params)
         bad_params['sid'] = ''
-        argv = [bad_params['sid'], bad_params['start_date'], \
-            bad_params['end_date'], bad_params['element']]
+        ordered_keys = ['sid','start_date', 'end_date', 'element']
+        argv = [bad_params[o] for o in ordered_keys]
         with self.assertRaises(WRCCWrappers.InputParameterError) as e:
             WRCCWrappers.sodsum_wrapper(argv)
             self.assertTrue(str(e.value).find('StationIDError'))
@@ -132,12 +151,7 @@ class TestSodsumm(unittest.TestCase):
         """
         Test that Sodsumm wrapper works on the normal path.
         """
-        sodsumm = WRCCWrappers.Wrapper('Sodsumm',
-            data_params=self.data_params,
-            app_specific_params=self.app_params)
-        data = sodsumm.get_data()
-        results = sodsumm.run_app(data)
-        results = results[0]
+        results = run_wrapper('Sodsumm', self.data_params, self.app_params)
         self.assertIsInstance(results, dict)
         keys = self.results_keys[self.app_params['el_type']]
         for key in keys:
@@ -159,13 +173,9 @@ class TestSoddyrec(unittest.TestCase):
         """
         Test that Sodsumm wrapper works on the normal path.
         """
-        soddyrec = WRCCWrappers.Wrapper('Soddyrec',
-            data_params=self.data_params,
-            app_specific_params=self.app_params)
-        data = soddyrec.get_data()
-        results = soddyrec.run_app(data)
-        results = results[0][0]
-        self.assertIsInstance(results, list)
+        results = run_wrapper('Soddyrec', self.data_params, self.app_params)
+        self.assertIsInstance(results, dict)
+        self.assertIsInstance(results[0], list)
         self.assertIsNot(results, [])
 
 class TestSoddynorm(unittest.TestCase):
@@ -184,12 +194,7 @@ class TestSoddynorm(unittest.TestCase):
         """
         Test that Sodsumm wrapper works on the normal path.
         """
-        soddynorm = WRCCWrappers.Wrapper('Soddynorm',
-            data_params=self.data_params,
-            app_specific_params=self.app_params)
-        data = soddynorm.get_data()
-        results = soddynorm.run_app(data)
-        results = results[0]
+        results = run_wrapper('Soddynorm', self.data_params, self.app_params)
         self.assertIsInstance(results, list)
         self.assertIsNot(results, [])
 

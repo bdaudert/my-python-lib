@@ -17,7 +17,7 @@ from email.mime.text import MIMEText
 from ftplib import FTP
 from math import sqrt
 import colorsys
-
+import copy
 
 import WRCCClasses, AcisWS, WRCCData
 

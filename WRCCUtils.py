@@ -1576,9 +1576,100 @@ def extract_highcarts_data_spatial_summary(data,el_idx, element, form):
     return hc_data
 
 ########################
-
 #HEADER FORMATTING
 ########################
+def find_id(form_name_field, json_file_path):
+    '''
+    Deals with autofill by station name.
+    Note: Autofill sis set up to return name, id
+    so we just pick up the id for data analysis
+    '''
+    i = str(form_name_field).strip()
+    name_id_list = i.rsplit(',',1)
+    if len(name_id_list) == 1:
+        name_id_list = i.rsplit(', ',1)
+    name = None
+    if len(name_id_list) >=2:
+        i= str(name_id_list[-1]).replace(' ','')
+        '''
+        #Special case CWA --> json file list Las Vegas, NV as name
+        #but form field is Las Vegas NV
+        if len(i) ==3 and i.isalpha():
+            sp = name_id_list[0].rsplit('  ',1)
+            if len(sp) != 2:sp = name_id_list[0].rsplit(' ',1)
+            name = ', '.join(sp)
+        else:
+            name = name_id_list[0]
+        '''
+        name = name_id_list[0]
+        return i
+    elif len(name_id_list) == 1:
+        name_list= i.split(' ')
+        #check for digits
+        if bool(re.compile('\d').search(i)) and len(name_list) == 1:
+            #User entered a station id
+            return i
+        else:
+            name = str(form_name_field)
+    if not os.path.isfile(json_file_path) or os.path.getsize(json_file_path) == 0:
+        return str(form_name_field)
+    #Find id in json file
+    json_data = load_json_data_from_file(json_file_path)
+    for entry in json_data:
+        #check if i is id
+        if entry['id'] == i:
+            #Check that names match
+            if name:
+                #kml file names have special chars removed
+                n = re.sub('[^a-zA-Z0-9\n\.]', ' ', entry['name'])
+                if entry['name'].upper() != name.upper() and n.upper() != name.upper():
+                    return str(form_name_field)
+                else:
+                    return i
+            else:
+                return i
+        #Check if i is name
+        if entry['name'].upper() == i.upper():
+            return entry['id']
+    return str(form_name_field)
+
+def find_ids(in_list, json_file_path):
+    #Split up in_list into names and ids
+    names = ['No name' for i in in_list]
+    ids = ['No ID' for i in in_list]
+    for idx, item in enumerate(in_list):
+        i_list = item.strip().rsplit(',',1)
+        if len(i_list) == 1:
+            i_list = item.rsplit(', ',1)
+        if len(i_list) == 2:
+            names[idx] = i_list[0]
+            ids[idx] = i_list[1]
+        if len(i_list) == 1:
+            #check if we have id
+            n = i_list[0].split(' ')
+            if bool(re.compile('\d').search(i_list[0])) and len(n) == 1:
+                ids[idx] = i_list[0]
+            else:
+                names[idx] = i_list[0].upper()
+    #If all ids are present, return ids
+    if ids.count('No ID') == 0:
+        return ','.join(ids)
+    #Check that autofill file exists
+    if not os.path.isfile(json_file_path) or os.path.getsize(json_file_path) == 0:
+        return ','.join(filter(lambda v: v is not 'No ID', ids))
+    #Loop over entries in autofill list and find missing ids
+    json_data = load_json_data_from_file(json_file_path)
+    for entry in json_data:
+        if entry['name'].upper() not in names:
+            continue
+        index = names.index(entry['name'].upper())
+        if ids[index] is 'No ID':
+            ids[index] = entry['id']
+        #check if we ids list is complete
+        if ids.count('No ID') == 0:
+            return ','.join(ids)
+    return ','.join(ids)
+
 def elements_to_display(elements,units,valid_daterange=None):
     '''
     Converts form elements for display
@@ -1663,7 +1754,32 @@ def form_to_display_list(key_order_list, form):
         if str(key) not in keys:
             continue
         idx = keys.index(str(key))
-        if key == 'data_summary':
+        if key in ['station_id','station_ids']:
+            in_list = form[key].strip().split(',')
+            ids_string = find_ids(in_list,'/www/apps/csc/dj-projects/my_acis/media/json/US_station_id.json')
+            ids_list = ids_string.split(',')
+            stns_long_names = ''
+            meta = AcisWS.StnMeta({'sids':ids_string})
+            if 'meta' not in meta.keys():
+                display_list[idx].append(str(val))
+            else:
+                for i, stn_meta in enumerate(meta['meta']):
+                    stn_name = str(stn_meta['name'])
+                    #Pick the correct station id
+                    stn_id = stn_meta['sids'][0].split(' ')[0]
+                    for sid in stn_meta['sids']:
+                        s_id = sid.split(' ')[0]
+                        if s_id in ids_list:
+                            stn_id = s_id
+                            break
+                    stns_long_names+=stn_name + ', ' + stn_id
+                    if i < len(meta['meta']) - 1:
+                        stns_long_names+='; '
+                #Only grab unique entries.
+                stn_list = list(set(stns_long_names.split('; ')))
+                stns_long_names = '; '.join(stn_list)
+                display_list[idx].append(stns_long_names)
+        elif key == 'data_summary':
             if 'data_summary' in form.keys() and form['data_summary'] !='none':
                 s_type = WRCCData.DISPLAY_PARAMS[form['data_summary']]
                 if form['data_summary'] == 'windowed_data':

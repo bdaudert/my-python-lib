@@ -673,17 +673,6 @@ def soddynorm_wrapper(argv):
         sys.exit(1)
     #run app
     results = SN_wrapper.run_app(data)
-    '''
-    try:
-        SN_wrapper = Wrapper('Soddynorm', data_params, app_specific_params=app_params)
-        #Get data
-        data = SN_wrapper.get_data()
-        #run app
-        results = SN_wrapper.run_app(data)
-    except:
-        format_soddynorm_results_web({},{},data_params)
-        sys.exit(1)
-    '''
     format_soddynorm_results_web(results,SN_wrapper,data_params)
 
 ###################

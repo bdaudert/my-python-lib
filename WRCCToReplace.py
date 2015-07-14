@@ -55,8 +55,7 @@ class DownloadDataJob(object):
             'pipe':'|'
         }
         self.column_headers = {
-            #'Sodxtrmts':WRCCData.COLUMN_HEADERS['Sodxtrmts'],
-            'Sodxtrmts':None,
+            'Sodxtrmts':WRCCData.COLUMN_HEADERS['Sodxtrmts'],
             'Sodsumm':None,
             'area_time_series':['Date      '],
             'spatial_summary':None
@@ -120,7 +119,7 @@ class DownloadDataJob(object):
         if self.request:
             response = HttpResponse(mimetype='text/csv')
             response['Content-Disposition'] = 'attachment;filename=%s%s' % (self.output_file_name,self.file_extension[self.data_format])
-            writer = csv.writer(response, delimiter=self.delimiter_dict[self.delimiter])
+            writer = csv.writer(response, delimiter=self.delimiter_dict[self.delimiter], quotechar=' ', quoting=csv.QUOTE_MINIMAL)
 
         else: #write to file
             try:
@@ -159,6 +158,9 @@ class DownloadDataJob(object):
             #row = ['%8s' %str(h) for h in column_header] #Kelly's format
             #row = ['%s' %str(h) for h in column_header]
             writer.writerow(row)
+        #Strip header from sodxtrmts output
+        if self.app_name == 'Sodxtrmts':
+            data = data[1:]
         for row_idx, row in enumerate(data):
             row_formatted = []
             for idx, r in enumerate(row):

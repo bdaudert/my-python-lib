@@ -38,12 +38,12 @@ class TestSodxtrmts(unittest.TestCase):
             'sid':'266779',
             'start_date':'POR',
             'end_date':'POR',
-            'element':'hdd',
+            'element':'pcpn',
             'units':'english',
             'base_temperature':'64'
         }
         self.app_params = {
-            'el_type':'hdd',
+            'el_type':'pcpn',
             'base_temperature':'64',
             'units':'english',
             'max_missing_days':'5',
@@ -51,7 +51,10 @@ class TestSodxtrmts(unittest.TestCase):
             'statistic_period': 'monthly',
             'statistic': 'msum',
             'frequency_analysis': 'F',
-            'departures_from_averages':'F'
+            'departures_from_averages':'F',
+            'threshold_for_less_or_greater':0.5,
+            'threshold_low_for_between':0.1,
+            'threshold_high_for_between':1.0
         }
     def test_sodxtrmts(self):
         """
@@ -61,6 +64,26 @@ class TestSodxtrmts(unittest.TestCase):
         self.assertIsInstance(results, list)
         self.assertIsNot(results, [])
 
+    def test_elements(self):
+        for el in ['maxt', 'mint', 'avgt','dtr', 'hdd', 'cdd', 'gdd']:
+            dp = copy.deepcopy(self.data_params)
+            ap = copy.deepcopy(self.app_params)
+            dp['element'] = el
+            ap['el_type'] = el
+            results = run_wrapper('Sodxtrmts', self.data_params, self.app_params)
+            self.assertIsInstance(results, list)
+            self.assertIsNot(results, [])
+        self.assertIsInstance(results, list)
+        self.assertIsNot(results, [])
+
+    def test_stat(self):
+        for stat in ['mmax', 'mmin', 'mave','msum', 'rmon', 'sd','ndays']:
+            dp = copy.deepcopy(self.data_params)
+            ap = copy.deepcopy(self.app_params)
+            ap['statistic'] = stat
+            results = run_wrapper('Sodxtrmts', self.data_params, self.app_params)
+            self.assertIsInstance(results, list)
+            self.assertIsNot(results, [])
 
 class TestSodsum(unittest.TestCase):
 

@@ -307,11 +307,12 @@ class CsvWriter(object):
 
     def set_writer(self):
         import csv
+        qc = ' '
         if self.f is not None:
             self.csvfile = open(self.f, 'w+')
-            self.writer = csv.writer(self.csvfile, delimiter=self.delim )
+            self.writer = csv.writer(self.csvfile, delimiter=self.delim, quotechar=qc, quoting=csv.QUOTE_MINIMAL )
         if self.response is not None:
-            self.writer = csv.writer(self.response, delimiter=self.delim)
+            self.writer = csv.writer(self.response, delimiter=self.delim, quotechar=qc, quoting=csv.QUOTE_MINIMAL)
 
     def write_header(self):
         #Search params header:

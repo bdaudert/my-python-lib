@@ -2314,6 +2314,20 @@ def set_back_date(days_back):
     back_date = '%s%s%s' % (yr_b, mon_b, day_b)
     return back_date
 
+def advance_date(date, days, back_or_forward):
+    d = date_to_eight(date)
+    if len(date) == 8:sep = ''
+    else:sep = date[4]
+    date_new = date
+    date_dt = datetime.datetime.strptime(date, '%Y%m%d')
+    if back_or_forward == 'forward':
+        d_dt_new = date_dt + datetime.timedelta(days=int(days))
+    if back_or_forward == 'back':
+        d_dt_new = date_dt - datetime.timedelta(days=int(days))
+    date_new = datetime_to_date(d_dt_new,sep)
+    return date_new
+
+
 def get_N_HexCol(N=5):
     '''
     Generates HEX color list of size N
@@ -2539,6 +2553,16 @@ def find_num_lls(bbox,grid):
     num_lons = math.ceil(111 *(abs(box[0]) - abs(box[2])) / spatial_res)
     return num_lats, num_lons
 
+
+def haversine_distance(lon1, lat1, lon2, lat2):
+    R = 6372.8 # Earth radius in kilometers
+    dLat = math.radians(lat2 - lat1)
+    dLon = math.radians(lon2 - lon1)
+    lat1 = math.radians(lat1)
+    lat2 = math.radians(lat2)
+    a = math.sin(dLat/2)**2 + math.cos(lat1)*math.cos(lat2)*math.sin(dLon/2)**2
+    c = 2*math.asin(sqrt(a))
+    return round(R * c,4)
 
 def point_in_circle(x,y,circle):
     '''

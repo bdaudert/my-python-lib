@@ -658,7 +658,11 @@ class DataComparer(object):
                 if not vd_found:
                     continue
                 else:
-                    return req['meta'][stn_idx]
+                    if stn_lat and stn_lon:
+                        km_dist = WRCCUtils.haversine_distance(stn_lon, stn_lat, lon, lat)
+                    stn_meta = req['meta'][stn_idx]
+                    stn_meta['dist'] = km_dist
+                    return stn_meta
                 try:
                     dist_temp = abs(stn_lat - lat) + abs(stn_lon - lon)
                 except:
@@ -670,6 +674,8 @@ class DataComparer(object):
             if not idx:
                 length = 2*length
                 continue
+        km_dist = WRCCUtils.haversine_distance(stn_lon, stn_lat, lon, lat)
+        stn_meta['dist'] = km_dist
         return stn_meta
 
     def get_data(self):
@@ -688,6 +694,10 @@ class DataComparer(object):
         except Exception, e:
             gdata = {'data':[], 'meta': [],'error': str(e)}
         stn_meta = self.find_closest_station()
+        try:
+            dist = stn_meta['dist']
+        except:
+            dist = -9999
         if not stn_meta or 'sids' not in stn_meta.keys():
             err = 'No station could be found near given lon,lat: %s' %str(self.location)
             sdata = {'data':[], 'meta': [], 'error': err}
@@ -700,7 +710,7 @@ class DataComparer(object):
                 sdata = AcisWS.StnData(data_params)
             except Exception, e:
                 sdata = {'data':[], 'meta': [],'error': str(e)}
-        return gdata, sdata
+        return gdata,sdata,stn_meta['dist']
 
     def get_graph_data(self,gdata,sdata):
         '''
@@ -758,7 +768,7 @@ class DataComparer(object):
             'pearsonc':None,
             'pearsonp': None,
             'ksc':None,
-            'ksp':None,
+            'ksp':None
         }
         sdata = s_graph_dict['data']
         gdata = g_graph_dict['data']

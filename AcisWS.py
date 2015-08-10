@@ -99,7 +99,8 @@ def General(request_type, params):
     '''
     request_type in [basin, climdiv,cwa,state, county]
     '''
-    #return make_request(settings.ACIS_BASE_URL+'General' + '/' + request_type, params)
+    return make_request(settings.ACIS_BASE_URL+'General' + '/' + request_type, params)
+    '''
     req ={}
     for url in settings.ACIS_SERVERS:
         try:
@@ -109,6 +110,7 @@ def General(request_type, params):
                 break
         except:
             continue
+    '''
     return req
 
 ###################################

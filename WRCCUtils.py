@@ -5,19 +5,17 @@ Module WRCCUtils
 '''
 
 import datetime, calendar, time, sys, os
-import re
-import json
+import re, json
 import numpy as np
-import scipy
-import math
-import re
+import scipy, math
 from collections import defaultdict, Mapping, Iterable
 import smtplib
 from email.mime.text import MIMEText
 from ftplib import FTP
-from math import sqrt
 import colorsys
 import copy
+
+from osgeo import gdal, ogr, osr
 
 import WRCCClasses, AcisWS, WRCCData
 
@@ -33,12 +31,6 @@ special_grid_areas = ['county', 'county_warning_area','basin','climate_division'
 station_reduction_areas = ['county', 'county_warning_area','basin',\
 'climate_division','state','bounding_box']
 grid_reduction_areas = ['state','bounding_box']
-####################################
-#FUNCTIONS
-#####################################
-####################################
-#CLEANED FUNCTIONS
-#####################################
 ###################################
 #DATA  LSITER MODULES
 ###################################
@@ -354,7 +346,6 @@ def request_and_format_data(form):
         request_data = getattr(AcisWS,'GridData')
     #Make data request
     req = request_data(params)
-    print params
 
     '''
     try:
@@ -2061,8 +2052,55 @@ def is_leap_year(year):
         return False
 
 ###############################
-#Coordinate system conversions
+#GEOSPATIAL
 ##############################
+def shapefile_to_ll(shp_file, feature_id):
+    poly_ll = ''
+    ## Project all coordinates to WGS84
+    output_osr = osr.SpatialReference()
+    output_osr.ImportFromEPSG(4326)  ## WGS84
+    ##output_osr.ImportFromEPSG(4269)  ## NAD83
+    ## Get the spatial reference
+    input_ds = ogr.Open(shp_file)
+    input_layer = input_ds.GetLayer()
+    input_osr = input_layer.GetSpatialRef()
+    ## Build the tranform object for projecting the coordinates
+    tx = osr.CoordinateTransformation(input_osr, output_osr)
+    #Get the feature by ID
+    input_ftr = input_layer.GetFeature(long(feature_id))
+    input_geom = input_ftr.GetGeometryRef()
+    input_geom_type = input_geom.GetGeometryName()
+    ## Project a copy of the geometry
+    proj_geom = input_geom.Clone()
+    proj_geom.Transform(tx)
+
+    #Extract lon, lat coordinates from different geometry types
+    #1.POINT and MULTIPOINT
+    if input_geom_type in  ['POINT','MULTIPOINT']:
+        for i in range(0, proj_geom.GetPointCount()):
+            pt = proj_geom.GetPoint(i)
+            poly_ll+=str(pt[0]) + ',' + str(pt[1])
+            if i < proj_geom.GetPointCount() - 1:
+                poly_ll+=','
+    #2.POLYGONS, LINES, MULTILINESTRINGS
+    if input_geom_type in ['POLYGON','LINE','MULTILINESTRING']:
+        ## POLYGONS are made up of LINEAR RINGS
+        for i in range(0, proj_geom.GetGeometryCount()):
+            sub_geom = proj_geom.GetGeometryRef(i)
+
+            ## LINEAR RINGS are made up of POINTS
+            for j in range(0, sub_geom.GetPointCount()):
+                pt = sub_geom.GetPoint(j)
+                poly_ll+=str(pt[0]) + ',' + str(pt[1])
+                if j < sub_geom.GetPointCount() - 1:
+                    poly_ll+=','
+
+        ## Get the next feature
+        #input_ftr = input_layer.GetNextFeature()
+        ## Or break after the first one
+        #break
+    return poly_ll
+
 def geoll2ddmmss(lat,lon):
     try:
         latitude = float(lat)
@@ -2374,6 +2412,7 @@ def generate_kml_file(area_type, state, kml_file_name, dir_location):
         return 'Need absolute path of directory. You entered: %s' %str(dir_location)
     else:
         dr = str(dir_location)
+    '''
     #Check if kml file already exists in dir_loc
     try:
         with open(dr + kml_file_name):
@@ -2383,6 +2422,7 @@ def generate_kml_file(area_type, state, kml_file_name, dir_location):
                 return 'Success'
     except IOError:
         pass
+    '''
     #Make General call to get the geojson for the input params
     req = AcisWS.make_gen_call_by_state(WRCCData.SEARCH_AREA_FORM_TO_ACIS[str(area_type)], str(state))
     #Sanity Check:
@@ -2406,53 +2446,63 @@ def generate_kml_file(area_type, state, kml_file_name, dir_location):
     kml_file.write('<?xml version="1.0" encoding="UTF-8"?>\n')
     kml_file.write('<kml xmlns="http://www.opengis.net/kml/2.2">\n')
     kml_file.write('  <Document>\n')
-    #Styles
-    for poly_idx, poly in enumerate(json_data):
-        kml_file.write('    <Style id="poly%s">\n' %poly_idx)
-        kml_file.write('      <LineStyle>\n')
-        #kml_file.write('        <color>%s</color>\n' %str(colors[poly_idx]))
-        kml_file.write('        <width>1.5</width>\n')
-        kml_file.write('      </LineStyle>\n')
-        kml_file.write('      <PolyStyle>\n')
-        #kml_file.write('        <color>%s</color>\n' %str(colors[poly_idx]))
-        kml_file.write('        <color>0000FF</color>\n')
-        #kml_file.write('        <colorMode>normal</colorMode>\n')
-        kml_file.write('        <fill>1</fill>\n')
-        #kml_file.write('        <outline>1</outline>\n')
-        kml_file.write('      </PolyStyle>\n')
-        kml_file.write('    </Style>\n')
-    #Polygons
-    for poly_idx, poly in enumerate(json_data):
-        poly_bbox = poly['bbox']
-        if 'state' in poly.keys():
-            poly_state = poly['state']
-        else:
-            poly_state = ''
-        coords = poly['geojson']['coordinates'][0][0]
+    kml_file.write('    <Style id="multipoly">\n')
+    kml_file.write('      <LineStyle>\n')
+    kml_file.write('        <width>1.5</width>\n')
+    kml_file.write('      </LineStyle>\n')
+    #kml_file.write('      <PolyStyle>\n')
+    kml_file.write('      <PolySymbolizer>\n')
+    kml_file.write('        <color>0000FF</color>\n')
+    kml_file.write('         <outline>1</outline>\n')
+    kml_file.write('        <Fill>\n')
+    kml_file.write('           <CssParameter name="fill">#0000FF</CssParameter>\n')
+    kml_file.write('           <CssParameter name="fill-opacity">0.5</CssParameter>\n')
+    kml_file.write('        </Fill>\n')
+    #kml_file.write('      </PolyStyle>\n')
+    kml_file.write('      </PolySymbolizer>\n')
+    kml_file.write('    </Style>\n')
+    #Multipolys
+    for mpoly_idx in range(len(json_data)):
         #Remove special characters from name
         #Overlay maps and url bars do not like hashes and other weird chars
-        name = re.sub('[^a-zA-Z0-9\n\.]', ' ', poly['name'])
-
+        n = re.sub('[^a-zA-Z0-9\n\.]', ' ', json_data[mpoly_idx]['name'])
+        name = re.sub('  ',' ',n)
+        ID = json_data[mpoly_idx]['id']
         kml_file.write('    <Placemark>\n')
-        kml_file.write('      <name>%s</name>\n' %poly['id'])
-        kml_file.write('      <description>%s, %s</description>\n' %(name, poly['id']))
-        kml_file.write('      <styleUrl>#poly%s</styleUrl>\n' %poly_idx)
-        kml_file.write('      <Polygon>\n')
-        kml_file.write('      <tessellate>1</tessellate>\n')
-        kml_file.write('        <extrude>1</extrude>\n')
-        kml_file.write('        <altitudeMode>relativeToGround</altitudeMode>\n')
-        kml_file.write('        <outerBoundaryIs>\n')
-        kml_file.write('          <LinearRing>\n')
-        kml_file.write('            <coordinates>\n')
+        kml_file.write('      <name>%s</name>\n' %ID)
+        kml_file.write('      <description>%s, %s</description>\n' %(name, ID))
+        kml_file.write('      <styleUrl>#multipoly</styleUrl>\n')
+        kml_file.write('      <Multigeometry>\n')
+        #Polygons
+        for poly_idx in range(len(json_data[mpoly_idx]['geojson']['coordinates'])):
+            kml_file.write('      <Polygon>\n')
+            kml_file.write('        <tessellate>1</tessellate>\n')
+            kml_file.write('        <extrude>1</extrude>\n')
+            kml_file.write('        <altitudeMode>relativeToGround</altitudeMode>\n')
+            for ring_idx in range(len(json_data[mpoly_idx]['geojson']['coordinates'][poly_idx])):
+                if ring_idx == 0:
+                    #Outer Boundary
+                    kml_file.write('        <outerBoundaryIs>\n')
+                else:
+                    #Inner Boundary
+                    kml_file.write('        <innerBoundaryIs>\n')
+                kml_file.write('          <LinearRing>\n')
+                kml_file.write('            <coordinates>\n')
 
-        for idx, lon_lat in enumerate(coords):
-            kml_file.write('              %s,%s,%s\n' %(lon_lat[0], lon_lat[1],0))
-        #Add first coordinate to close polygon
-        #kml_file.write('              %s,%s,%s\n' %(coords[0][0], coords[0][1],0))
-        kml_file.write('            </coordinates>\n')
-        kml_file.write('          </LinearRing>\n')
-        kml_file.write('        </outerBoundaryIs>\n')
-        kml_file.write('      </Polygon>\n')
+                coords = json_data[mpoly_idx]['geojson']['coordinates'][poly_idx][ring_idx]
+
+                for idx, lon_lat in enumerate(coords):
+                    kml_file.write('              %s,%s,%s\n' %(lon_lat[0], lon_lat[1],0))
+                #Add first coordinate to close polygon
+                #kml_file.write('              %s,%s,%s\n' %(coords[0][0], coords[0][1],0))
+                kml_file.write('            </coordinates>\n')
+                kml_file.write('          </LinearRing>\n')
+                if ring_idx == 0:
+                    kml_file.write('        </outerBoundaryIs>\n')
+                else:
+                    kml_file.write('        </innerBoundaryIs>\n')
+                kml_file.write('      </Polygon>\n')
+        kml_file.write('      </Multigeometry>\n')
         kml_file.write('    </Placemark>\n')
 
     #Footer
@@ -2561,7 +2611,7 @@ def haversine_distance(lon1, lat1, lon2, lat2):
     lat1 = math.radians(lat1)
     lat2 = math.radians(lat2)
     a = math.sin(dLat/2)**2 + math.cos(lat1)*math.cos(lat2)*math.sin(dLon/2)**2
-    c = 2*math.asin(sqrt(a))
+    c = 2*math.asin(math.sqrt(a))
     return round(R * c,4)
 
 def point_in_circle(x,y,circle):
@@ -4383,7 +4433,7 @@ def compute_pet(lat,lon,maxt,mint,doy,units):
     itd1 = (1440/pi)*1.959/(rvec*rvec)
     itd2 = h*math.sin(theta)*math.sin(dec)+math.cos(theta)*math.cos(dec)*math.sin(h)
     ra = itd1*itd2
-    harg = 0.0023*ra*sqrt(td)*(ta+17.8)
+    harg = 0.0023*ra*math.sqrt(td)*(ta+17.8)
     xl = 595-0.51*ta
     #harg : PeT in mm/day
     harg = 10*harg/xl

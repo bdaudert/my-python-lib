@@ -1242,7 +1242,7 @@ def Sodxtrmts(**kwargs):
                 #Special for accumulations or subsequents
                 outchr[p_idx] = mischr[intgr]
                 if annsav[yr][p_idx] != ' ':
-                    outchr[p_idx] = annsav[yr][p_ied]
+                    outchr[p_idx] = annsav[yr][p_idx]
                 if (abs(table_1[yr][p_idx] -  9999) < 0.001 or abs(table_1[yr][p_idx] + 9999.0) <0.001 or outchr[p_idx] =='z'):
                     if kwargs['statistic'] == 'msum' and element == 'hdd' and table_1[yr][p_idx]> 9998.5:
                         continue

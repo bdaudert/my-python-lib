@@ -2412,8 +2412,10 @@ def generate_kml_file(area_type, state, kml_file_name, dir_location):
         return 'Need absolute path of directory. You entered: %s' %str(dir_location)
     else:
         dr = str(dir_location)
-    '''
     #Check if kml file already exists in dir_loc
+    filelist = [ f for f in os.listdir(dr) if f.endswith(".kml") ]
+    for f in filelist:
+        os.remove(dr + f)
     try:
         with open(dr + kml_file_name):
             if os.stat(dr + kml_file_name).st_size==0:
@@ -2422,7 +2424,6 @@ def generate_kml_file(area_type, state, kml_file_name, dir_location):
                 return 'Success'
     except IOError:
         pass
-    '''
     #Make General call to get the geojson for the input params
     req = AcisWS.make_gen_call_by_state(WRCCData.SEARCH_AREA_FORM_TO_ACIS[str(area_type)], str(state))
     #Sanity Check:
@@ -2450,17 +2451,40 @@ def generate_kml_file(area_type, state, kml_file_name, dir_location):
     kml_file.write('      <LineStyle>\n')
     kml_file.write('        <width>1.5</width>\n')
     kml_file.write('      </LineStyle>\n')
-    #kml_file.write('      <PolyStyle>\n')
-    kml_file.write('      <PolySymbolizer>\n')
-    kml_file.write('        <color>0000FF</color>\n')
+    kml_file.write('      <PolyStyle>\n')
+    kml_file.write('         <color>50F00014</color>\n')
     kml_file.write('         <outline>1</outline>\n')
-    kml_file.write('        <Fill>\n')
-    kml_file.write('           <CssParameter name="fill">#0000FF</CssParameter>\n')
-    kml_file.write('           <CssParameter name="fill-opacity">0.5</CssParameter>\n')
-    kml_file.write('        </Fill>\n')
-    #kml_file.write('      </PolyStyle>\n')
-    kml_file.write('      </PolySymbolizer>\n')
+    kml_file.write('        <Fill>1<Fill>\n')
+    kml_file.write('      </PolyStyle>\n')
     kml_file.write('    </Style>\n')
+    #Polygons
+    for poly_idx, poly in enumerate(json_data):
+        coords = poly['geojson']['coordinates'][0][0]
+        #Remove special characters from name
+        #Overlay maps and url bars do not like hashes and other weird chars
+        name = re.sub('[^a-zA-Z0-9\n\.]', ' ', poly['name'])
+        kml_file.write('    <Placemark>\n')
+        kml_file.write('      <name>%s</name>\n' %poly['id'])
+        kml_file.write('      <description>%s, %s</description>\n' %(name, poly['id']))
+        kml_file.write('      <styleUrl>#multipoly%s</styleUrl>\n' %poly_idx)
+        kml_file.write('      <Polygon>\n')
+        #kml_file.write('      <tessellate>1</tessellate>\n')
+        kml_file.write('        <extrude>1</extrude>\n')
+        kml_file.write('        <altitudeMode>relativeToGround</altitudeMode>\n')
+        kml_file.write('        <outerBoundaryIs>\n')
+        kml_file.write('          <LinearRing>\n')
+        kml_file.write('            <coordinates>\n')
+
+        for idx, lon_lat in enumerate(coords):
+            kml_file.write('              %s,%s,%s\n' %(lon_lat[0], lon_lat[1],0))
+        #Add first coordinate to close polygon
+        #kml_file.write('              %s,%s,%s\n' %(coords[0][0], coords[0][1],0))
+        kml_file.write('            </coordinates>\n')
+        kml_file.write('          </LinearRing>\n')
+        kml_file.write('        </outerBoundaryIs>\n')
+        kml_file.write('      </Polygon>\n')
+        kml_file.write('    </Placemark>\n')
+    '''
     #Multipolys
     for mpoly_idx in range(len(json_data)):
         #Remove special characters from name
@@ -2472,11 +2496,11 @@ def generate_kml_file(area_type, state, kml_file_name, dir_location):
         kml_file.write('      <name>%s</name>\n' %ID)
         kml_file.write('      <description>%s, %s</description>\n' %(name, ID))
         kml_file.write('      <styleUrl>#multipoly</styleUrl>\n')
-        kml_file.write('      <Multigeometry>\n')
+        #kml_file.write('      <MultiGeometry>\n')
         #Polygons
         for poly_idx in range(len(json_data[mpoly_idx]['geojson']['coordinates'])):
             kml_file.write('      <Polygon>\n')
-            kml_file.write('        <tessellate>1</tessellate>\n')
+            #kml_file.write('        <tessellate>1</tessellate>\n')
             kml_file.write('        <extrude>1</extrude>\n')
             kml_file.write('        <altitudeMode>relativeToGround</altitudeMode>\n')
             for ring_idx in range(len(json_data[mpoly_idx]['geojson']['coordinates'][poly_idx])):
@@ -2502,9 +2526,9 @@ def generate_kml_file(area_type, state, kml_file_name, dir_location):
                 else:
                     kml_file.write('        </innerBoundaryIs>\n')
                 kml_file.write('      </Polygon>\n')
-        kml_file.write('      </Multigeometry>\n')
+        #kml_file.write('      </MultiGeometry>\n')
         kml_file.write('    </Placemark>\n')
-
+    '''
     #Footer
     kml_file.write('  </Document>\n')
     kml_file.write('</kml>\n')

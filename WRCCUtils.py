@@ -1416,25 +1416,24 @@ def get_single_interannaul_data(form):
     year_data = []; hc_data = []
     today_str = set_back_date(0)
     today_year = today_str[0:4]
-    start_date = form['start_year'] + '0101'
     if form['units'] == 'metric':
         unit_convert = getattr(tismodule, 'convert_to_metric')
     else:
         unit_convert =  getattr(thismodule,'convert_nothing')
-    if today_year == form['end_year'] :
-        end_date = ''.join(today_str.split('-'))
-    else:
-        end_date = form['end_year'] + '1231'
     el_vX = WRCCData.ACIS_ELEMENTS_DICT[form['element']]['vX']
     acis_params = {
-        'sdate':start_date,
-        'edate':end_date,
-        'elems': [{'vX':el_vX}],
+        'sdate':form['start_date'],
+        'edate':form['end_date'],
+        'elems': [{'vX':el_vX}]
     }
     #Data request
     if 'station_id' in form.keys():
         acis_params['sid'] = form['station_id']
-        req = AcisWS.StnData(acis_params)
+        #find valid_dateange for station and element:
+        if form['start_date'] != '9999-99-99' and form['start_date'] != '9999-99-99':
+            req = AcisWS.StnData(acis_params)
+        else:
+            req = {}
     if 'location' in form.keys():
         acis_params['loc'] = form['location']
         acis_params['grid'] = form['grid']
@@ -1456,8 +1455,7 @@ def get_single_interannaul_data(form):
     doy_end = compute_doy_leap(end_window[0:2], end_window[0:4])
     if doy_end < doy_start:year_change = True
     #Get windowed data
-    windowed_data = get_windowed_data(data, start_date, end_date, start_window, end_window)
-    print windowed_data
+    windowed_data = get_windowed_data(data, acis_params['sdate'], acis_params['edate'], start_window, end_window)
     #Sort data by year
     smry_data = []; smry = None
     yr = windowed_data[0][0][0:4]
@@ -1471,6 +1469,14 @@ def get_single_interannaul_data(form):
             try:smry_data.append(float(d[1]))
             except:pass
             continue
+        #Last Year
+        if not year_change and int(data_yr) == int(windowed_data[-1][0][0:4]):
+            try:smry_data.append(float(d[1]))
+            except:pass
+            if str(d) == str(windowed_data[-1]):
+                pass
+            else:
+                continue
         if year_change:
             if  int(data_yr) == int(yr):
                 try:smry_data.append(float(d[1]))
@@ -1483,9 +1489,22 @@ def get_single_interannaul_data(form):
             if int(data_yr) == int(yr) + 1 and data_doy == doy_end:
                 try:smry_data.append(float(d[1]))
                 except:pass
+            #Last period
+            if int(data_yr) == int(windowed_data[-1][0][0:4]) + 2:
+                try:smry_data.append(float(d[1]))
+                except:pass
+                continue
+            if int(data_yr) == int(windowed_data[-1][0][0:4]) + 2 and 1 <= data_doy  and data_doy <= doy_end:
+                try:smry_data.append(float(d[1]))
+                except:pass
+                if str(d) == str(windowed_data[-1]):
+                    pass
+                else:
+                    continue
         #Compute Summary for this year
         if smry_data:
             smry = compute_statistic(smry_data,form['temporal_summary'])
+        print yr, data_yr, len(smry_data), smry
         if smry:
             s_val = unit_convert(form['element'],smry)
             year_data.append([yr,s_val])
@@ -1498,6 +1517,7 @@ def get_single_interannaul_data(form):
         #reset
         smry_data = []
         yr = data_yr
+
     return year_data, hc_data
 
 ################################

@@ -4,7 +4,8 @@
 Module WRCCUtils
 '''
 
-import datetime, calendar, time, sys, os
+import datetime as dt
+import calendar, time, sys, os
 import re, json
 import numpy as np
 import scipy, math
@@ -1364,13 +1365,13 @@ def get_window_data(data, start_date, end_date, start_window, end_window):
         #Date formatting needed to deal with end of data and window size
         #doy = day of year
         if is_leap_year(st_yr) and st_mon > 2:
-            doy_first = datetime.datetime(st_yr, st_mon, st_day).timetuple().tm_yday -1
+            doy_first = dt.datetime(st_yr, st_mon, st_day).timetuple().tm_yday -1
         else:
-            doy_first = datetime.datetime(st_yr, st_mon, st_day).timetuple().tm_yday
+            doy_first = dt.datetime(st_yr, st_mon, st_day).timetuple().tm_yday
         if is_leap_year(end_yr) and end_mon > 2:
-            doy_last = datetime.datetime(end_yr, end_mon, end_day).timetuple().tm_yday - 1
+            doy_last = dt.datetime(end_yr, end_mon, end_day).timetuple().tm_yday - 1
         else:
-            doy_last = datetime.datetime(end_yr, end_mon, end_day).timetuple().tm_yday
+            doy_last = dt.datetime(end_yr, end_mon, end_day).timetuple().tm_yday
         doy_window_st = compute_doy(start_window[0:2], start_window[2:4])
         doy_window_end = compute_doy(end_window[0:2], end_window[2:4])
         dates = [data[i][0] for i  in range(len(data))]
@@ -1405,8 +1406,338 @@ def get_window_data(data, start_date, end_date, start_window, end_window):
     return windowed_data
 
 ################################
-# INTERANNUAL DATA MODULES
+# INTERANNUAL/INTRAANNUAL DATA MODULES
 ############################
+def compute_running_mean(data,num):
+    '''
+    Computes running mean
+    Args:
+        data: highcarts formatted data: [[int_time1,val], [int_time2, val], ...]
+        num: runningMeanDays or runningMeanYears
+    Returns: running mean data formatted for highcharts
+    '''
+    rm_data =[]
+    if num is not None:
+        if num % 2 == 0:
+            num = num /2 -1
+        else:
+            num = (num - 1) / 2
+
+    for idx,row_data in enumerate(data):
+        int_time = row_data[0]
+        try:
+            val = round(float(row_data[1]),4)
+            #deal with None data
+            if abs(val + 9999.0) < 0.0001:
+                val = None
+        except:
+            val = None
+        #Running Mean
+        if num is not None:
+            skip = False
+            if idx > num and idx < len(data) -1 - num:
+                ind_range = range(idx-num,idx+num+1)
+            elif idx<=num:
+                ind_range = range(0,idx+1)
+        elif idx>=len(data)-1-num:
+            ind_range = range(idx,len(data))
+            cnt = 0; summ = 0
+            for i in ind_range:
+                try:
+                    rm_val = round(float(data[i][1]),4)
+                    summ+=rm_val
+                    cnt+=1
+                except:
+                    skip = True
+                    break
+            if not skip and cnt >0:
+               rm_data.append([int_time,round(summ / float(cnt),4)])
+
+    return rm_data
+
+
+def compute_circular_running_mean(data,num):
+    '''
+    Computes circular running mean (wraps around in array)
+    Args:
+        data: highcarts formatted data: [[int_time1,val], [int_time2, val], ...]
+        num: runningMeanDays or runningMeanYears
+    Returns: running mean data formatted for highcharts
+    '''
+    rm_data =[]
+    if num is not None:
+        if num % 2 == 0:
+            num = num /2 -1
+        else:
+            num = (num - 1) / 2
+
+    for idx,row_data in enumerate(data):
+        int_time = row_data[0]
+        try:
+            val = round(float(row_data[1]),4)
+            #deal with None data
+            if abs(val + 9999.0) < 0.0001:
+                val = None
+        except:
+            val = None
+        #Running Mean
+        if num is not None:
+            skip = False
+            cnt = 0; summ = 0
+            for i in range(idx -  num,idx + num+1):
+                try:
+                    rm_val = round(float(data[i][1]),4)
+                    summ+=rm_val
+                    cnt+=1
+                except:
+                    skip = True
+                    break
+            if not skip and cnt >0:
+                rm_data.append([int_time,round(summ / float(cnt),4)])
+
+    return rm_data
+
+
+def compute_circular_running_mean_bounds(data,num):   #need to consolidate these into single function later
+    '''
+    Computes circular running mean (wraps around in array)
+    Args:
+        data: highcarts formatted data: [[int_time1,val], [int_time2, val], ...]
+        num: runningMeanDays or runningMeanYears
+    Returns: running mean data formatted for highcharts
+    '''
+    rm_data =[]
+    if num is not None:
+        if num % 2 == 0:
+            num = num /2 -1
+        else:
+            num = (num - 1) / 2
+
+    for idx,row_data in enumerate(data):
+        int_time = row_data[0]
+        try:
+            val_lower = round(float(row_data[1]),4)
+            #deal with None data
+            if abs(val_lower + 9999.0) < 0.0001:
+                val_lower = None
+        except:
+            val_lower = None
+        try:
+            val_upper = round(float(row_data[2]),4)
+            #deal with None data
+            if abs(val_upper + 9999.0) < 0.0001:
+                val_upper = None
+        except:
+            val_upper = None
+        #Running Mean
+        if num is not None:
+            skip = False
+        if idx > num and idx < len(data) -1 - num:
+            ind_range = range(idx-num,idx+num+1)
+        elif idx<=num:
+            ind_range = range(0,idx+1)
+        elif idx>=len(data)-1-num:
+            ind_range = range(idx,len(data))
+
+        cnt_upper = 0; summ_upper = 0
+        cnt_lower = 0; summ_lower = 0
+        for i in ind_range:
+            #range(idx -  num,idx + num+1):
+            try:
+                rm_val = round(float(data[i][1]),4)
+                summ_lower+=rm_val
+                cnt_lower+=1
+            except:
+                skip = True
+                break
+            try:
+                rm_val = round(float(data[i][2]),4)
+                summ_upper+=rm_val
+                cnt_upper+=1
+            except:
+                skip = True
+                break
+        if not skip and cnt_upper >0 and cnt_lower>0:
+            rm_data.append([int_time,round(summ_lower / float(cnt_lower),4),round(summ_upper / float(cnt_upper),4)])
+
+    return rm_data
+
+def get_single_intraannual_data(form):
+    '''
+    Intraannual data
+    Args: cleaned form field entries
+    Returns: inter-year data and highcarts data for POR or grid range
+    '''
+    #Set up time vars
+    doyS = compute_doy(form['start_month'],form['start_day'])
+    yS = form['start_date'][0:4]
+    yE = form['end_date'][0:4]
+    yearTarget = int(yE) - 1
+    if is_leap_year(yearTarget):yr_len = 366
+    else:yr_len = 365
+    doyE = doyS + yr_len
+    if doyE > yr_len + 1:
+        doyE-= yr_len + 1
+    yS = form['start_date'][0:4]
+    yE = form['end_date'][0:4]
+    ##Check if year change occurs in time period
+    year_change = False
+    if doyS != 1:year_change = True
+    #Set up data request parameters
+    ts_data = []; hc_data = []
+    if form['units'] == 'metric':
+        unit_convert = getattr(tismodule, 'convert_to_metric')
+    else:
+        unit_convert =  getattr(thismodule,'convert_nothing')
+    el_vX = WRCCData.ACIS_ELEMENTS_DICT[form['element']]['vX']
+    acis_params = {
+        'sdate':form['start_date'],
+        'edate':form['end_date'],
+        'elems': [{'vX':el_vX}]
+    }
+    #Data request
+    if 'station_id' in form.keys():
+        acis_params['sid'] = form['station_id']
+        #find valid_dateange for station and element:
+        if form['start_date'] != '9999-99-99' and form['start_date'] != '9999-99-99':
+            req = AcisWS.StnData(acis_params)
+        else:
+            req = {}
+    if 'location' in form.keys():
+        acis_params['loc'] = form['location']
+        acis_params['grid'] = form['grid']
+        req = AcisWS.GridData(acis_params)
+    if 'data' not in req.keys():
+        return ts_data, hc_data
+    data = req['data']
+
+    #Get data for each year
+    year_graph_data= {}
+    year_txt_data = {}
+    #Save doys and data values
+    year_doy_data = {}
+    #Store data for each year separately
+    for year in range(int(yS), int(yE) + 1):
+        year_graph_data[year] = []
+        year_txt_data[year] =[]
+        year_doy_data[year] ={}
+    #================================
+    #For each year, pick the corresponding data
+    #And store them in a dict, keys are the years
+    #sorted_data = sorted(data, key=itemgetter(3))
+    for row_data in data:
+        date_str = row_data[0]
+        date_eight = date_to_eight(date_str)
+        data_year = int(date_str[0:4])
+        doy = compute_doy_leap(date_eight[4:6],date_eight[6:8])
+        d = calendar.timegm(dt.datetime.strptime(date_eight, '%Y%m%d').timetuple())
+        int_time = 1000 * d
+        val = row_data[1]
+        try:val = float(val)
+        except:val = -9999
+        if not year_change and 1 <= doy <= 366:
+            year_txt_data[data_year].append([date_str, val])
+            year_graph_data[data_year].append([int_time,val])
+            year_doy_data[data_year][doy] = [int_time,val]
+        if year_change and doyS <= doy <= 366:
+            year_txt_data[data_year].append([date_str, val])
+            year_graph_data[data_year].append([int_time,val])
+            year_doy_data[data_year][doy] = [int_time,val]
+        if year_change and 1<= doy <= doyE and str(data_year) != yS:
+            year_txt_data[data_year - 1 ].append([date_str, val])
+            year_graph_data[data_year -1 ].append([int_time,val])
+            year_doy_data[data_year - 1][doy] = [int_time,val]
+    #================================
+    # Sort data, compute climo and percentiles
+    #================================
+    percentiles = [[5, 95],[10,90],[25,75]]
+    climoData = []; percentileData = [[] for p in percentiles]
+    for year in range(int(yS), int(yE) + 1):
+        year_graph_data[year] = sorted(year_graph_data[year])
+        year_txt_data[year] = sorted(year_txt_data[year])
+    #================================
+    #Climo and percentile computation
+    semiWindowDaysSmoothing = 10
+    if not year_change:
+        doy_list = range(1,367)
+    else:
+        doy_list = range(int(doyS), 367) + range(1,int(doyE)+1)
+    for doy_idx, doy in enumerate(doy_list):
+        #Omit Feb 29
+        #if doy in [60]:
+        #    continue
+        #Convert target year and doy to integer time
+        if doy < 60:
+            datetime = dt.datetime(yearTarget, int(form['start_month']), int(form['start_day'])) + dt.timedelta(days = doy_idx)
+        else:
+            datetime = dt.datetime(yearTarget, int(form['start_month']), int(form['start_day'])) + dt.timedelta(days = doy_idx - 1)
+        #epoch = dt.datetime(1970,1,1)
+        epoch = dt.datetime.utcfromtimestamp(0)
+        int_time = int((datetime - epoch).total_seconds() * 1000)
+        doy_vals = []; d_array = []
+        '''
+        #Cumulative for precip/pet
+        if form['element'] in ['pcpn','pet','snow']:
+            for year in range(int(yS), int(yE) + 1):
+                if doy in year_doy_data[year].keys():
+                   if doy == 60:
+                       year_doy_data[year][doy][1]=year_doy_data[year][doy][1];
+                   if doy == 61:
+                       year_doy_data[year][doy][1]=year_doy_data[year][doy][1]+year_doy_data[year][doy-2][1]
+                   elif doy !=doyS:
+                       if doy==1:
+                           year_doy_data[year][doy][1]=year_doy_data[year][doy][1]+year_doy_data[year][365][1]
+                       else:
+                           year_doy_data[year][doy][1]=year_doy_data[year][doy][1]+year_doy_data[year][doy-1][1]
+                   doy_vals.append(year_doy_data[year][doy][1])
+        else:
+            for year in range(int(yS), int(yE) + 1):
+               if doy in year_doy_data[year].keys():
+                   doy_vals.append(year_doy_data[year][doy][1])
+        '''
+        for year in range(int(yS), int(yE) + 1):
+            if doy in year_doy_data[year].keys():
+                doy_vals.append(year_doy_data[year][doy][1])
+        if doy_vals:
+            d_array = np.array(doy_vals)
+            climoData.append([int_time,np.mean(d_array)])
+            for p_idx, p in enumerate(percentiles):
+                pl = round(np.percentile(d_array, p[0]),4)
+                pu = round(np.percentile(d_array, p[1]),4)
+                percentileData[p_idx].append([int_time,pl,pu])
+
+    #================================
+    #  SORT DATA
+    #================================
+    climoData = sorted(climoData)
+    for p_idx in range(len(percentileData)):
+        percentileData[p_idx] = sorted(percentileData[p_idx])
+
+    #================================
+    #  SMOOTHE DATA
+    #================================
+    #smooth the climoData and the percentileData - wrap around with days of year
+    filtersize = 10 #10-day window.. maybe want 21-day window?
+    '''
+    if climoData:
+        if form['element'] in ['pcpn','pet','snow']:
+            climoData = compute_running_mean(climoData,filtersize)
+        else:
+            climoData = compute_circular_running_mean(climoData,filtersize)
+    '''
+    climoData = compute_circular_running_mean(climoData,filtersize)
+    for p_idx, p in enumerate(percentiles):
+        if percentileData[p_idx]:
+            '''
+            if form['element'] in ['pcpn','pet','snow']:
+                 percentileData[p_idx]= compute_circular_running_mean_bounds(percentileData[p_idx],filtersize)
+            else:
+                 percentileData[p_idx]= compute_circular_running_mean_bounds(percentileData[p_idx],filtersize)
+            '''
+            percentileData[p_idx]= compute_circular_running_mean_bounds(percentileData[p_idx],filtersize)
+    #================================
+    return year_txt_data, year_graph_data, climoData, percentileData
+
 def get_single_interannaul_data(form):
     '''
     Interannual data
@@ -1509,7 +1840,7 @@ def get_single_interannaul_data(form):
             s_val = unit_convert(form['element'],smry)
             year_data.append([yr,s_val])
             date = yr + '-01-01'
-            d = calendar.timegm(datetime.datetime.strptime(date, '%Y-%m-%d').timetuple())
+            d = calendar.timegm(dt.datetime.strptime(date, '%Y-%m-%d').timetuple())
             int_time = 1000 * d
             hc_data.append([int_time, s_val])
         else:
@@ -1547,7 +1878,7 @@ def extract_highcarts_data_monann(data,form):
         mon_data = zipped[data_idx]
         for d_idx, data in enumerate(mon_data[1:-6]):
             date = years[d_idx+1] + '-01-01'
-            d = calendar.timegm(datetime.datetime.strptime(date, '%Y-%m-%d').timetuple())
+            d = calendar.timegm(dt.datetime.strptime(date, '%Y-%m-%d').timetuple())
             int_time = 1000 * d
             try:
                 val = round(float(data),2)
@@ -1574,7 +1905,7 @@ def extract_highcarts_data_spatial_summary(data,el_idx, element, form):
     num_nulls = None
     for idx,row_data in enumerate(req_data):
         date = format_date_string(row_data[0],'dash')
-        d = calendar.timegm(datetime.datetime.strptime(date, '%Y-%m-%d').timetuple())
+        d = calendar.timegm(dt.datetime.strptime(date, '%Y-%m-%d').timetuple())
         int_time = 1000 * d
         try:
             val = round(float(row_data[el_idx + 1]),4)
@@ -1927,26 +2258,26 @@ def date_to_datetime(date_str):
     eight_date = date_str.replace('-','').replace('/','').replace(':','')
     if len(eight_date) != 8:
         return None
-    dt = datetime.datetime(int(eight_date[0:4]),int(eight_date[4:6]), int(eight_date[6:8]))
-    return dt
+    dtime = dt.datetime(int(eight_date[0:4]),int(eight_date[4:6]), int(eight_date[6:8]))
+    return dtime
 
-def datetime_to_date(dt, seperator):
+def datetime_to_date(dtime, seperator):
     '''
     yyyy-mm-dd
     yyyy/mm/dd
     yyyy:mm:dd
     yyyymmdd
     '''
-    if type(dt) != datetime.datetime:
+    if type(dtime) != dt.datetime:
         return '0000' + str(seperator) + '00' + str(seperator) + '00'
-    try:y = str(dt.year)
+    try:y = str(dtime.year)
     except:y = '0000'
 
-    try:m =str(dt.month)
+    try:m =str(dtime.month)
     except:m = '00'
     if len(m) == 1:m = '0' + m
 
-    try:d =str(dt.day)
+    try:d =str(dtime.day)
     except:d = '00'
     if len(d) == 1:d = '0' + d
     return y + str(seperator) + m + str(seperator) + d
@@ -1964,11 +2295,11 @@ def get_start_date(time_unit, end_date, number):
     mon = int(end_date[4:6])
     day = int(end_date[6:8])
     if time_unit == 'years':
-        start = datetime.datetime(yr,mon,day) - datetime.timedelta(days=x*365)
+        start = dt.datetime(yr,mon,day) - dt.timedelta(days=x*365)
     elif time_unit == 'months':
-        start = datetime.datetime(yr,mon,day) - datetime.timedelta(days=(x*365)/12)
+        start = dt.datetime(yr,mon,day) - dt.timedelta(days=(x*365)/12)
     else:
-        start = datetime.datetime(yr,mon,day) - datetime.timedelta(days=x)
+        start = dt.datetime(yr,mon,day) - dt.timedelta(days=x)
     yr_start = str(start.year)
     mon_start = str(start.month)
     day_start = str(start.day)
@@ -2257,10 +2588,10 @@ def get_dates(s_date, e_date, app_name=None):
     else:
         dates = []
         #convert to datetimes
-        start_date = datetime.datetime(int(s_date[0:4]), int(s_date[4:6].lstrip('0')), int(s_date[6:8].lstrip('0')))
-        end_date = datetime.datetime(int(e_date[0:4]), int(e_date[4:6].lstrip('0')), int(e_date[6:8].lstrip('0')))
+        start_date = dt.datetime(int(s_date[0:4]), int(s_date[4:6].lstrip('0')), int(s_date[6:8].lstrip('0')))
+        end_date = dt.datetime(int(e_date[0:4]), int(e_date[4:6].lstrip('0')), int(e_date[6:8].lstrip('0')))
         for n in range(int ((end_date - start_date).days +1)):
-            next_date = start_date + datetime.timedelta(n)
+            next_date = start_date + dt.timedelta(n)
             n_year = str(next_date.year)
             n_month = str(next_date.month)
             n_day = str(next_date.day)
@@ -2363,9 +2694,9 @@ def set_back_date(days_back):
         int(days_back)
     except:
         return '99990101'
-    tdy = datetime.datetime.today()
+    tdy = dt.datetime.today()
     #Choose default start_date 4 weeks back
-    b = datetime.datetime.today() - datetime.timedelta(days=int(days_back))
+    b = dt.datetime.today() - dt.timedelta(days=int(days_back))
     yr_b = str(b.year);mon_b = str(b.month);day_b = str(b.day)
     if len(mon_b) == 1:mon_b = '0%s' % mon_b
     if len(day_b) == 1:day_b = '0%s' % day_b
@@ -2377,11 +2708,11 @@ def advance_date(date, days, back_or_forward):
     if len(date) == 8:sep = ''
     else:sep = date[4]
     date_new = date
-    date_dt = datetime.datetime.strptime(date, '%Y%m%d')
+    date_dt = dt.datetime.strptime(date, '%Y%m%d')
     if back_or_forward == 'forward':
-        d_dt_new = date_dt + datetime.timedelta(days=int(days))
+        d_dt_new = date_dt + dt.timedelta(days=int(days))
     if back_or_forward == 'back':
-        d_dt_new = date_dt - datetime.timedelta(days=int(days))
+        d_dt_new = date_dt - dt.timedelta(days=int(days))
     date_new = datetime_to_date(d_dt_new,sep)
     return date_new
 
@@ -2844,13 +3175,13 @@ def convert_db_dates(messy_date):
     For metadata tool: metadata load tables population
     '''
     #Check if input is datetime object, convert if necessary
-    if type(messy_date) is datetime.date or type(messy_date) is datetime.datetime:
+    if type(messy_date) is dt.date or type(messy_date) is dt.datetime:
         y = str(messy_date.year);m = str(messy_date.month);d=str(messy_date.day)
         if len(y) != 4:y='9999'
         if len(m) == 1:m='0'+m
         if len(d)==1:d='0'+d
         return y+'-'+m+'-'+d
-        #return datetime.datetime.strftime(messy_date,"%Y-%m-%d")
+        #return dt.datetime.strftime(messy_date,"%Y-%m-%d")
     #Check if data is already in form yyyy-mm-dd
     date_list = messy_date.split('-')
     if len(date_list) == 3 and len(date_list[0]) == 4:
@@ -3173,10 +3504,10 @@ def get_dates(s_date, e_date, app_name=None):
     else:
         dates = []
         #convert to datetimes
-        start_date = datetime.datetime(int(s_date[0:4]), int(s_date[4:6].lstrip('0')), int(s_date[6:8].lstrip('0')))
-        end_date = datetime.datetime(int(e_date[0:4]), int(e_date[4:6].lstrip('0')), int(e_date[6:8].lstrip('0')))
+        start_date = dt.datetime(int(s_date[0:4]), int(s_date[4:6].lstrip('0')), int(s_date[6:8].lstrip('0')))
+        end_date = dt.datetime(int(e_date[0:4]), int(e_date[4:6].lstrip('0')), int(e_date[6:8].lstrip('0')))
         for n in range(int ((end_date - start_date).days +1)):
-            next_date = start_date + datetime.timedelta(n)
+            next_date = start_date + dt.timedelta(n)
             n_year = str(next_date.year)
             n_month = str(next_date.month)
             n_day = str(next_date.day)
@@ -3304,14 +3635,14 @@ def get_windowed_indices(dates, start_window, end_window):
     #Date formatting needed to deal with end of data and window size
     #doy = day of year
     if is_leap_year(start_yr) and start_mon > 2:
-        doy_first = datetime.datetime(start_yr, start_mon, start_day).timetuple().tm_yday -1
+        doy_first = dt.datetime(start_yr, start_mon, start_day).timetuple().tm_yday -1
     else:
-        doy_first = datetime.datetime(start_yr, start_mon, start_day).timetuple().tm_yday
+        doy_first = dt.datetime(start_yr, start_mon, start_day).timetuple().tm_yday
 
     if is_leap_year(end_yr) and end_mon > 2:
-        doy_last = datetime.datetime(end_yr, end_mon, end_day).timetuple().tm_yday - 1
+        doy_last = dt.datetime(end_yr, end_mon, end_day).timetuple().tm_yday - 1
     else:
-        doy_last = datetime.datetime(end_yr, end_mon, end_day).timetuple().tm_yday
+        doy_last = dt.datetime(end_yr, end_mon, end_day).timetuple().tm_yday
     doy_window_st = compute_doy(start_window[0:2], start_window[2:4])
     doy_window_end = compute_doy(end_window[0:2], end_window[2:4])
     #Check end conditions at endpoints:
@@ -3366,13 +3697,13 @@ def get_windowed_data(data, start_date, end_date, start_window, end_window):
         #Date formatting needed to deal with end of data and window size
         #doy = day of year
         if is_leap_year(st_yr) and st_mon > 2:
-            doy_first = datetime.datetime(st_yr, st_mon, st_day).timetuple().tm_yday -1
+            doy_first = dt.datetime(st_yr, st_mon, st_day).timetuple().tm_yday -1
         else:
-            doy_first = datetime.datetime(st_yr, st_mon, st_day).timetuple().tm_yday
+            doy_first = dt.datetime(st_yr, st_mon, st_day).timetuple().tm_yday
         if is_leap_year(end_yr) and end_mon > 2:
-            doy_last = datetime.datetime(end_yr, end_mon, end_day).timetuple().tm_yday - 1
+            doy_last = dt.datetime(end_yr, end_mon, end_day).timetuple().tm_yday - 1
         else:
-            doy_last = datetime.datetime(end_yr, end_mon, end_day).timetuple().tm_yday
+            doy_last = dt.datetime(end_yr, end_mon, end_day).timetuple().tm_yday
         doy_window_st = compute_doy(start_window[0:2], start_window[2:4])
         doy_window_end = compute_doy(end_window[0:2], end_window[2:4])
         dates = [data[i][0] for i  in range(len(data))]

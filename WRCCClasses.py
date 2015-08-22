@@ -164,6 +164,10 @@ class GraphDictWriter(object):
                 subTitle+= ', ' + self.form['start_day'] + ' To '
                 subTitle+= WRCCData.NUMBER_TO_MONTH_NAME[self.form['end_month']]
                 subTitle+= ', ' + self.form['end_day']
+            else:
+                subTitle = 'Start Month and Day: '
+                subTitle+=WRCCData.NUMBER_TO_MONTH_NAME[self.form['start_month']]
+                subTitle+= ', ' + self.form['start_day']
         return subTitle
 
 

@@ -1626,7 +1626,7 @@ def get_single_intraannual_data(form):
     #And store them in a dict, keys are the years
     #sorted_data = sorted(data, key=itemgetter(3))
     for row_data in data:
-        date_str = row_data[0]
+        date_str = str(row_data[0])
         date_eight = date_to_eight(date_str)
         data_year = int(date_str[0:4])
         doy = compute_doy_leap(date_eight[4:6],date_eight[6:8])
@@ -1637,16 +1637,19 @@ def get_single_intraannual_data(form):
         except:val = -9999
         if not year_change and 1 <= doy <= 366:
             year_txt_data[data_year].append([date_str, val])
-            year_graph_data[data_year].append([int_time,val])
-            year_doy_data[data_year][doy] = [int_time,val]
+            if val != -9999:
+                year_graph_data[data_year].append([int_time,val])
+                year_doy_data[data_year][doy] = [int_time,val]
         if year_change and doyS <= doy <= 366:
             year_txt_data[data_year].append([date_str, val])
-            year_graph_data[data_year].append([int_time,val])
-            year_doy_data[data_year][doy] = [int_time,val]
+            if val != -9999:
+                year_graph_data[data_year].append([int_time,val])
+                year_doy_data[data_year][doy] = [int_time,val]
         if year_change and 1<= doy <= doyE and str(data_year) != yS:
             year_txt_data[data_year - 1 ].append([date_str, val])
-            year_graph_data[data_year -1 ].append([int_time,val])
-            year_doy_data[data_year - 1][doy] = [int_time,val]
+            if val != -9999:
+                year_graph_data[data_year -1 ].append([int_time,val])
+                year_doy_data[data_year - 1][doy] = [int_time,val]
     #================================
     # Sort data, compute climo and percentiles
     #================================
@@ -1680,20 +1683,22 @@ def get_single_intraannual_data(form):
         if form['element'] in ['pcpn','pet','snow']:
             for year in range(int(yS), int(yE) + 1):
                 if doy in year_doy_data[year].keys():
-                   if doy == 60:
-                       year_doy_data[year][doy][1]=year_doy_data[year][doy][1];
-                   if doy == 61:
-                       year_doy_data[year][doy][1]=year_doy_data[year][doy][1]+year_doy_data[year][doy-2][1]
-                   elif doy !=doyS:
-                       if doy==1:
-                           year_doy_data[year][doy][1]=year_doy_data[year][doy][1]+year_doy_data[year][365][1]
-                       else:
-                           year_doy_data[year][doy][1]=year_doy_data[year][doy][1]+year_doy_data[year][doy-1][1]
-                   doy_vals.append(year_doy_data[year][doy][1])
-        else:
-            for year in range(int(yS), int(yE) + 1):
-               if doy in year_doy_data[year].keys():
-                   doy_vals.append(year_doy_data[year][doy][1])
+                    if doy == 60:
+                        year_doy_data[year][doy][1]=year_doy_data[year][doy][1];
+                    if doy == 61:
+                        if doy - 2 in year_doy_data[year].keys():
+                            year_doy_data[year][doy][1]=year_doy_data[year][doy][1]+year_doy_data[year][doy-2][1]
+                    elif doy !=doyS:
+                        if doy==1 and 365 in year_doy_data[year].keys():
+                            year_doy_data[year][doy][1]=year_doy_data[year][doy][1]+year_doy_data[year][365][1]
+                        else:
+                            if doy - 1 in year_doy_data[year].keys():
+                                year_doy_data[year][doy][1]=year_doy_data[year][doy][1]+year_doy_data[year][doy-1][1]
+                    doy_vals.append(year_doy_data[year][doy][1])
+                else:
+                    for year in range(int(yS), int(yE) + 1):
+                        if doy in year_doy_data[year].keys():
+                            doy_vals.append(year_doy_data[year][doy][1])
         '''
         for year in range(int(yS), int(yE) + 1):
             if doy in year_doy_data[year].keys():
@@ -2138,6 +2143,8 @@ def form_to_display_list(key_order_list, form):
             display_list[idx].append(WRCCData.DISPLAY_PARAMS[form[key]])
         elif key == 'grid':
             display_list[idx].append(WRCCData.GRID_CHOICES[form['grid']][0])
+        elif key == 'start_month':
+            display_list[idx].append(WRCCData.MONTH_NAMES_SHORT_CAP[int(form[key]) - 1])
         else:
             display_list[idx].append(str(val))
     return display_list
@@ -2233,6 +2240,8 @@ def date_to_eight(date,se=None):
     '''
     mon_lens = ['31', '28', '31','30','31','30', '31','31','30','31','30','31']
     d8 = date.replace('-','').replace('/','').replace(':','').replace(' ','')
+    if len(d8) == 8:
+        return d8
     mmdd = '0101';dd='01'
     if se == 'end':
         mmdd = '1231'

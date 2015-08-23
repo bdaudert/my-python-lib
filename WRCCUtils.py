@@ -1589,12 +1589,20 @@ def get_single_intraannual_data(form):
         unit_convert = getattr(tismodule, 'convert_to_metric')
     else:
         unit_convert =  getattr(thismodule,'convert_nothing')
-    el_vX = WRCCData.ACIS_ELEMENTS_DICT[form['element']]['vX']
+    elems = []
+    if form['element'] == 'dtr':
+        elems = [{'vX':1},{'vX':2}]
+    elif form['element'] == 'pet':
+        elems = [{'vX':1},{'vX':2}]
+    else:
+        elems = [{'vX':WRCCData.ACIS_ELEMENTS_DICT[form['element']]['vX']}]
     acis_params = {
         'sdate':form['start_date'],
         'edate':form['end_date'],
-        'elems': [{'vX':el_vX}]
+        'elems': elems,
+        'meta':'ll'
     }
+
     #Data request
     if 'station_id' in form.keys():
         acis_params['sid'] = form['station_id']
@@ -1609,7 +1617,13 @@ def get_single_intraannual_data(form):
         req = AcisWS.GridData(acis_params)
     if 'data' not in req.keys():
         return ts_data, hc_data
-    data = req['data']
+    data = []
+    if form['element'] == 'dtr':
+        data = get_dtr_from_single_station(req)
+    elif form['element'] == 'pet':
+        data = get_pet_from_single_station(req)
+    else:
+        data = req['data']
 
     #Get data for each year
     year_graph_data= {}
@@ -1631,33 +1645,86 @@ def get_single_intraannual_data(form):
         data_year = int(date_str[0:4])
         doy = compute_doy_leap(date_eight[4:6],date_eight[6:8])
         d = calendar.timegm(dt.datetime.strptime(date_eight, '%Y%m%d').timetuple())
-        int_time = 1000 * d
+        int_time = 1000 * d + 1 * 24 * 3600 * 1000
         val = row_data[1]
         try:val = float(val)
         except:val = -9999
         if not year_change and 1 <= doy <= 366:
-            year_txt_data[data_year].append([date_str, val])
-            if val != -9999:
-                year_graph_data[data_year].append([int_time,val])
-                year_doy_data[data_year][doy] = [int_time,val]
+            if form['calculation'] == 'cumulative':
+                if year_txt_data[data_year]:
+                    summ = year_txt_data[data_year][-1][1]
+                    if val != -9999:
+                        summ = round(summ + val,2)
+                    year_txt_data[data_year].append([date_str, summ])
+                    year_graph_data[data_year].append([int_time,summ])
+                    year_doy_data[data_year][doy] = [int_time,summ]
+                else:
+                    #First entry for year
+                    if val != -9999:
+                        year_txt_data[data_year].append([date_str, val])
+                        year_graph_data[data_year].append([int_time,val])
+                        year_doy_data[data_year][doy] = [int_time,val]
+                    else:
+                        year_txt_data[data_year].append([date_str, 0])
+            else:
+                year_txt_data[data_year].append([date_str, val])
+                if val != -9999:
+                    year_graph_data[data_year].append([int_time,val])
+                    year_doy_data[data_year][doy] = [int_time,val]
         if year_change and doyS <= doy <= 366:
-            year_txt_data[data_year].append([date_str, val])
-            if val != -9999:
-                year_graph_data[data_year].append([int_time,val])
-                year_doy_data[data_year][doy] = [int_time,val]
+            if form['calculation'] == 'cumulative':
+                if year_txt_data[data_year]:
+                    summ = year_txt_data[data_year][-1][1]
+                    if val != -9999:
+                        summ = round(summ + val,2)
+                    year_txt_data[data_year].append([date_str, summ])
+                    year_graph_data[data_year].append([int_time,summ])
+                    year_doy_data[data_year][doy] = [int_time,summ]
+                else:
+                    #First value for year
+                    if val != -9999:
+                        year_txt_data[data_year].append([date_str, val])
+                        year_graph_data[data_year].append([int_time,val])
+                        year_doy_data[data_year][doy] = [int_time,val]
+                    else:
+                        year_txt_data[data_year].append([date_str, 0])
+            else:
+                year_txt_data[data_year].append([date_str, val])
+                if val != -9999:
+                    year_graph_data[data_year].append([int_time,val])
+                    year_doy_data[data_year][doy] = [int_time,val]
         if year_change and 1<= doy <= doyE and str(data_year) != yS:
-            year_txt_data[data_year - 1 ].append([date_str, val])
-            if val != -9999:
-                year_graph_data[data_year -1 ].append([int_time,val])
-                year_doy_data[data_year - 1][doy] = [int_time,val]
+            if form['calculation'] == 'cumulative':
+                if year_txt_data[data_year - 1]:
+                    summ = year_txt_data[data_year -1][-1][1]
+                    if val != -9999:
+                        summ = round(summ + val,2)
+                    year_txt_data[data_year - 1].append([date_str, summ])
+                    year_graph_data[data_year - 1].append([int_time,summ])
+                    year_doy_data[data_year - 1][doy] = [int_time,summ]
+                else:
+                    if val != -9999:
+                        year_txt_data[data_year - 1].append([date_str, val])
+                        year_graph_data[data_year -1].append([int_time,val])
+                        year_doy_data[data_year -1][doy] = [int_time,val]
+                    else:
+                        year_txt_data[data_year -1].append([date_str, 0])
+            else:
+                year_txt_data[data_year - 1 ].append([date_str, val])
+                if val != -9999:
+                    year_graph_data[data_year -1 ].append([int_time,val])
+                    year_doy_data[data_year - 1][doy] = [int_time,val]
     #================================
     # Sort data, compute climo and percentiles
     #================================
     percentiles = [[5, 95],[10,90],[25,75]]
     climoData = []; percentileData = [[] for p in percentiles]
+
+    '''
     for year in range(int(yS), int(yE) + 1):
         year_graph_data[year] = sorted(year_graph_data[year])
         year_txt_data[year] = sorted(year_txt_data[year])
+    '''
     #================================
     #Climo and percentile computation
     semiWindowDaysSmoothing = 10
@@ -1678,28 +1745,6 @@ def get_single_intraannual_data(form):
         epoch = dt.datetime.utcfromtimestamp(0)
         int_time = int((datetime - epoch).total_seconds() * 1000)
         doy_vals = []; d_array = []
-        '''
-        #Cumulative for precip/pet
-        if form['element'] in ['pcpn','pet','snow']:
-            for year in range(int(yS), int(yE) + 1):
-                if doy in year_doy_data[year].keys():
-                    if doy == 60:
-                        year_doy_data[year][doy][1]=year_doy_data[year][doy][1];
-                    if doy == 61:
-                        if doy - 2 in year_doy_data[year].keys():
-                            year_doy_data[year][doy][1]=year_doy_data[year][doy][1]+year_doy_data[year][doy-2][1]
-                    elif doy !=doyS:
-                        if doy==1 and 365 in year_doy_data[year].keys():
-                            year_doy_data[year][doy][1]=year_doy_data[year][doy][1]+year_doy_data[year][365][1]
-                        else:
-                            if doy - 1 in year_doy_data[year].keys():
-                                year_doy_data[year][doy][1]=year_doy_data[year][doy][1]+year_doy_data[year][doy-1][1]
-                    doy_vals.append(year_doy_data[year][doy][1])
-                else:
-                    for year in range(int(yS), int(yE) + 1):
-                        if doy in year_doy_data[year].keys():
-                            doy_vals.append(year_doy_data[year][doy][1])
-        '''
         for year in range(int(yS), int(yE) + 1):
             if doy in year_doy_data[year].keys():
                 doy_vals.append(year_doy_data[year][doy][1])
@@ -1723,22 +1768,18 @@ def get_single_intraannual_data(form):
     #================================
     #smooth the climoData and the percentileData - wrap around with days of year
     filtersize = 10 #10-day window.. maybe want 21-day window?
-    '''
     if climoData:
-        if form['element'] in ['pcpn','pet','snow']:
+        if form['element'] in ['pcpn','pet','snow','gdd','hdd','cdd']:
             climoData = compute_running_mean(climoData,filtersize)
         else:
             climoData = compute_circular_running_mean(climoData,filtersize)
-    '''
-    climoData = compute_circular_running_mean(climoData,filtersize)
+    #climoData = compute_circular_running_mean(climoData,filtersize)
     for p_idx, p in enumerate(percentiles):
         if percentileData[p_idx]:
-            '''
-            if form['element'] in ['pcpn','pet','snow']:
+            if form['element'] in ['pcpn','pet','snow','gdd','hdd','cdd']:
                  percentileData[p_idx]= compute_circular_running_mean_bounds(percentileData[p_idx],filtersize)
             else:
                  percentileData[p_idx]= compute_circular_running_mean_bounds(percentileData[p_idx],filtersize)
-            '''
             percentileData[p_idx]= compute_circular_running_mean_bounds(percentileData[p_idx],filtersize)
     #================================
     return year_txt_data, year_graph_data, climoData, percentileData
@@ -1807,6 +1848,7 @@ def get_single_interannaul_data(form):
             continue
         #Last Year
         if not year_change and int(data_yr) == int(windowed_data[-1][0][0:4]):
+            yr = data_yr
             try:smry_data.append(float(d[1]))
             except:pass
             if str(d) == str(windowed_data[-1]):
@@ -1840,7 +1882,6 @@ def get_single_interannaul_data(form):
         #Compute Summary for this year
         if smry_data:
             smry = compute_statistic(smry_data,form['temporal_summary'])
-        print yr, data_yr, len(smry_data), smry
         if smry:
             s_val = unit_convert(form['element'],smry)
             year_data.append([yr,s_val])
@@ -1853,7 +1894,19 @@ def get_single_interannaul_data(form):
         #reset
         smry_data = []
         yr = data_yr
-
+    #Last value
+    if smry_data:
+        smry = compute_statistic(smry_data,form['temporal_summary'])
+        if smry:
+            s_val = unit_convert(form['element'],smry)
+            date = str(windowed_data[-1][0])
+            year_data.append([data_yr,s_val])
+            date = date[0:4] + '-01-01'
+            dtime = calendar.timegm(dt.datetime.strptime(date, '%Y-%m-%d').timetuple())
+            int_time = 1000 * dtime
+            hc_data.append([int_time, s_val])
+        else:
+            year_data.append([date,-9999])
     return year_data, hc_data
 
 ################################
@@ -4872,6 +4925,95 @@ def Cagamma(rdata, numdat, pnlist, numpn):
     for i in range(numpn):
         psd[i] = Gampctle(pnlist[i], scale, shape)
     return psd
+
+def get_calc_from_single_station(req, calculation,element):
+    if 'data' not in req.keys(): return []
+    data = []
+    if calculation == 'values':
+        return req['data']
+    if calculation == 'cumulative':
+        summ = 0
+        for idx, date_vals in enumerate(req['data']):
+            if len(date_vals) != 2:
+                if not date_vals:
+                    d = ['9999-99-99',summ]
+                else:
+                    d = [date_vals[0], summ]
+                data.append(d)
+                continue
+            d = [str(date_vals[0])]
+            if element in ['maxt', 'mint','avgt','dtr','hdd','gdd','cdd']:
+                try:
+                    val = int(date_vals[1])
+                    if val not in [-9999,-999]:
+                        summ+=val
+                        val = summ
+                except:
+                    val = summ
+            else:
+                try:
+                    val = float(date_vals[1])
+                    if abs(val + 9999)<0.001 or abs(val + 999)<0.001:
+                        val = summ
+                    else:
+                        summ+=val
+                        val = summ
+                except:
+                    val = summ
+
+            d.append(val)
+            data.append(d)
+    return data
+
+def get_dtr_from_single_station(req):
+    if 'data' not in req.keys(): return []
+    data = []
+    summ = 0
+    for date_vals in req['data']:
+        if len(date_vals) != 3:
+            if not date_vals:
+                val = ['9999-99-99',-9999]
+            else:
+                val = [date_vals[0], -9999]
+            data.append(val)
+            continue
+        d = [str(date_vals[0])]
+        try:
+            if int(date_vals[1]) in [-9999,-999] or int(req_data[idx - 1]) in [-9999,-999]:
+                val = -9999
+            else:
+                val = str(int(date_vals[1]) - int(date_vals[2]))
+        except:
+            val = -9999
+        d.append(val)
+        data.append(d)
+    return data
+
+def get_pet_from_single_station(req):
+    if 'data' not in req.keys(): return []
+    if 'meta' not in req.keys() or 'll' not in req['meta'].keys():
+        return []
+    data = []
+    for date_vals in req['data']:
+        if len(date_vals) != 3:
+            if not date_vals:
+                val = ['9999-99-99',-9999]
+            else:
+                val = [date_vals[0], -9999]
+            data.append(val)
+            continue
+        d = [str(date_vals[0])]
+        date_eight = date_to_eight(str(date_vals[0]))
+        doy = compute_doy(date_eight[4:6],date_eight[6:8])
+        lon = req['meta']['ll'][0]
+        lat = req['meta']['ll'][1]
+        try:
+            val = compute_pet(lat,lon,date_vals[1],date_vals[2],doy,'english')
+        except:
+            val = -9999
+        d.append(val)
+        data.append(d)
+    return data
 
 def compute_pet(lat,lon,maxt,mint,doy,units):
     '''

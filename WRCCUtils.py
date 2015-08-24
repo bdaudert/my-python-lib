@@ -2089,10 +2089,13 @@ def elements_to_display(elements,units,valid_daterange=None):
             unit = WRCCData.UNITS_METRIC[el_strip]
             #form cleaned has english units
             #base_temp = convert_to_metric(el_strip,base_temp)
+        if unit != '':
+            unit = ' (' + unit + ')'
+
         if not base_temp or base_temp == ' ':
-            el_list_long.append(WRCCData.DISPLAY_PARAMS[el_strip] + ' (' + unit + ')')
+            el_list_long.append(WRCCData.DISPLAY_PARAMS[el_strip] + unit)
         else:
-            el_list_long.append(WRCCData.DISPLAY_PARAMS[el_strip] + ' (' + unit + '), Base: ' + str(base_temp))
+            el_list_long.append(WRCCData.DISPLAY_PARAMS[el_strip] + unit + ', Base: ' + str(base_temp))
         if valid_daterange:
             try:
                 vd = [str(valid_daterange[el_idx][0]),str(valid_daterange[el_idx][1])]
@@ -2143,7 +2146,12 @@ def form_to_display_list(key_order_list, form):
     Returns: List of [key,val] pairs
     '''
     keys = [k for k in key_order_list]
-    display_list = [[WRCCData.DISPLAY_PARAMS[key]] for key in keys]
+    display_list = []
+    for key in keys:
+        try:
+            display_list.append([WRCCData.DISPLAY_PARAMS[key]])
+        except:
+            display_list.append([''])
     #Special case window for interannual
     if 'window' in keys:
         idx = keys.index(str(key))
@@ -2190,7 +2198,10 @@ def form_to_display_list(key_order_list, form):
         elif key in ['spatial_summary','temporal_summary']:
             display_list[idx].append(WRCCData.DISPLAY_PARAMS[form[key]])
         elif key in ['elements', 'element']:
-            el_list_long = elements_to_display(form[key],form['units'])
+            if 'units' in form.keys():
+                el_list_long = elements_to_display(form[key],form['units'])
+            else:
+                el_list_long = elements_to_display(form[key],'english')
             display_list[idx].append(', '.join(el_list_long))
         elif key in ['data_type','units']:
             display_list[idx].append(WRCCData.DISPLAY_PARAMS[form[key]])

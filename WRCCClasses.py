@@ -77,7 +77,10 @@ class GraphDictWriter(object):
     def set_chartType(self):
         el_strip, base_temp = WRCCUtils.get_el_and_base_temp(self.element)
         if el_strip in ['pcpn','snow', 'snwd', 'hdd','cdd','gdd']:
-            chartType = 'column'
+            if 'calculation' in self.form.keys() and self.form['calculation'] == 'cumulative':
+                chartType = 'spline'
+            else:
+                chartType = 'column'
         else:
             chartType = 'spline'
         return chartType
@@ -168,6 +171,12 @@ class GraphDictWriter(object):
                 subTitle = 'Start Month and Day: '
                 subTitle+=WRCCData.NUMBER_TO_MONTH_NAME[self.form['start_month']]
                 subTitle+= ', ' + self.form['start_day']
+        if 'req_type' in self.form.keys() and self.form['req_type'] == 'data_comparison':
+            try:
+                subTitle = 'Compared with grid: '
+                subTitle+=WRCCData.GRID_CHOICES[str(self.form['grid'])][0]
+            except:
+                pass
         return subTitle
 
 

@@ -613,9 +613,9 @@ AREA_DEFAULTS = {
     'location':'-111,40'
 }
 
+
 DISPLAY_PARAMS = {
     #data types
-    'area_type':'Area Type',
     'data_type':'Data Type',
     'station': 'Station',
     'grid':'Grid',
@@ -631,6 +631,7 @@ DISPLAY_PARAMS = {
     'select_grid_by':'Grid Data Request',
     'select_stations_by': 'Station Data Request',
     #search areas
+    'area_type':'Area Type',
     'user_area_id': 'Point/Area',
     'stnid': 'Station ID',
     'stnids': 'Station IDs',
@@ -713,6 +714,7 @@ DISPLAY_PARAMS = {
     'evap': 'Pan Evaporation',
     'pet': 'Potential ET',
     #Other
+    'calculation':'Calculation',
     'temporal_resolution': 'Temporal Resolution',
     'temporal': 'Temporal Summary',
     'spatial':'Spatial Summary',

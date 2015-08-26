@@ -139,7 +139,10 @@ class GraphDictWriter(object):
                 title += WRCCData.DISPLAY_PARAMS[self.form['temporal_summary']] + ' of '
             elif 'spatial_summary' in self.form.keys():
                 title += WRCCData.DISPLAY_PARAMS[self.form['spatial_summary']] + ' of '
-            title += WRCCData.DISPLAY_PARAMS[el_strip]
+            if 'calculation' in self.form.keys() and self.form['calculation'] == 'cumulative':
+                title += 'Cumulative ' + WRCCData.DISPLAY_PARAMS[el_strip]
+            else:
+                title += WRCCData.DISPLAY_PARAMS[el_strip]
             if self.name is None:
                 self.name = title.split(', ')[-1]
         if base_temp:
@@ -162,13 +165,18 @@ class GraphDictWriter(object):
             if 'location' in self.form.keys():
                 subTitle = 'Location: ' + self.form['location']
         if 'start_month' in self.form.keys() and 'start_day' in self.form.keys():
+            #Interannual/Intraannual
+            if 'grid' in self.form.keys():
+                subTitle = 'Grid: ' + WRCCData.GRID_CHOICES[str(self.form['grid'])][0] + ', '
+            else:
+                subTitle = ''
             if 'end_month' in self.form.keys() and 'end_day' in self.form.keys():
-                subTitle = 'From ' + WRCCData.NUMBER_TO_MONTH_NAME[self.form['start_month']]
+                subTitle+= 'From ' + WRCCData.NUMBER_TO_MONTH_NAME[self.form['start_month']]
                 subTitle+= ', ' + self.form['start_day'] + ' To '
                 subTitle+= WRCCData.NUMBER_TO_MONTH_NAME[self.form['end_month']]
                 subTitle+= ', ' + self.form['end_day']
             else:
-                subTitle = 'Start Month and Day: '
+                subTitle+= 'Start Month and Day: '
                 subTitle+=WRCCData.NUMBER_TO_MONTH_NAME[self.form['start_month']]
                 subTitle+= ', ' + self.form['start_day']
         if 'req_type' in self.form.keys() and self.form['req_type'] == 'data_comparison':
@@ -329,8 +337,13 @@ class CsvWriter(object):
 
     def write_header(self):
         #Search params header:
-        if self.smry and self.form['data_summary'] != 'None':
+        if self.smry and 'data_summary' in self.form.keys() and self.form['data_summary'] != 'None':
             header_keys = [self.form['area_type'],'data_summary','start_date', 'end_date']
+        elif 'req_type' in self.form.keys() and self.form['req_type'] == 'interannual':
+            header_keys = ['element','start_month','start_day', \
+            'end_month', 'end_day','temporal_summary']
+        elif 'req_type' in self.form.keys() and self.form['req_type'] == 'intraannual':
+            header_keys = ['element','start_month','start_day']
         else:
             header_keys = [self.form['area_type'],'start_date', 'end_date']
         if 'data_type' in self.form.keys():
@@ -343,24 +356,35 @@ class CsvWriter(object):
             self.writer.writerow(row)
 
         if self.data_type == 'station' and not self.smry:
-            row = ['*DataFlags','M=Missing', 'T=Trace', 'S=Subsequent', 'A=Accumulated']
-            self.writer.writerow(row)
+            if 'req_type' in self.form.keys() and self.form['req_type'] in  ['interannual','intraannual']:
+                pass
+            else:
+                row = ['*DataFlags','M=Missing', 'T=Trace', 'S=Subsequent', 'A=Accumulated']
+                self.writer.writerow(row)
 
     def write_data(self):
         #Loop over data points
         for p_idx, p_data in enumerate(self.data):
             self.writer.writerow(['*'])
-            #Write meta
-            meta_display_params = WRCCUtils.metadict_to_display_list(self.req['meta'][p_idx], self.meta_keys, self.form)
-            for key_val in meta_display_params:
-                row = ['*' + key_val[0].replace(' ',''),' '.join(key_val[1])]
-                self.writer.writerow(row)
+            if 'meta' in self.req.keys():
+                #Write meta
+                meta_display_params = WRCCUtils.metadict_to_display_list(self.req['meta'][p_idx], self.meta_keys, self.form)
+                for key_val in meta_display_params:
+                    row = ['*' + key_val[0].replace(' ',''),' '.join(key_val[1])]
+                    self.writer.writerow(row)
             #Write data
-            self.writer.writerow(['*'])
+            if 'req_type' in self.form.keys() and self.form['req_type'] in  ['intraannual']:
+                h = ['*' + 'Year: ', p_data[0][0][0:4]]
+                self.writer.writerow(h)
+            else:
+                self.writer.writerow(['*'])
             for d_idx, date_data in enumerate(p_data):
                 if d_idx == 0:
                     #Data Header
-                    h = ['*' + date_data[0]]
+                    if 'req_type' in self.form.keys() and self.form['req_type'] in ['intraannual','interannual']:
+                        h = [date_data[0]]
+                    else:
+                        h = ['*' + date_data[0]]
                 else:
                     h = [date_data[0]]
                 d = date_data[1:]
@@ -428,19 +452,13 @@ class ExcelWriter(object):
         self.wb = Workbook()
 
     def write_header(self,ws):
-        '''
-        if self.smry:
-            header_keys = [self.form['area_type'],'data_summary','start_date', 'end_date']
-            header = WRCCUtils.form_to_display_list(header_keys, self.form)
-        else:
-            header = []
-        for k_idx, key_val in enumerate(header):
-            ws.write(0,k_idx,key_val[0].replace(' ',''))
-            ws.write(1,k_idx,key_val[1])
-        '''
-        #Search params header:
         if self.smry and self.form['data_summary'] != 'None':
             header_keys = [self.form['area_type'],'data_summary','start_date', 'end_date']
+        elif 'req_type' in self.form.keys() and self.form['data_summary'] == 'interannual':
+            header_keys = ['element','start_month','start_day', \
+            'end_month', 'end_day','temporal_summary']
+        elif 'req_type' in self.form.keys() and self.form['data_summary'] == 'intraannual':
+            header_keys = ['element','start_month','start_day']
         else:
             header_keys = [self.form['area_type'],'start_date', 'end_date']
         if 'data_type' in self.form.keys():
@@ -455,15 +473,19 @@ class ExcelWriter(object):
     def write_data(self):
         #Loop over data points
         for p_idx, p_data in enumerate(self.data):
-            #Write meta
-            meta_display_params = WRCCUtils.metadict_to_display_list(self.req['meta'][p_idx], self.meta_keys, self.form)
             #New sheet for each point
-            ws = self.wb.add_sheet('Point' + str(p_idx))
+            if 'req_type' in self.form.keys() and self.form['req_type'] == 'intraannual':
+                ws = self.wb.add_sheet('Year' + str(int(self.form['start_year']) + p_idx))
+            else:
+                ws = self.wb.add_sheet('Point' + str(p_idx))
             self.write_header(ws)
-            #Write header
-            for m_idx,key_val in enumerate(meta_display_params):
-                ws.write(3,m_idx,meta_display_params[m_idx][0])
-                ws.write(4,m_idx,' '.join(meta_display_params[m_idx][1]))
+            if 'meta' in self.req.keys():
+                #Write meta
+                meta_display_params = WRCCUtils.metadict_to_display_list(self.req['meta'][p_idx], self.meta_keys, self.form)
+                #Write meta for point
+                for m_idx,key_val in enumerate(meta_display_params):
+                    ws.write(3,m_idx,meta_display_params[m_idx][0])
+                    ws.write(4,m_idx,' '.join(meta_display_params[m_idx][1]))
             if self.data_type =='station':
                 ws.write(6,0,'DataFlags')
                 ws.write(6,1,'M=Missing')

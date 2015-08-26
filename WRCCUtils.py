@@ -1843,13 +1843,17 @@ def get_single_interannaul_data(form):
         data_doy = compute_doy_leap(date_eight[4:6],date_eight[6:8])
         val = d[1]
         if not year_change and int(data_yr) == int(yr):
-            try:smry_data.append(float(d[1]))
+            try:
+                if abs(float(d[1]) + 9999)> 0.001 and abs(float(d[1]) + 999)> 0.001:
+                    smry_data.append(float(d[1]))
             except:pass
             continue
         #Last Year
         if not year_change and int(data_yr) == int(windowed_data[-1][0][0:4]):
             yr = data_yr
-            try:smry_data.append(float(d[1]))
+            try:
+                if abs(float(d[1]) + 9999)> 0.001 and abs(float(d[1]) + 999)> 0.001:
+                    smry_data.append(float(d[1]))
             except:pass
             if str(d) == str(windowed_data[-1]):
                 pass
@@ -1857,23 +1861,33 @@ def get_single_interannaul_data(form):
                 continue
         if year_change:
             if  int(data_yr) == int(yr):
-                try:smry_data.append(float(d[1]))
+                try:
+                    if abs(float(d[1]) + 9999)> 0.001 and abs(float(d[1]) + 999)> 0.001:
+                        smry_data.append(float(d[1]))
                 except:pass
                 continue
             if int(data_yr) == int(yr) + 1 and 1 <= data_doy  and data_doy < doy_end:
-                try:smry_data.append(float(d[1]))
+                try:
+                    if abs(float(d[1]) + 9999)> 0.001 and abs(float(d[1]) + 999)> 0.001:
+                        smry_data.append(float(d[1]))
                 except:pass
                 continue
             if int(data_yr) == int(yr) + 1 and data_doy == doy_end:
-                try:smry_data.append(float(d[1]))
+                try:
+                    if abs(float(d[1]) + 9999)> 0.001 and abs(float(d[1]) + 999)> 0.001:
+                        smry_data.append(float(d[1]))
                 except:pass
             #Last period
             if int(data_yr) == int(windowed_data[-1][0][0:4]) + 2:
-                try:smry_data.append(float(d[1]))
+                try:
+                    if abs(float(d[1]) + 9999)> 0.001 and abs(float(d[1]) + 999)> 0.001:
+                        smry_data.append(float(d[1]))
                 except:pass
                 continue
             if int(data_yr) == int(windowed_data[-1][0][0:4]) + 2 and 1 <= data_doy  and data_doy <= doy_end:
-                try:smry_data.append(float(d[1]))
+                try:
+                    if abs(float(d[1]) + 9999)> 0.001 and abs(float(d[1]) + 999)> 0.001:
+                        smry_data.append(float(d[1]))
                 except:pass
                 if str(d) == str(windowed_data[-1]):
                     pass
@@ -2202,12 +2216,15 @@ def form_to_display_list(key_order_list, form):
                 el_list_long = elements_to_display(form[key],form['units'])
             else:
                 el_list_long = elements_to_display(form[key],'english')
+            if 'calculation' in form.keys() and  form['calculation'] == 'cumulative':
+                for el_idx in range(len(el_list_long)):
+                    el_list_long[el_idx] = 'Cumulative ' + el_list_long[0]
             display_list[idx].append(', '.join(el_list_long))
         elif key in ['data_type','units']:
             display_list[idx].append(WRCCData.DISPLAY_PARAMS[form[key]])
         elif key == 'grid':
             display_list[idx].append(WRCCData.GRID_CHOICES[form['grid']][0])
-        elif key == 'start_month':
+        elif key in ['start_month','end_month']:
             display_list[idx].append(WRCCData.MONTH_NAMES_SHORT_CAP[int(form[key]) - 1])
         else:
             display_list[idx].append(str(val))

@@ -238,7 +238,7 @@ if __name__ == '__main__' :
         if mtime <= x_mins_ago:
             logger.info('Data request for parameter file %s is in progress' %str(os.path.basename(params_file)))
             if mtime <= time_out:
-                logger.info('24 hr processing limit reached. Removing parameter file: %s' %str(params_file))
+                logger.info('12 hr processing limit reached. Removing parameter file: %s' %str(params_file))
                 compose_failed_request_email(params, [params_file], log_file_name)
                 os.remove(params_file)
             continue

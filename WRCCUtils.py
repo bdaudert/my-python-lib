@@ -1092,6 +1092,13 @@ def format_station_spatial_summary(req,form):
     format_date = getattr(thismodule,'format_date_string')
     sep = form['date_format']
     dates = get_dates(form['start_date'],form['end_date'])
+    #Sanity check on data
+    if not data or len(data) <1:
+        error = 'No data found for these parameters.'
+        return {'data':[],'smry':[],'meta':[],'form':form,'errors':error}
+    if 'data' not in data[0].keys():
+        error = 'No data found for these parameters.'
+        return {'data':[],'smry':[],'meta':[],'form':form,'errors':error}
     #Sanity check on dates
     if len(dates) != len(data[0]['data']):
         error = 'Dates mismatch.'
@@ -1157,9 +1164,17 @@ def format_station_no_summary(req,form):
     new_data = [];new_smry = [];new_meta = []
     #MultiStnData calls return no dates
     dates = get_dates(form['start_date'],form['end_date'])
+    #Sanity check on data
+    if not data or len(data) <1:
+        error = 'No data found for these parameters.'
+        return new_data,new_smry,new_meta
+    if 'data' not in data[0].keys():
+        error = 'No data found for these parameters.'
+        return {'data':[],'smry':[],meta:[],'form':form,'errors':error}
     #Sanity check on dates
     if len(dates) != len(data[0]['data']):
-        return new_data,new_smry,new_meta
+        error = 'Dates mismatch!'
+        return {'data':[],'smry':[],meta:[],'form':form,'errors':error}
     #Set unit converter
     unit_convert = getattr(thismodule,'convert_nothing')
     if 'units' in form.keys() and form['units'] == 'metric':
@@ -1228,6 +1243,13 @@ def format_station_windowed_data(req,form):
     new_data = [];new_smry = [];new_meta = []
     #MultiStnData calls return no dates
     dates = get_dates(form['start_date'],form['end_date'])
+    #Sanity check on data
+    if not data or len(data) <1:
+        error = 'No data found for these parameters.'
+        return new_data,new_smry,new_meta
+    if 'data' not in data[0].keys():
+        error = 'No data found for these parameters.'
+        return {'data':[],'smry':[],meta:[],'form':form,'errors':error}
     #Sanity check on dates
     if len(dates) != len(data[0]['data']):
         return {'data':[],'smry':[],meta:[],'form':form}
@@ -1417,14 +1439,14 @@ def compute_running_mean(data,num):
     Returns: running mean data formatted for highcharts
     '''
     rm_data =[]
-    if num is not None:
-        if num % 2 == 0:
-            num = num /2 -1
-        else:
-            num = (num - 1) / 2
+    if num % 2 == 0:
+        num = num /2 -1
+    else:
+        num = (num - 1) / 2
 
     for idx,row_data in enumerate(data):
         int_time = row_data[0]
+        '''
         try:
             val = round(float(row_data[1]),4)
             #deal with None data
@@ -1432,27 +1454,28 @@ def compute_running_mean(data,num):
                 val = None
         except:
             val = None
+        '''
         #Running Mean
-        if num is not None:
-            skip = False
-            if idx > num and idx < len(data) -1 - num:
-                ind_range = range(idx-num,idx+num+1)
-            elif idx<=num:
-                ind_range = range(0,idx+1)
+        skip =False
+        if idx > num and idx < len(data) -1 - num:
+            ind_range = range(idx-num,idx+num+1)
+        elif idx<=num:
+            ind_range = range(0,idx+1)
         elif idx>=len(data)-1-num:
             ind_range = range(idx,len(data))
-            cnt = 0; summ = 0
-            for i in ind_range:
-                try:
-                    rm_val = round(float(data[i][1]),4)
+
+        cnt = 0; summ = 0
+        for i in ind_range:
+            try:
+                rm_val = round(float(data[i][1]),4)
+                if abs(rm_val + 9999) > 0.001 and abs(rm_val + 999) > 0.0001:
                     summ+=rm_val
                     cnt+=1
-                except:
-                    skip = True
-                    break
-            if not skip and cnt >0:
-               rm_data.append([int_time,round(summ / float(cnt),4)])
-
+            except:
+                skip = True
+                break
+        if not skip and cnt >0:
+            rm_data.append([int_time,round(summ / float(cnt),4)])
     return rm_data
 
 
@@ -1568,25 +1591,32 @@ def get_single_intraannual_data(form):
     Args: cleaned form field entries
     Returns: inter-year data and highcarts data for POR or grid range
     '''
+    #Set up results dicts and lists
+    year_txt_data = {}
+    year_graph_data = {}
+    year_doy_data = {}
+    percentiles = [[5, 95],[10,90],[25,75]]
+    climoData = []; percentileData = [[] for p in percentiles]
     #Set up time vars
     doyS = compute_doy(form['start_month'],form['start_day'])
     yS = form['start_date'][0:4]
     yE = form['end_date'][0:4]
-    yearTarget = int(yE) - 1
-    if is_leap_year(yearTarget):yr_len = 366
+    target_year = int(form['target_year'])
+    #Sanity check on  target year
+    if target_year < int(yS) or target_year > int(yE):
+        target_year = int(yE) - 1
+    if is_leap_year(target_year):yr_len = 366
     else:yr_len = 365
     doyE = doyS + yr_len
     if doyE > yr_len + 1:
         doyE-= yr_len + 1
-    yS = form['start_date'][0:4]
-    yE = form['end_date'][0:4]
     ##Check if year change occurs in time period
     year_change = False
     if doyS != 1:year_change = True
     #Set up data request parameters
     ts_data = []; hc_data = []
     if form['units'] == 'metric':
-        unit_convert = getattr(tismodule, 'convert_to_metric')
+        unit_convert = getattr(thismodule, 'convert_to_metric')
     else:
         unit_convert =  getattr(thismodule,'convert_nothing')
     elems = []
@@ -1615,8 +1645,10 @@ def get_single_intraannual_data(form):
         acis_params['loc'] = form['location']
         acis_params['grid'] = form['grid']
         req = AcisWS.GridData(acis_params)
+    #Check for empty request
     if 'data' not in req.keys():
-        return ts_data, hc_data
+        return year_txt_data, year_graph_data, climoData, percentileData
+
     data = []
     if form['element'] == 'dtr':
         data = get_dtr_from_single_station(req)
@@ -1625,11 +1657,6 @@ def get_single_intraannual_data(form):
     else:
         data = req['data']
 
-    #Get data for each year
-    year_graph_data= {}
-    year_txt_data = {}
-    #Save doys and data values
-    year_doy_data = {}
     #Store data for each year separately
     for year in range(int(yS), int(yE) + 1):
         year_graph_data[year] = []
@@ -1647,8 +1674,10 @@ def get_single_intraannual_data(form):
         d = calendar.timegm(dt.datetime.strptime(date_eight, '%Y%m%d').timetuple())
         int_time = 1000 * d + 1 * 24 * 3600 * 1000
         val = row_data[1]
-        try:val = float(val)
-        except:val = -9999
+        try:
+            val = unit_convert(form['element'],float(val))
+        except:
+            val = -9999
         if not year_change and 1 <= doy <= 366:
             if form['calculation'] == 'cumulative':
                 if year_txt_data[data_year]:
@@ -1717,8 +1746,6 @@ def get_single_intraannual_data(form):
     #================================
     # Sort data, compute climo and percentiles
     #================================
-    percentiles = [[5, 95],[10,90],[25,75]]
-    climoData = []; percentileData = [[] for p in percentiles]
 
     '''
     for year in range(int(yS), int(yE) + 1):
@@ -1738,9 +1765,9 @@ def get_single_intraannual_data(form):
         #    continue
         #Convert target year and doy to integer time
         if doy < 60:
-            datetime = dt.datetime(yearTarget, int(form['start_month']), int(form['start_day'])) + dt.timedelta(days = doy_idx)
+            datetime = dt.datetime(target_year, int(form['start_month']), int(form['start_day'])) + dt.timedelta(days = doy_idx)
         else:
-            datetime = dt.datetime(yearTarget, int(form['start_month']), int(form['start_day'])) + dt.timedelta(days = doy_idx - 1)
+            datetime = dt.datetime(target_year, int(form['start_month']), int(form['start_day'])) + dt.timedelta(days = doy_idx - 1)
         #epoch = dt.datetime(1970,1,1)
         epoch = dt.datetime.utcfromtimestamp(0)
         int_time = int((datetime - epoch).total_seconds() * 1000)
@@ -1755,7 +1782,6 @@ def get_single_intraannual_data(form):
                 pl = round(np.percentile(d_array, p[0]),4)
                 pu = round(np.percentile(d_array, p[1]),4)
                 percentileData[p_idx].append([int_time,pl,pu])
-
     #================================
     #  SORT DATA
     #================================
@@ -1768,6 +1794,7 @@ def get_single_intraannual_data(form):
     #================================
     #smooth the climoData and the percentileData - wrap around with days of year
     filtersize = 10 #10-day window.. maybe want 21-day window?
+    #FIX ME:
     if climoData:
         if form['element'] in ['pcpn','pet','snow','gdd','hdd','cdd']:
             climoData = compute_running_mean(climoData,filtersize)
@@ -2284,7 +2311,22 @@ def metadict_to_display_list(metadata, key_order_list,form):
         meta.append(['Units', [form['units']]])
     return meta
 
-
+#######################
+# LINKS AN URL PARAMS
+#######################
+def set_url_params(initial):
+    p_str = '?'
+    for key, val in initial.iteritems():
+        k = str(key)
+        #convert lists to strings (elements)
+        if isinstance(val, list):
+            v = (',').join(val)
+        else:
+            v = str(val)
+        p_str+= k +'=' + v + '&'
+        #strip last &
+    p_str = p_str[0:-1]
+    return p_str
 ##########################
 #DATE/TIME FUNCTIONS
 ##########################
@@ -2713,9 +2755,9 @@ def get_station_ids(stn_json_file_path):
         if stn['name'] == name_previous:
             continue
         name_previous = stn['name']
-        stn_ids+=stn['sids'][0]
-        if idx < len(json_data['stations']) - 2:
-            stn_ids+=','
+        stn_ids+=stn['sids'][0] + ','
+    #strip last comme
+    stn_ids = stn_ids.rstrip(',')
     return stn_ids
 
 def convert_nothing(element,value):

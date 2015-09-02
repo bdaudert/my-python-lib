@@ -348,8 +348,10 @@ class CsvWriter(object):
             header_keys = [self.form['area_type'],'start_date', 'end_date']
         if 'data_type' in self.form.keys():
             header_keys.insert(0,'data_type')
+        '''
         if 'user_area_id' in self.form.keys():
             header_keys.insert(0,'user_area_id')
+        '''
         header = WRCCUtils.form_to_display_list(header_keys, self.form)
         for key_val in header:
             row = ['*' + key_val[0].replace(' ',''),key_val[1]]
@@ -463,8 +465,10 @@ class ExcelWriter(object):
             header_keys = [self.form['area_type'],'start_date', 'end_date']
         if 'data_type' in self.form.keys():
             header_keys.insert(0,'data_type')
+        '''
         if 'user_area_id' in self.form.keys():
             header_keys.insert(0,'user_area_id')
+        '''
         header = WRCCUtils.form_to_display_list(header_keys, self.form)
         for k_idx, key_val in enumerate(header):
             ws.write(0,k_idx,key_val[0].replace(' ',''))

@@ -1821,7 +1821,7 @@ def get_single_interannaul_data(form):
     today_str = set_back_date(0)
     today_year = today_str[0:4]
     if form['units'] == 'metric':
-        unit_convert = getattr(tismodule, 'convert_to_metric')
+        unit_convert = getattr(thismodule, 'convert_to_metric')
     else:
         unit_convert =  getattr(thismodule,'convert_nothing')
     el_vX = WRCCData.ACIS_ELEMENTS_DICT[form['element']]['vX']
@@ -2019,7 +2019,7 @@ def extract_highcarts_data_spatial_summary(data,el_idx, element, form):
 ########################
 #HEADER FORMATTING
 ########################
-def find_id(form_name_field, json_file_path):
+def find_id_and_name(form_name_field, json_file_path):
     '''
     Deals with autofill by station name.
     Note: Autofill sis set up to return name, id
@@ -2043,14 +2043,15 @@ def find_id(form_name_field, json_file_path):
             name = name_id_list[0]
         '''
         name = name_id_list[0]
-        return i
+        return i, name
     elif len(name_id_list) == 1:
         name_list= i.split(' ')
         #check for digits
         if bool(re.compile('\d').search(i)) and len(name_list) == 1:
             #User entered a station id
-            return i
+            pass
         else:
+            #user entered a name without id
             name = str(form_name_field)
     if not os.path.isfile(json_file_path) or os.path.getsize(json_file_path) == 0:
         return str(form_name_field)
@@ -2064,17 +2065,17 @@ def find_id(form_name_field, json_file_path):
                 #kml file names have special chars removed
                 n = re.sub('[^a-zA-Z0-9\n\.]', ' ', entry['name'])
                 if entry['name'].upper() != name.upper() and n.upper() != name.upper():
-                    return str(form_name_field)
+                    return str(form_name_field), name
                 else:
-                    return i
+                    return i, name
             else:
-                return i
+                return i,''
         #Check if i is name
         if entry['name'].upper() == i.upper():
-            return entry['id']
+            return entry['id'], entry['name']
     return str(form_name_field)
 
-def find_ids(in_list, json_file_path):
+def find_ids_and_names(in_list, json_file_path):
     #Split up in_list into names and ids
     names = ['No name' for i in in_list]
     ids = ['No ID' for i in in_list]
@@ -2094,10 +2095,10 @@ def find_ids(in_list, json_file_path):
                 names[idx] = i_list[0].upper()
     #If all ids are present, return ids
     if ids.count('No ID') == 0:
-        return ','.join(ids)
+        return ','.join(ids), ','.join(names)
     #Check that autofill file exists
     if not os.path.isfile(json_file_path) or os.path.getsize(json_file_path) == 0:
-        return ','.join(filter(lambda v: v is not 'No ID', ids))
+        return ','.join(filter(lambda v: v is not 'No ID', ids)),','.join(names)
     #Loop over entries in autofill list and find missing ids
     json_data = load_json_data_from_file(json_file_path)
     for entry in json_data:
@@ -2108,8 +2109,8 @@ def find_ids(in_list, json_file_path):
             ids[index] = entry['id']
         #check if we ids list is complete
         if ids.count('No ID') == 0:
-            return ','.join(ids)
-    return ','.join(ids)
+            return ','.join(ids),','.join(names)
+    return ','.join(ids),','.join(names)
 
 def elements_to_display(elements,units,valid_daterange=None):
     '''
@@ -2205,7 +2206,7 @@ def form_to_display_list(key_order_list, form):
         idx = keys.index(str(key))
         if key in ['station_id','station_ids']:
             in_list = form[key].strip().split(',')
-            ids_string = find_ids(in_list,'/www/apps/csc/dj-projects/my_acis/media/json/US_station_id.json')
+            ids_string, names = find_ids_and_names(in_list,'/www/apps/csc/dj-projects/my_acis/media/json/US_station_id.json')
             ids_list = ids_string.split(',')
             stns_long_names = ''
             meta = AcisWS.StnMeta({'sids':ids_string})

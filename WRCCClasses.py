@@ -1377,6 +1377,7 @@ class SODDataJob(object):
         #Make data request
         data_params = self.set_request_params()
         request = AcisWS.MultiStnData(data_params)
+        print data_params
         resultsdict['data'], resultsdict['error'] = self.format_data_station(request, station_ids, elements)
         return resultsdict
 

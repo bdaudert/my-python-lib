@@ -84,6 +84,7 @@ def StnMeta(params):
     return DataCall('StnMeta', params)
 
 def StnData(params):
+    print params
     return DataCall('StnData', params)
 
 def MultiStnData(params):

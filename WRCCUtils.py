@@ -51,6 +51,8 @@ def get_data_type(form):
     data_type = None
     if 'station_id' in form.keys() or 'station_ids' in form.keys():
         return 'station'
+    elif 'sid' in form.keys() or 'sids' in form.keys():
+        return 'station'
     elif 'location' in form.keys() or 'locations' in form.keys():
         return 'grid'
     else:
@@ -333,6 +335,7 @@ def request_and_format_data(form):
     data_type = get_data_type(form)
     #Set request parameters
     params = set_acis_params(form)
+    print params
     #Find correct data call functions
     if not data_type:
         error = 'Not a valid request. Could not find request type.'
@@ -510,7 +513,7 @@ def format_data_single_lister(req,form):
         unit_convert = getattr(thismodule,'convert_to_metric')
     #Set date converter
     format_date = getattr(thismodule,'format_date_string')
-    sep = form['date_format']
+    sep = 'dash'
     #Data Loop
     #Keep track of missing data
     flag_missing = True
@@ -604,7 +607,7 @@ def station_data_trim_and_summary(req,form):
     dates = get_dates(form['start_date'],form['end_date'])
     #Set date converter
     format_date = getattr(thismodule,'format_date_string')
-    sep = form['date_format']
+    sep = 'dash'
     if form['data_summary'] == 'spatial':
         new_smry = [[format_date(dates[d_idx],sep)] for d_idx in range(len(dates))]
         smry_data = [[[] for el in form['elements']] for date_idx in range(len(dates))]
@@ -739,7 +742,7 @@ def grid_data_trim_and_summary(req,form):
     header_data, header_smry = set_lister_headers(form)
     #Set date converter
     format_date = getattr(thismodule,'format_date_string')
-    sep = form['date_format']
+    sep = 'dash'
     if form['data_summary'] == 'spatial':
         new_smry = [[format_date(str(data[date_idx][0]),sep)] for date_idx in range(len(data))]
         smry_data = [[[] for el in els] for date_idx in range(len(data))]
@@ -844,7 +847,7 @@ def format_grid_spatial_summary(req,form):
     header_data, header_smry = set_lister_headers(form)
     #Set date converter
     format_date = getattr(thismodule,'format_date_string')
-    sep = form['date_format']
+    sep = 'dash'
     new_smry = [[format_date(str(data[date_idx][0]),sep)] for date_idx in range(len(data))]
     smry_data = [[[] for el in form['elements']] for date_idx in range(len(data))]
     new_data = [];new_meta = []
@@ -908,7 +911,7 @@ def format_grid_no_summary(req,form):
     header_data, header_smry = set_lister_headers(form)
     #Set date converter
     format_date = getattr(thismodule,'format_date_string')
-    sep = form['date_format']
+    sep = 'dash'
     new_data = [];new_smry = [];new_meta = []
     #Set unit converter
     unit_convert = getattr(thismodule,'convert_nothing')
@@ -967,7 +970,7 @@ def format_grid_windowed_data(req,form):
     header_data, header_smry = set_lister_headers(form)
     #Set date converter
     format_date = getattr(thismodule,'format_date_string')
-    sep = form['date_format']
+    sep = 'dash'
     new_data = [];new_smry = [];new_meta = []
     #Set unit converter
     unit_convert = getattr(thismodule,'convert_nothing')
@@ -1090,7 +1093,7 @@ def format_station_spatial_summary(req,form):
     header_data, header_smry = set_lister_headers(form)
     #Set date converter
     format_date = getattr(thismodule,'format_date_string')
-    sep = form['date_format']
+    sep = 'dash'
     dates = get_dates(form['start_date'],form['end_date'])
     #Sanity check on data
     if not data or len(data) <1:
@@ -1160,7 +1163,7 @@ def format_station_no_summary(req,form):
     header_data, header_smry = set_lister_headers(form)
     #Set date converter
     format_date = getattr(thismodule,'format_date_string')
-    sep = form['date_format']
+    sep = 'dash'
     new_data = [];new_smry = [];new_meta = []
     #MultiStnData calls return no dates
     dates = get_dates(form['start_date'],form['end_date'])
@@ -1239,7 +1242,7 @@ def format_station_windowed_data(req,form):
     header_data, header_smry = set_lister_headers(form)
     #Set date converter
     format_date = getattr(thismodule,'format_date_string')
-    sep = form['date_format']
+    sep = 'dash'
     new_data = [];new_smry = [];new_meta = []
     #MultiStnData calls return no dates
     dates = get_dates(form['start_date'],form['end_date'])
@@ -2348,6 +2351,9 @@ def format_date_string(date,separator):
     if separator == 'dash':s = '-'
     if separator == 'colon':s = ':'
     if separator == 'slash':s = '/'
+    if separator == '-':s = '-'
+    if separator == ':':s = ':'
+    if separator == '/':s = '/'
     return y + s + m + s + d
 
 def date_to_eight(date,se=None):

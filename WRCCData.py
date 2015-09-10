@@ -609,6 +609,7 @@ AREA_DEFAULTS = {
     'county':'Churchill, 32001',
     'basin':'Hot Creek-Railroad Valleys,16060012',
     'shape':'-115,34, -115, 35,-114,35, -114, 34',
+    'shape_file':'',
     'point': '-111,40',
     'location':'-111,40'
 }
@@ -645,6 +646,7 @@ DISPLAY_PARAMS = {
     'lat': 'Latitude',
     'lon': 'Longitude',
     'shape': 'Custom Shape',
+    'shape_file': 'Custom Shape',
     'polygon': 'Polygon',
     'circle':'Circle',
     'climate_division': 'Climate Division',
@@ -1257,4 +1259,84 @@ TABLE_LIST_NO_GRAPHICS = {
 'prsn':['prsn'],
 'hc':['hdd', 'cdd'],
 'g':['gdd', 'corn']
+}
+
+###################################
+###################################
+#Unit/Functional Testing
+###################################
+###################################
+SINGLE_LISTER_TEST_PARAMS = {
+    'default': {
+        'area_type':'station_id',
+        'station_id':'RENO TAHOE INTL AP, 266779',
+        'elements':['maxt', 'mint', 'pcpn'],
+        'add_special_degree_days':'F',
+        'start_date':'POR',
+        'end_date':'POR',
+        'units':'english',
+        'data_summary':'none',
+        'show_flags':'F',
+        'show_observation_time':'F',
+    },
+    'station_name_flags': {
+        'area_type':'station_id',
+        'station_id':'RENO TAHOE INTL AP',
+        'elements':['maxt', 'mint', 'pcpn'],
+        'add_special_degree_days':'F',
+        'start_date':'20000101',
+        'end_date':'20000110',
+        'units':'english',
+        'data_summary':'none',
+        'show_flags':'T',
+        'show_observation_time':'T',
+    },
+    'windowed_data': {
+        'area_type':'station_id',
+        'station_id':'RENO TAHOE INTL AP, 266779',
+        'elements':['gdd', 'hdd', 'cdd'],
+        'add_special_degree_days':'F',
+        'start_date':'20000101',
+        'end_date':'20041231',
+        'units':'english',
+        'data_summary':'windowed_data',
+        'start_window':'1228',
+        'start_window':'0103',
+        'show_flags':'F',
+        'show_observation_time':'F'
+    },
+    'temporal_summary': {
+        'area_type':'station_id',
+        'station_id':'RENO TAHOE INTL AP, 266779',
+        'elements':['avgt', 'snow', 'snwd'],
+        'add_special_degree_days':'F',
+        'start_date':'20000101',
+        'end_date':'20000110',
+        'units':'english',
+        'data_summary':'temporal',
+        'temporal_summary':'mean'
+    },
+    'grid_metric': {
+        'area_type':'location',
+        'location':'-119, 39',
+        'grid':'21',
+        'elements':['maxt', 'mint', 'pcpn'],
+        'add_special_degree_days':'F',
+        'start_date':'20000101',
+        'end_date':'20000110',
+        'units':'metric',
+        'data_summary':'none'
+    },
+    'grid_special_degree_days': {
+        'area_type':'location',
+        'location':'-119, 39',
+        'grid':'1',
+        'elements':['pcpn'],
+        'add_special_degree_days':'T',
+        'degeree_days':'gdd51,hdd45,cdd67',
+        'start_date':'20000101',
+        'end_date':'20000110',
+        'units':'metric',
+        'data_summary':'none'
+    },
 }

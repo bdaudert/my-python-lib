@@ -62,7 +62,7 @@ class TestSodxtrmts(unittest.TestCase):
         """
         results = run_wrapper('Sodxtrmts', self.data_params, self.app_params)
         self.assertIsInstance(results, list)
-        self.assertIsNot(results, [])
+        self.assertNotEqual(results, [])
 
     def test_elements(self):
         for el in ['maxt', 'mint', 'avgt','dtr', 'hdd', 'cdd', 'gdd']:
@@ -72,9 +72,9 @@ class TestSodxtrmts(unittest.TestCase):
             ap['el_type'] = el
             results = run_wrapper('Sodxtrmts', self.data_params, self.app_params)
             self.assertIsInstance(results, list)
-            self.assertIsNot(results, [])
+            self.assertNotEqual(results, [])
         self.assertIsInstance(results, list)
-        self.assertIsNot(results, [])
+        self.assertNotEqual(results, [])
 
     def test_stat(self):
         for stat in ['mmax', 'mmin', 'mave','msum', 'rmon', 'sd','ndays']:
@@ -83,7 +83,7 @@ class TestSodxtrmts(unittest.TestCase):
             ap['statistic'] = stat
             results = run_wrapper('Sodxtrmts', self.data_params, self.app_params)
             self.assertIsInstance(results, list)
-            self.assertIsNot(results, [])
+            self.assertNotEqual(results, [])
 
 class TestSodsum(unittest.TestCase):
 
@@ -199,7 +199,7 @@ class TestSoddyrec(unittest.TestCase):
         results = run_wrapper('Soddyrec', self.data_params, self.app_params)
         self.assertIsInstance(results, dict)
         self.assertIsInstance(results[0], list)
-        self.assertIsNot(results, [])
+        self.assertNotEqual(results, [])
 
 class TestSoddynorm(unittest.TestCase):
     def setUp(self):
@@ -219,7 +219,7 @@ class TestSoddynorm(unittest.TestCase):
         """
         results = run_wrapper('Soddynorm', self.data_params, self.app_params)
         self.assertIsInstance(results, list)
-        self.assertIsNot(results, [])
+        self.assertNotEqual(results, [])
 
 if __name__ == '__main__':
     unittest.main()

@@ -6,35 +6,29 @@ import copy
 ###########
 #STATICS
 ###########
-WRAPPERS = {
-    'Sodxtrmts':'sodxtrmts_wrapper',
-    'Sodsum':'sodsum_wrapper',
-    'Sodsumm':'sodsumm_wrapper',
-    'Soddyrec':'soddyrec_wrapper',
-    'Soddynorm':'soddynorm_wrapper'
-}
 
-def run_app(app, data_params, app_params):
-    '''
-    Runs wrapper for application app
-    '''
-    wrapper = WRCCWrappers.Wrapper(app,
-            data_params=data_params,
-            app_specific_params=app_params)
-    data = wrapper.get_data()
-    results = wrapper.run_app(data)
-    '''
-    All apps area set up for multiple ids,
-    All wrappers run on a single station
-    Pick results for first and only station
-    '''
-    results = results[0]
-    return results
+###########
+#TESTS
+###########
+class TestStationFinder(unittest.TestCase):
+    def setUp(self):
+        self.test_params_set = WRCCData.STATION_FINDER_TEST_PARAMS
+
 
 
 class TestSingleLister(unittest.TestCase):
     def setUp(self):
         self.test_params_set = WRCCData.SINGLE_LISTER_TEST_PARAMS
+        self.stations = WRCCData.TEST_STATIONS
+
+    def test_find_station_id_name(self):
+        for station in self.stations:
+            station_json = '/www/apps/csc/dj-projects/my_acis/media/json/US_station_id.json'
+            stn_id, stn_name = WRCCUtils.find_id_and_name(station,station_json)
+            self.assertIsInstance(stn_name, str)
+            self.assertIsInstance(stn_id, str)
+            self.assertNotEqual(stn_id,'')
+
     def test_single_lister(self):
         """
         Run a test for each of the parameters
@@ -52,9 +46,7 @@ class TestSingleLister(unittest.TestCase):
                 data_key = 'smry'
             #Check for empty request
             self.assertNotEqual([],request[data_key])
-            print request[data_key]
             if test_type == 'windowed_data':
-                print request['data']
                 d = request['data'][0]
                 sd = params['start_date']
                 ed = params['end_date']

@@ -35,8 +35,15 @@ def set_back_date(days_back):
     if len(day_b) == 1:day_b = '0%s' % day_b
     back_date = '%s%s%s' % (yr_b, mon_b, day_b)
     return back_date
-today = set_back_date(0)
 
+
+today = set_back_date(0)
+today_year = today[0:4]
+today_month = today[5:7]
+today_day = today[8:10]
+begin_10yr = set_back_date(3660)
+yesterday = set_back_date(1)
+fourtnight = set_back_date(14)
 ###################################
 ###################################
 #General
@@ -1266,10 +1273,22 @@ TABLE_LIST_NO_GRAPHICS = {
 #Unit/Functional Testing
 ###################################
 ###################################
+TEST_STATIONS = ['RENO TAHOE INTL AP, 266779','RENO TAHOE INTL AP','266779']
+STATION_FINDER_TEST_PARAMS = {
+    'default': {
+        'area_type':'state',
+        'state':'Nv',
+        'elements':['maxt', 'mint', 'pcpn'],
+        'element_constraints':'all',
+        'start_date':fourtnight,
+        'end_date':yesterday,
+        'date_constraints':'all'
+    }
+}
 SINGLE_LISTER_TEST_PARAMS = {
     'default': {
         'area_type':'station_id',
-        'station_id':'RENO TAHOE INTL AP, 266779',
+        'station_id':'266779',
         'elements':['maxt', 'mint', 'pcpn'],
         'add_special_degree_days':'F',
         'start_date':'POR',
@@ -1279,9 +1298,9 @@ SINGLE_LISTER_TEST_PARAMS = {
         'show_flags':'F',
         'show_observation_time':'F',
     },
-    'station_name_flags': {
+    'flags': {
         'area_type':'station_id',
-        'station_id':'RENO TAHOE INTL AP',
+        'station_id':'266779',
         'elements':['maxt', 'mint', 'pcpn'],
         'add_special_degree_days':'F',
         'start_date':'20000101',
@@ -1293,7 +1312,7 @@ SINGLE_LISTER_TEST_PARAMS = {
     },
     'windowed_data': {
         'area_type':'station_id',
-        'station_id':'RENO TAHOE INTL AP, 266779',
+        'station_id':'266779',
         'elements':['gdd', 'hdd', 'cdd'],
         'add_special_degree_days':'F',
         'start_date':'20000101',
@@ -1301,13 +1320,13 @@ SINGLE_LISTER_TEST_PARAMS = {
         'units':'english',
         'data_summary':'windowed_data',
         'start_window':'1228',
-        'start_window':'0103',
+        'end_window':'0103',
         'show_flags':'F',
         'show_observation_time':'F'
     },
     'temporal_summary': {
         'area_type':'station_id',
-        'station_id':'RENO TAHOE INTL AP, 266779',
+        'station_id':'266779',
         'elements':['avgt', 'snow', 'snwd'],
         'add_special_degree_days':'F',
         'start_date':'20000101',

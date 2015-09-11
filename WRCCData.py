@@ -1274,17 +1274,56 @@ TABLE_LIST_NO_GRAPHICS = {
 ###################################
 ###################################
 TEST_STATIONS = ['RENO TAHOE INTL AP, 266779','RENO TAHOE INTL AP','266779']
+STATION_FINDER_TEST_ORDER = ['default']
 STATION_FINDER_TEST_PARAMS = {
     'default': {
         'area_type':'state',
         'state':'Nv',
         'elements':['maxt', 'mint', 'pcpn'],
-        'element_constraints':'all',
+        'elements_constraints':'all',
         'start_date':fourtnight,
         'end_date':yesterday,
-        'date_constraints':'all'
-    }
+        'dates_constraints':'all'
+    },
+    'clim_div': {
+        'area_type':'climate_division',
+        'climate_division':'Keys, FL07',
+        'elements':['maxt', 'mint', 'pcpn'],
+        'elements_constraints':'all',
+        'start_date':fourtnight,
+        'end_date':yesterday,
+        'dates_constraints':'all'
+    },
+    'constraints_any_any': {
+        'area_type':'state',
+        'state':'Nv',
+        'elements':['maxt', 'mint', 'pcpn'],
+        'elements_constraints':'any',
+        'start_date':fourtnight,
+        'end_date':yesterday,
+        'dates_constraints':'any'
+    },
+   'constraints_all_any': {
+        'area_type':'state',
+        'state':'Nv',
+        'elements':['maxt', 'mint', 'pcpn'],
+        'elements_constraints':'all',
+        'start_date':fourtnight,
+        'end_date':yesterday,
+        'dates_constraints':'any'
+    },
+   'constraints_any_all': {
+        'area_type':'state',
+        'state':'Nv',
+        'elements':['maxt', 'mint', 'pcpn'],
+        'elements_constraints':'any',
+        'start_date':fourtnight,
+        'end_date':yesterday,
+        'dates_constraints':'all'
+    },
 }
+SINGLE_LISTER_TEST_ORDER = ['default','flags','windowed_data',\
+    'temporal_summary','grid_metric','grid_special_degree_days']
 SINGLE_LISTER_TEST_PARAMS = {
     'default': {
         'area_type':'station_id',

@@ -266,13 +266,12 @@ def check_end_date(form):
         return err
     if ed < sd:
         return 'Start Date is later then End Year.'
-    return err
 
     #Check station data dates
     if 'station_id' in form.keys() or ('data_type' in form.keys() and form['data_type'] == 'station'):
-        #Check year
-        if int(date[0:4]) > today.year:
-            return 'Not a valid End Date. Year should be this year or earlier.'
+        if date.lower() != 'por':
+            if WRCCUtils.date_to_datetime(date) > today:
+                return 'Not a valid End Date. Date should be today or ealier.'
 
     #Check grid data dates
     if 'location' in form.keys() or ('data_type' in form.keys() and form['data_type'] == 'grid'):

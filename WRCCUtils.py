@@ -229,6 +229,41 @@ def set_acis_params(form):
         return {}
     #Format dates
     s_date, e_date = start_end_date_to_eight(form)
+
+    #Check for unreasonable start and end dates
+    unreasonable = False
+    if data_type == 'station':
+        today = set_back_date(0)
+        unreasonable = False
+        if s_date !='por' and e_date !='por':
+            if int(s_date[0:4]) <= 1900 and int(e_date[0:4]) - int(s_date[0:4]) >= 30:
+                unreasonable = True
+            if int(e_date[0:4]) > int(today[0:4]):
+                e_date = set_back_date(1)
+        if unreasonable:
+            meta_params = {
+                form['area_type']: form[form['area_type']],
+                'elems':','.join(form['elements']),
+                'meta':'valid_daterange'
+            }
+            meta_data = AcisWS.StnMeta(meta_params)
+            if 'meta' in meta_data.keys():
+                start_dts = []
+                end_dts = []
+                for stn_meta in meta_data['meta']:
+                    for el_vd in stn_meta['valid_daterange']:
+                        if el_vd and len(el_vd) == 2:
+                            start_dts.append(date_to_datetime(el_vd[0]))
+                            end_dts.append(date_to_datetime(el_vd[1]))
+            if start_dts:
+                s = min(start_dts)
+                if s > date_to_datetime(s_date):
+                    s_date = datetime_to_date(s,'')
+            if end_dts:
+                e = max(end_dts)
+                if e < date_to_datetime(e_date):
+                    e_date = datetime_to_date(e,'')
+
     params = {
             'sdate':s_date,
             'edate':e_date
@@ -336,7 +371,6 @@ def request_and_format_data(form):
     data_type = get_data_type(form)
     #Set request parameters
     params = set_acis_params(form)
-    print params
     #Find correct data call functions
     if not data_type:
         error = 'Not a valid request. Could not find request type.'
@@ -350,17 +384,19 @@ def request_and_format_data(form):
     if data_type == 'grid':
         request_data = getattr(AcisWS,'GridData')
     #Make data request
-    req = request_data(params)
-
-    '''
+    #req = request_data(params)
     try:
         req = request_data(params)
     except Exception, e:
         error = 'Data request failed with error: %s.' %str(e)
         resultsdict['errors'].append( error)
         return resultsdict
-    '''
-    #Sanity check
+
+    #Sanity checks
+    if req is None:
+        error = 'No data found for these parameters.'
+        resultsdict['errors'].append( error)
+        return resultsdict
     if not 'data' in req.keys() and not 'smry' in req.keys():
         error = 'No data found for these parameters.'
         resultsdict['errors'].append( error)
@@ -2681,9 +2717,8 @@ def find_valid_daterange(sid, start_date='por', end_date='por', el_list=None, ma
     #Format start/end date into 8 digit strings
     s_date = date_to_eight(start_date)
     e_date = date_to_eight(end_date)
-    if s_date.lower() != 'por' and e_date.lower() != 'por':
-        return [s_date, e_date]
-
+    s_date_dt = date_to_datetime(s_date)
+    e_date_dt = date_to_datetime(e_date)
     if el_list is None:
         #el_tuple = 'maxt,mint,pcpn,snow,snwd,hdd,gdd,cdd'
         el_tuple = '1,2,4,10,11,45'
@@ -2702,58 +2737,37 @@ def find_valid_daterange(sid, start_date='por', end_date='por', el_list=None, ma
         return ['', '']
     if 'error' in request.keys() or not 'meta' in request.keys():
         return ['', '']
-    #Find valid daterange
-    #format first test date
-    el_idx = 0
+
     vd_start = None;vd_end = None
     idx_start = 0
     if not request['meta']:
         return ['', '']
-    for el_idx, el_vdr in enumerate(request['meta'][0]['valid_daterange']):
-        if s_date.lower() != 'por':
-            vd_start = date_to_datetime(s_date)
-        else:
-            if request['meta'][0]['valid_daterange'][el_idx]:
-                vd_start = date_to_datetime(request['meta'][0]['valid_daterange'][el_idx][0])
-        if e_date.lower() != 'por':
-            vd_end = date_to_datetime(e_date)
-        else:
-            if request['meta'][0]['valid_daterange'][el_idx]:
-                vd_end =  date_to_datetime(request['meta'][0]['valid_daterange'][el_idx][1])
-        if vd_start is not None and vd_end is not None and vd_start <= vd_end:
-            idx_start = el_idx + 1
-            break
-    if vd_start is None or vd_end is None:
-        return ['', '']
-    #loop over valid dateranges for each elements and find max or min valid daterange
-    for el_idx, el_vdr in enumerate(request['meta'][0]['valid_daterange'][idx_start:]):
-        vd_start_test = None;vd_end_test = None
-        if s_date.lower() == 'por':
-            if el_vdr:
-                vd_start_test = date_to_datetime(el_vdr[0])
-        if e_date.lower() == 'por':
-            if el_vdr:
-                vd_end_test = date_to_datetime(el_vdr[1])
-        if max_or_min == 'min':
-            if vd_start_test is not None and vd_start_test > vd_start and vd_start_test <= vd_end:
-                vd_start = vd_start_test
-            if vd_end_test is not None and vd_end_test < vd_end and vd_end_test >= vd_start:
-                vd_end = vd_end_test
-        elif max_or_min == 'max':
-            if vd_start_test is not None and vd_start_test < vd_start and vd_start_test <= vd_end:
-                vd_start = vd_start_test
-            if vd_end_test is not None and vd_end_test > vd_end and vd_end_test >= vd_start:
-                vd_end = vd_end_test
-    #convert back to date string
-    if s_date.lower() == 'por':
-        vd_start = datetime_to_date(vd_start,'')
-    else:
-        vd_start = s_date[0:4] + s_date[4:6] + s_date[6:8]
-    if e_date.lower() == 'por':
-        vd_end = datetime_to_date(vd_end,'')
-    else:
-        vd_end = e_date[0:4] + e_date[4:6] + e_date[6:8]
 
+    vd_start_dts = []
+    vd_end_dts = []
+    vd_start = None;vd_end = None
+    #Convert valid date ranges to datetimes
+    for el_idx, el_vdr in enumerate(request['meta'][0]['valid_daterange'][idx_start:]):
+        if el_vdr and len(el_vdr) == 2:
+            vd_start_dts.append(date_to_datetime(el_vdr[0]))
+            vd_end_dts.append(date_to_datetime(el_vdr[1]))
+    if max_or_min == 'min' and len(vd_start_dts) >=1:
+        vd_start = max(vd_start_dts)
+        vd_end = min(vd_end_dts)
+    if max_or_min == 'max' and len(vd_end_dts) >=1:
+        vd_start = min(vd_start_dts)
+        vd_end = max(vd_end_dts)
+    #Check if dateranges were found
+    if vd_start is None or vd_end is None:
+        return ['','']
+    #if user input lies within vd, choose those dates
+    if s_date.lower() != 'por' and vd_start <= s_date_dt and s_date_dt <= vd_end:
+        vd_start = s_date_dt
+    if e_date.lower() != 'por' and vd_end >= e_date_dt and e_date_dt >= vd_start:
+        vd_end = e_date_dt
+    #convert back to date string
+    vd_start = datetime_to_date(vd_start,'')
+    vd_end = datetime_to_date(vd_end,'')
     return [vd_start, vd_end]
 
 def get_dates(s_date, e_date, app_name=None):

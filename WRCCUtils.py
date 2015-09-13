@@ -2412,6 +2412,8 @@ def format_date_string(date,separator):
         date string where year,month and day are
         separated by separator
     '''
+    if str(date).lower() == 'por':
+        return str(date)
     d = str(date).replace('-','').replace(':','').replace('/','')
     y = d[0:4]
     m = d[4:6]
@@ -2539,6 +2541,36 @@ def start_end_date_to_eight(form):
         if len(e_date)!=8:
             e_date = None
     return s_date, e_date
+
+def set_start_end_window(start_date, end_date):
+    '''
+    Picks appropriate start/end window
+    for the given start/end dates
+    '''
+    sw = '01-01'; ew = '01-31'
+    if start_date.lower() == 'por' and end_date.lower() == 'por':
+        return sw, ew
+    sd = date_to_eight(start_date)
+    ed = date_to_eight(end_date)
+    if sd.lower() != 'por' and ed.lower() != 'por':
+        sw = sd[4:6] + '-' + sd[6:8]
+        ew = ed[4:6] + '-' + ed[6:8]
+        return sw, ew
+
+    if sd.lower() == 'por' and ed.lower() != 'por':
+        date = ed; bof = 'back'
+        num_days_s = 2; num_days_e = 0
+    else:
+        date = sd; bof = 'forward'
+        num_days_s = 0; num_days_e = 2
+    sw = advance_date(date, num_days_s, bof)
+    ew = advance_date(date, num_days_e, bof)
+    if len(sw) == 8 and len(ew) == 8:
+        sw = sw[4:6] + '-' + sw[6:8]
+        ew = ew[4:6] + '-' + ew[6:8]
+    else:
+        sw = '01-01'; ew = '01-31'
+    return sw, ew
 
 ##############
 #Day of Year

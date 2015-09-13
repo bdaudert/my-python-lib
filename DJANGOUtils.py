@@ -136,11 +136,15 @@ def set_initial(request,req_type):
         del initial[str(initial['area_type'])]
         #set new area params
         initial['station_ids'] = str(Get('station_ids_string',''))
+        initial['station_ids_string'] = initial['station_ids']
         initial['area_type'] = 'station_ids'
         initial['area_type_label'] = 'Station IDs'
         initial['area_type_value'] = initial['station_ids']
         initial['station_json'] = Get('station_json','')
 
+    #If station finder set hidden var station_ids_string for results
+    if req_type == 'station_finder':
+        initial['station_ids_string'] = str(Get('station_ids_string',''))
     #Set element(s)--> always as list if multiple
     if req_type == 'map_overlay':
         initial['elements'] = Get('elements','maxt,mint,pcpn').split(',')
@@ -238,12 +242,18 @@ def set_initial(request,req_type):
         initial['start_date']  = Get('start_date', WRCCUtils.format_date_string(fourtnight,'-'))
         initial['end_date']  = Get('end_date', WRCCUtils.format_date_string(yesterday,'-'))
     #data windows and flags
+    sw = '01-01'; ew = '01-31'
+    if initial['start_date'] and initial['end_date']:
+        sw, ew = WRCCUtils.set_start_end_window(initial['start_date'],initial['end_date'])
     if req_type in ['single_lister', 'multi_lister']:
-        initial['start_window'] = Get('start_window', '01-01')
-        initial['end_window'] = Get('end_window','01-31')
+        initial['start_window'] = Get('start_window', sw)
+        initial['end_window'] = Get('end_window',ew)
         initial['temporal_resolution'] = Get('temporal_resolution','dly')
         initial['show_flags'] = Get('show_flags', 'F')
         initial['show_observation_time'] = Get('show_observation_time', 'F')
+    if req_type in ['station_finder']:
+        initial['start_window'] = Get('start_window', sw)
+        initial['end_window'] = Get('end_window',ew)
     #data summaries
     if req_type in  ['temporal_summary', 'interannual']:
         initial['data_summary'] = Get('data_summary', 'temporal')
@@ -251,16 +261,15 @@ def set_initial(request,req_type):
         initial['data_summary'] = Get('data_summary', 'spatial')
     else:
         initial['data_summary'] = Get('data_summary', 'none')
-    if req_type in ['single_lister', 'multi_lister','temporal_summary', 'interannual']:
-        if req_type == 'interannual':
+    if initial['data_summary'] == 'temporal':
+        if req_type in ['single_lister', 'multi_lister','temporal_summary', 'interannual', 'sf_download']:
             if initial['element'] in ['pcpn','snow','evap','pet']:
                 initial['temporal_summary'] = Get('temporal_summary', 'sum')
             else:
                 initial['temporal_summary'] = Get('temporal_summary', 'mean')
-        else:
-            initial['temporal_summary'] = Get('temporal_summary', 'mean')
-    if req_type in ['single_lister', 'multi_lister','spatial_summary']:
-        initial['spatial_summary'] = Get('spatial_summary', 'mean')
+    if initial['data_summary'] == 'spatial':
+        if req_type in ['single_lister', 'multi_lister','spatial_summary','sf_download']:
+            initial['spatial_summary'] = Get('spatial_summary', 'mean')
 
     #download options
     if req_type in ['single_lister','multi_lister']:
@@ -555,7 +564,7 @@ def set_form(request, clean=True):
             else:
                 el_list = None
             if 'station_id' in form.keys():
-                stn_id, stn_name = WRCCUtils.find_ids_and_names(str(form['station_id']),settings.MEDIA_DIR +'json/US_station_id.json')
+                stn_id, stn_name = WRCCUtils.find_id_and_name(str(form['station_id']),settings.MEDIA_DIR +'json/US_station_id.json')
                 form[k] = WRCCUtils.find_valid_daterange(stn_id, start_date=sd, end_date=ed, el_list=el_list, max_or_min='max')[idx]
             else:
                 form[str(key)] = str(form[key]).replace('-','').replace(':','').replace('/','').replace(' ','')

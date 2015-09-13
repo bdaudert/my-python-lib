@@ -1274,58 +1274,30 @@ TABLE_LIST_NO_GRAPHICS = {
 ###################################
 ###################################
 TEST_STATIONS = ['RENO TAHOE INTL AP, 266779','RENO TAHOE INTL AP','266779']
-STATION_FINDER_TEST_ORDER = ['default']
-STATION_FINDER_TEST_PARAMS = {
-    'default': {
-        'area_type':'state',
-        'state':'Nv',
-        'elements':['maxt', 'mint', 'pcpn'],
-        'elements_constraints':'all',
-        'start_date':fourtnight,
-        'end_date':yesterday,
-        'dates_constraints':'all'
-    },
-    'clim_div': {
-        'area_type':'climate_division',
-        'climate_division':'Keys, FL07',
-        'elements':['maxt', 'mint', 'pcpn'],
-        'elements_constraints':'all',
-        'start_date':fourtnight,
-        'end_date':yesterday,
-        'dates_constraints':'all'
-    },
-    'constraints_any_any': {
-        'area_type':'state',
-        'state':'Nv',
-        'elements':['maxt', 'mint', 'pcpn'],
-        'elements_constraints':'any',
-        'start_date':fourtnight,
-        'end_date':yesterday,
-        'dates_constraints':'any'
-    },
-   'constraints_all_any': {
-        'area_type':'state',
-        'state':'Nv',
-        'elements':['maxt', 'mint', 'pcpn'],
-        'elements_constraints':'all',
-        'start_date':fourtnight,
-        'end_date':yesterday,
-        'dates_constraints':'any'
-    },
-   'constraints_any_all': {
-        'area_type':'state',
-        'state':'Nv',
-        'elements':['maxt', 'mint', 'pcpn'],
-        'elements_constraints':'any',
-        'start_date':fourtnight,
-        'end_date':yesterday,
-        'dates_constraints':'all'
-    },
+
+TEST_AREAS = {
+    'station_id':'303184',
+    'station_ids':'72583,266514',
+    'location':'-120.65,39.12',
+    'state':'de',
+    'county':'Douglas, 32005',
+    'county_warning_area':'San Francisco CA, MTR',
+    'climate_division':'NORTHEAST INTER. BASINS, CA03',
+    'basin':'Gualala Salmon, 18010109',
+    'shape':'-118.33,34.15,-118.15,34.06,-118.28,33.99'
 }
-SINGLE_LISTER_TEST_ORDER = ['default','flags','windowed_data',\
-    'temporal_summary','grid_metric','grid_special_degree_days']
-SINGLE_LISTER_TEST_PARAMS = {
-    'default': {
+
+DEFAULT_PARAMS = {
+    'station_finder': {
+        'area_type':'state',
+        'state':'Nv',
+        'elements':['maxt', 'mint', 'pcpn'],
+        'elements_constraints':'all',
+        'start_date':fourtnight,
+        'end_date':yesterday,
+        'dates_constraints':'all'
+    },
+    'single_lister':{
         'area_type':'station_id',
         'station_id':'266779',
         'elements':['maxt', 'mint', 'pcpn'],
@@ -1336,65 +1308,6 @@ SINGLE_LISTER_TEST_PARAMS = {
         'data_summary':'none',
         'show_flags':'F',
         'show_observation_time':'F',
-    },
-    'flags': {
-        'area_type':'station_id',
-        'station_id':'266779',
-        'elements':['maxt', 'mint', 'pcpn'],
-        'add_special_degree_days':'F',
-        'start_date':'20000101',
-        'end_date':'20000110',
-        'units':'english',
-        'data_summary':'none',
-        'show_flags':'T',
-        'show_observation_time':'T',
-    },
-    'windowed_data': {
-        'area_type':'station_id',
-        'station_id':'266779',
-        'elements':['gdd', 'hdd', 'cdd'],
-        'add_special_degree_days':'F',
-        'start_date':'20000101',
-        'end_date':'20041231',
-        'units':'english',
-        'data_summary':'windowed_data',
-        'start_window':'1228',
-        'end_window':'0103',
-        'show_flags':'F',
-        'show_observation_time':'F'
-    },
-    'temporal_summary': {
-        'area_type':'station_id',
-        'station_id':'266779',
-        'elements':['avgt', 'snow', 'snwd'],
-        'add_special_degree_days':'F',
-        'start_date':'20000101',
-        'end_date':'20000110',
-        'units':'english',
-        'data_summary':'temporal',
-        'temporal_summary':'mean'
-    },
-    'grid_metric': {
-        'area_type':'location',
-        'location':'-119, 39',
-        'grid':'21',
-        'elements':['maxt', 'mint', 'pcpn'],
-        'add_special_degree_days':'F',
-        'start_date':'20000101',
-        'end_date':'20000110',
-        'units':'metric',
-        'data_summary':'none'
-    },
-    'grid_special_degree_days': {
-        'area_type':'location',
-        'location':'-119, 39',
-        'grid':'1',
-        'elements':['pcpn'],
-        'add_special_degree_days':'T',
-        'degeree_days':'gdd51,hdd45,cdd67',
-        'start_date':'20000101',
-        'end_date':'20000110',
-        'units':'metric',
-        'data_summary':'none'
-    },
+    }
 }
+

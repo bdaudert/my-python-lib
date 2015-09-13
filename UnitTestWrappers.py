@@ -60,11 +60,13 @@ class TestSodxtrmts(unittest.TestCase):
         """
         Test that Sodxtrmts wrapper works an the normal path.
         """
+        print 'Testing Sodxtrmts'
         results = run_wrapper('Sodxtrmts', self.data_params, self.app_params)
         self.assertIsInstance(results, list)
         self.assertNotEqual(results, [])
 
     def test_elements(self):
+        print 'Testing Sodxtrmts elements'
         for el in ['maxt', 'mint', 'avgt','dtr', 'hdd', 'cdd', 'gdd']:
             dp = copy.deepcopy(self.data_params)
             ap = copy.deepcopy(self.app_params)
@@ -77,6 +79,7 @@ class TestSodxtrmts(unittest.TestCase):
         self.assertNotEqual(results, [])
 
     def test_stat(self):
+        print 'Testing Sodxtrmts statistic'
         for stat in ['mmax', 'mmin', 'mave','msum', 'rmon', 'sd','ndays']:
             dp = copy.deepcopy(self.data_params)
             ap = copy.deepcopy(self.app_params)
@@ -86,7 +89,6 @@ class TestSodxtrmts(unittest.TestCase):
             self.assertNotEqual(results, [])
 
 class TestSodsum(unittest.TestCase):
-
     def setUp(self):
         self.data_params = {
             'sid': '266779',
@@ -100,6 +102,7 @@ class TestSodsum(unittest.TestCase):
         """
         Test that Sodsum wrapper works on the normal path.
         """
+        print 'Testing Sodsum'
         results = results = run_wrapper('Sodsum', self.data_params, self.app_params)
         # results is a defaultdict(<type 'dict'>,
         # {0: {
@@ -124,6 +127,7 @@ class TestSodsum(unittest.TestCase):
         """
         Test that Sodsum handles bad `start_date` and `end_date`.
         """
+        print 'Testing Sodsum bad dates'
         #test_bad_dates('Sodsum', self.data_params, argv)
         bad_params = copy.deepcopy(self.data_params)
         bad_params['start_date'] = 'ABCDEFGH'
@@ -139,6 +143,7 @@ class TestSodsum(unittest.TestCase):
         """
         Test that Sodsum handles a bad station_id.
         """
+        print 'Testing Sodsum bad station'
         bad_params = copy.deepcopy(self.data_params)
         bad_params['sid'] = ''
         ordered_keys = ['sid','start_date', 'end_date', 'element']
@@ -174,6 +179,7 @@ class TestSodsumm(unittest.TestCase):
         """
         Test that Sodsumm wrapper works on the normal path.
         """
+        print 'Testing Sodsumm'
         results = run_wrapper('Sodsumm', self.data_params, self.app_params)
         self.assertIsInstance(results, dict)
         keys = self.results_keys[self.app_params['el_type']]
@@ -194,8 +200,9 @@ class TestSoddyrec(unittest.TestCase):
 
     def test_soddyrec(self):
         """
-        Test that Sodsumm wrapper works on the normal path.
+        Test that Soddyrec wrapper works on the normal path.
         """
+        print 'Testing Soddyrec'
         results = run_wrapper('Soddyrec', self.data_params, self.app_params)
         self.assertIsInstance(results, dict)
         self.assertIsInstance(results[0], list)
@@ -217,6 +224,7 @@ class TestSoddynorm(unittest.TestCase):
         """
         Test that Sodsumm wrapper works on the normal path.
         """
+        print 'Testing Soddynorm'
         results = run_wrapper('Soddynorm', self.data_params, self.app_params)
         self.assertIsInstance(results, list)
         self.assertNotEqual(results, [])

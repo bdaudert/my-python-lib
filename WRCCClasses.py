@@ -13,6 +13,7 @@ import scipy
 import json
 from cStringIO import StringIO
 import random
+import copy
 try:
     import cairo
 except:
@@ -114,6 +115,7 @@ class GraphDictWriter(object):
         elif 'temporal_summary' in self.form.keys() and not 'start_month' in self.form.keys():
             title = WRCCData.DISPLAY_PARAMS[self.form['temporal_summary']]
             title += ' of ' + WRCCData.DISPLAY_PARAMS[el_strip]
+
         elif 'statistic' in self.form.keys():
             if self.form['statistic'] == 'ndays':
                 title = 'Number of days where ' +  WRCCData.DISPLAY_PARAMS[el_strip]
@@ -127,6 +129,8 @@ class GraphDictWriter(object):
             else:
                 title = WRCCData.DISPLAY_PARAMS[self.form['statistic']]
                 title += ' of ' + WRCCData.DISPLAY_PARAMS[el_strip]
+        elif 'app_name' in self.form.keys() and self.form['app_name'] == 'data_comparison':
+            title = self.name
         elif 'station_id' in self.form.keys() or 'location' in self.form.keys():
             if 'user_area_id' in self.form.keys():
                 title = self.form['user_area_id']
@@ -179,9 +183,9 @@ class GraphDictWriter(object):
                 subTitle+= 'Start Month and Day: '
                 subTitle+=WRCCData.NUMBER_TO_MONTH_NAME[self.form['start_month']]
                 subTitle+= ', ' + self.form['start_day']
-        if 'req_type' in self.form.keys() and self.form['req_type'] == 'data_comparison':
+        if 'app_name' in self.form.keys() and self.form['app_name'] == 'data_comparison':
             try:
-                subTitle = 'Compared with grid: '
+                subTitle = 'Grid: '
                 subTitle+=WRCCData.GRID_CHOICES[str(self.form['grid'])][0]
             except:
                 pass
@@ -203,7 +207,15 @@ class GraphDictWriter(object):
         return xLabel
 
     def set_yLabel(self):
-        yLabel = self.set_elUnits()
+        if 'app_name' in self.form.keys() and self.form['app_name'] == 'data_comparison':
+            el_strip, base_temp = WRCCUtils.get_el_and_base_temp(self.element)
+            yLabel = WRCCData.DISPLAY_PARAMS[el_strip]
+            if base_temp:
+                yLable+= ' (' + str(base_temp) + ')'
+            u = self.set_elUnits()
+            yLabel += ' (' + str(u) + ')'
+        else:
+            yLabel = self.set_elUnits()
         return yLabel
 
     def set_legendTitle(self):
@@ -339,10 +351,10 @@ class CsvWriter(object):
         #Search params header:
         if self.smry and 'data_summary' in self.form.keys() and self.form['data_summary'] != 'None':
             header_keys = [self.form['area_type'],'data_summary','start_date', 'end_date']
-        elif 'req_type' in self.form.keys() and self.form['req_type'] == 'interannual':
+        elif 'app_name' in self.form.keys() and self.form['app_name'] == 'interannual':
             header_keys = ['element','start_month','start_day', \
             'end_month', 'end_day','temporal_summary']
-        elif 'req_type' in self.form.keys() and self.form['req_type'] == 'intraannual':
+        elif 'app_name' in self.form.keys() and self.form['app_name'] == 'intraannual':
             header_keys = ['element','start_month','start_day']
         else:
             header_keys = [self.form['area_type'],'start_date', 'end_date']
@@ -358,7 +370,7 @@ class CsvWriter(object):
             self.writer.writerow(row)
 
         if self.data_type == 'station' and not self.smry:
-            if 'req_type' in self.form.keys() and self.form['req_type'] in  ['interannual','intraannual']:
+            if 'app_name' in self.form.keys() and self.form['app_name'] in  ['interannual','intraannual']:
                 pass
             else:
                 row = ['*DataFlags','M=Missing', 'T=Trace', 'S=Subsequent', 'A=Accumulated']
@@ -375,7 +387,7 @@ class CsvWriter(object):
                     row = ['*' + key_val[0].replace(' ',''),' '.join(key_val[1])]
                     self.writer.writerow(row)
             #Write data
-            if 'req_type' in self.form.keys() and self.form['req_type'] in  ['intraannual']:
+            if 'app_name' in self.form.keys() and self.form['app_name'] in  ['intraannual']:
                 h = ['*' + 'Year: ', p_data[0][0][0:4]]
                 self.writer.writerow(h)
             else:
@@ -383,7 +395,7 @@ class CsvWriter(object):
             for d_idx, date_data in enumerate(p_data):
                 if d_idx == 0:
                     #Data Header
-                    if 'req_type' in self.form.keys() and self.form['req_type'] in ['intraannual','interannual']:
+                    if 'app_name' in self.form.keys() and self.form['app_name'] in ['intraannual','interannual']:
                         h = [date_data[0]]
                     else:
                         h = ['*' + date_data[0]]
@@ -456,10 +468,10 @@ class ExcelWriter(object):
     def write_header(self,ws):
         if self.smry and self.form['data_summary'] != 'None':
             header_keys = [self.form['area_type'],'data_summary','start_date', 'end_date']
-        elif 'req_type' in self.form.keys() and self.form['data_summary'] == 'interannual':
+        elif 'app_name' in self.form.keys() and self.form['data_summary'] == 'interannual':
             header_keys = ['element','start_month','start_day', \
             'end_month', 'end_day','temporal_summary']
-        elif 'req_type' in self.form.keys() and self.form['data_summary'] == 'intraannual':
+        elif 'app_name' in self.form.keys() and self.form['data_summary'] == 'intraannual':
             header_keys = ['element','start_month','start_day']
         else:
             header_keys = [self.form['area_type'],'start_date', 'end_date']
@@ -478,7 +490,7 @@ class ExcelWriter(object):
         #Loop over data points
         for p_idx, p_data in enumerate(self.data):
             #New sheet for each point
-            if 'req_type' in self.form.keys() and self.form['req_type'] == 'intraannual':
+            if 'app_name' in self.form.keys() and self.form['app_name'] == 'intraannual':
                 ws = self.wb.add_sheet('Year' + str(int(self.form['start_year']) + p_idx))
             else:
                 ws = self.wb.add_sheet('Point' + str(p_idx))
@@ -650,7 +662,10 @@ class DataComparer(object):
                 'bbox':bbox,
                 "meta":"name,state,sids,ll,elev,uid,valid_daterange",
             }
-            meta_params['elems'] = self.element
+            if self.element == 'pet':
+                meta_params['elems'] = 'maxt,mint'
+            else:
+                meta_params['elems'] = self.element
             try:
                 req = AcisWS.StnMeta(meta_params)
                 req['meta']
@@ -717,17 +732,124 @@ class DataComparer(object):
         stn_meta['dist'] = km_dist
         return stn_meta
 
+    def compute_pet(self,sdata, gdata):
+        sdata_pet = {'data':[], 'meta': []}
+        gdata_pet = {'data':[], 'meta': []}
+        if 'meta' in sdata.keys():
+            sdata_pet['meta'] = copy.deepcopy(sdata['meta'])
+        if 'meta' in gdata.keys():
+            gdata_pet['meta'] = copy.deepcopy(gdata['meta'])
+
+
+        #Pick one dataset for looping
+        if 'data'in sdata.keys() and sdata['data']:
+            data = copy.deepcopy(sdata)
+            data_2 = copy.deepcopy(gdata)
+            d_type = 'station'
+            ll_keys = ['ll']
+        elif 'data'in gdata.keys() and gdata['data']:
+            data = copy.deepcopy(gdata)
+            data_2 = copy.deepcopy(sdata)
+            d_type = 'grid'
+            ll_keys = ['lon','lat']
+
+        #Sanity checks
+        if data is None:
+            err = 'Compute PET: No station and no grid data could be found.'
+            sdata_pet['error'] = err
+            gdata_pet['error'] = err
+            return sdata, gdata
+
+
+        if 'meta' not in data.keys():
+            err = 'Compute PET: No meta data found.'
+            sdata_pet['error'] = err
+            gdata_pet['error'] = err
+            return sdata, gdata
+
+        for key in ll_keys:
+            if key not in data['meta'].keys():
+                err = 'Compute PET: No lon, lat meta data found.'
+                sdata_pet['error'] = err
+                gdata_pet['error'] = err
+                return sdata, gdata
+
+        data_pet = []
+        data_2_pet = []
+        for idx, date_vals in enumerate(data['data']):
+            if len(date_vals) != 3:
+                if not date_vals:
+                    val = ['9999-99-99',-9999]
+                else:
+                    val = [date_vals[0], -9999]
+                data_pet.append(val)
+                continue
+            d = [str(date_vals[0])]
+            d_2 = [str(date_vals[0])]
+            date_eight = WRCCUtils.date_to_eight(str(date_vals[0]))
+            doy = WRCCUtils.compute_doy(date_eight[4:6],date_eight[6:8])
+            if d_type == 'station':
+                lon = sdata['meta']['ll'][0]
+                lat = sdata['meta']['ll'][1]
+            else:
+                lon = gdata['meta']['lon']
+                lat = gdata['meta']['lat']
+            try:
+                val = WRCCUtils.compute_pet(lat,lon,date_vals[1],date_vals[2],doy,'english')
+            except:
+                val = -9999
+            d.append(val)
+            data_pet.append(d)
+            #second data set
+
+            if idx < len(data_2['data']):
+                if len(data_2['data'][idx]) != 3:
+                    if not data_2['data'][idx]:
+                        val_2 = ['9999-99-99',-9999]
+                    else:
+                        val_2 = [date_vals[0], -9999]
+                    data_2_pet.append(val_2)
+                    continue
+                if d_type == 'station':
+                    lon_2 = gdata['meta']['lon']
+                    lat_2 = gdata['meta']['lat']
+                else:
+                    lon_2 = sdata['meta']['ll'][0]
+                    lat_2 = sdata['meta']['ll'][1]
+                try:
+                    val_2 = WRCCUtils.compute_pet(lat_2,lon_2,data_2['data'][idx][1],data_2['data'][idx][2],doy,'english')
+                except:
+                    val_2 = -9999
+                d_2.append(val_2)
+                data_2_pet.append(d_2)
+            else:
+                #Can't find index in second dataset
+                d_2.append(-9999)
+                data_2_pet.append(d_2)
+
+        if d_type == 'station':
+            sdata_pet['data'] = data_pet
+            gdata_pet['data'] = data_2_pet
+        else:
+            sdata_pet['data'] = data_2_pet
+            gdata_pet['data'] = data_pet
+        return sdata_pet, gdata_pet
+
     def get_data(self):
         #Grid Data
         #els =  self.combine_elements()
         data_params = {
             'loc': self.location,
             'grid':self.grid,
-            'elems': self.element,
+            #'elems': self.element,
             'sdate': self.start_date,
             'edate': self.end_date,
             'meta':'ll,elev'
         }
+        if self.element == 'pet':
+            data_params['elems'] = 'maxt,mint'
+        else:
+            data_params['elems'] = self.element
         try:
             gdata = AcisWS.GridData(data_params)
         except Exception, e:
@@ -749,6 +871,9 @@ class DataComparer(object):
                 sdata = AcisWS.StnData(data_params)
             except Exception, e:
                 sdata = {'data':[], 'meta': [],'error': str(e)}
+        #If element is pet, compute it
+        if self.element == 'pet':
+            sdata, gdata = self.compute_pet(sdata, gdata)
         return gdata,sdata,stn_meta['dist']
 
     def get_graph_data(self,gdata,sdata):
@@ -761,12 +886,13 @@ class DataComparer(object):
         gloc = str(round(gdata['meta']['lon'],2)) + ', ' + str(round(gdata['meta']['lat'],2))
         sloc = ','.join([str(round(s,2)) for s in sdata['meta']['ll']])
         sname = str(sdata['meta']['name'])
-        sids = ''
+        sids = ''; sid_1 = str(sdata['meta']['sids'][0].split(' ')[0])
         for idx, sid in enumerate(sdata['meta']['sids']):
             sids+= sid.split(' ')[0]
             if idx != len(sdata['meta']['sids']) - 1:
                 sids+=', '
-        s_graph_title = 'Station' + sname + ', IDs: (' + sids + ')'
+        graph_title = 'Location: ' +  gloc + ', Station: ' + sname
+        s_graph_title = 'Station: ' + sname + ' (' + sid_1 + ')'
         g_graph_title =  'Location: ' +  gloc
         sid = str(sdata['meta']['sids'][0].split(' ')[0])
         el_strip, base_temp = WRCCUtils.get_el_and_base_temp(self.element, units=self.units)
@@ -789,7 +915,7 @@ class DataComparer(object):
             int_time = self.hms_to_seconds(str(data[0]))
             grid_data.append([int(int_time),gd])
             station_data.append([int(int_time),sd])
-            SGDWriter = GraphDictWriter(self.form, station_data, self.element, name = sname)
+            SGDWriter = GraphDictWriter(self.form, station_data, self.element, name = s_graph_title)
             s_graph_dict = SGDWriter.write_dict()
             GGDWriter =  GraphDictWriter(self.form, grid_data, self.element, name = g_graph_title)
             g_graph_dict = GGDWriter.write_dict()

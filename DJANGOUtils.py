@@ -1,5 +1,6 @@
 from django.conf import settings
 import WRCCUtils, WRCCData, AcisWS
+import copy
 
 today = WRCCUtils.set_back_date(0)
 today_year = today[0:4]
@@ -243,8 +244,9 @@ def set_initial(request,app_name):
         initial['end_date']  = Get('end_date', WRCCUtils.format_date_string(yesterday,'-'))
     #data windows and flags
     sw = '01-01'; ew = '01-31'
-    if initial['start_date'] and initial['end_date']:
-        sw, ew = WRCCUtils.set_start_end_window(initial['start_date'],initial['end_date'])
+    if 'start_date' in initial.keys() and 'end_date' in initial.keys():
+        if initial['start_date'] and initial['end_date']:
+            sw, ew = WRCCUtils.set_start_end_window(initial['start_date'],initial['end_date'])
     if app_name in ['single_lister', 'multi_lister']:
         initial['start_window'] = Get('start_window', sw)
         initial['end_window'] = Get('end_window',ew)
@@ -488,8 +490,7 @@ def set_form(request, clean=True):
     form['req_method'] = req_method
     #Convert request object to python dictionary
     if req_method == 'dict':
-        for key, val in request.iteritems():
-            form[str(key)]= val
+        form = copy.deepcopy(request)
         #Special case elements, always needs to be list
         if 'element' in request.keys() and not 'elements' in request.keys():
             form['elements'] = [form['element']]

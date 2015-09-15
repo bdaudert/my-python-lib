@@ -84,7 +84,7 @@ def check_request_size(form):
         return num_points, num_days
     elif 'station_ids' in form.keys():
         if isinstance(form['station_ids'], basestring):
-            num_points = len(form['locations'].split(','))
+            num_points = len(form['station_ids'].split(','))
         if isinstance(form['station_ids'],list):
             num_points = len(form['station_ids'])
         return num_points, num_days

@@ -61,6 +61,101 @@ def get_data_type(form):
             return str(form['data_type'])
     return data_type
 
+def check_request_size(form):
+    '''
+    Returns True if request is deemed large
+    False otherwise
+    '''
+    num_points = 1000000; num_days = 0
+    #Find num_days
+    if 'start_date' in form.keys() and 'end_date' in form.keys():
+        start_dt = date_to_datetime(date_to_eight(form['start_date']))
+        end_dt = date_to_datetime(date_to_eight(form['end_date']))
+        num_days = (end_dt - start_dt).days
+    #Find num_points
+    if 'station_id' in form.keys() or 'location' in form.keys():
+        num_points = 1
+        return num_points, num_days
+    elif 'locations' in form.keys():
+        if isinstance(form['locations'], basestring):
+            num_points = len(form['locations'].split(',')) / 2
+        if isinstance(form['locations'],list):
+            num_points = len(form['locations']) / 2
+        return num_points, num_days
+    elif 'station_ids' in form.keys():
+        if isinstance(form['station_ids'], basestring):
+            num_points = len(form['locations'].split(','))
+        if isinstance(form['station_ids'],list):
+            num_points = len(form['station_ids'])
+        return num_points, num_days
+
+    #Request meta for all other calls
+    #to find num_points
+    if 'shape' in form.keys():
+        at_key = 'bbox'
+        if isinstance(form['shape'],list):
+            shape = ','.join(form['shape'])
+        else:
+            shape = form['shape']
+
+        at_key = 'bbox'
+        shape_type, at_val = get_bbox(shape)
+    else:
+        at_key = form['area_type']
+        at_val = form[at_key]
+    data_type = get_data_type(form)
+    if data_type == 'station':
+        meta_params = {
+            WRCCData.FORM_TO_META_PARAMS[at_key]: at_val,
+            'elems':','.join(form['elements']),
+            'meta':'valid_daterange'
+        }
+        meta_data = AcisWS.StnMeta(meta_params)
+
+        if 'meta' in meta_data.keys() and isinstance(meta_data['meta'], list):
+            num_points = len(meta_data['meta'])
+            return num_points, num_days
+
+    if data_type == 'grid' and 'shape' in form.keys():
+        #Estimate num_points by using smallest grid (4km)
+        #using bbox estimate
+        try:
+            bl = at_val.split(',')
+            dist_1 = haversine_distance(bl[0], bl[1], bl[2], bl[1])
+            dist_2 = haversine_distance(bl[0], bl[1], bl[0], bl[3])
+            num_points = round(dist_1 / 4.0 * dist_2 / 4.0)
+            return num_poinst, num_days
+        except:
+            return num_poinst, num_days
+    elif data_type == 'grid':
+        at_list = ['county','county_warning_ara','climate_division','basin','state']
+        if form['area_type'] not in at_list:
+            return num_points, num_days
+        #Run general call to ge bboxes,
+        #take larges and estimate dist based on 4km grid
+        try:
+            state = form['overlay_state'].lower()
+            area = WRCCUtils.FORM_TO_META_PARAMS(form['area_type'])
+            params = {"state":state,"meta":"bbox,geojson,id"}
+            json_path = settings.MEDIA_DIR + '/json/US_' + form['area_type'] +'.json'
+            ID, name = find_id_and_name(form[form['area_type']],json_path)
+            meta_data = AcisWs.General(area, params)
+            #take firs bbox
+            if 'meta' in meta_data.keys() and isinstance(meta_data['meta'], list):
+                #Find bbox
+                for item in meta_data['meta']:
+                    if item['id'] != ID:continue
+
+                    bl = meta_data['meta'][0]
+                    dist_1 = haversine_distance(bl[0], bl[1], bl[2], bl[1])
+                    dist_2 = haversine_distance(bl[0], bl[1], bl[0], bl[3])
+                    num_points = round(dist_1 / 4.0 * dist_2 / 4.0)
+                    return num_poinst, num_days
+            return num_poinst, num_days
+        except:
+            return num_points, num_days
+    return num_points, num_days
+
 def get_meta_keys(form):
     '''
     Sets meta params for ACIS query
@@ -212,7 +307,7 @@ def set_acis_els(form):
 
 
 
-def set_acis_params(form):
+def set_acis_params(form, large_request):
     '''
     Sets ACIS parameters according to:
         area_type: station_id, location, county, state, etc.
@@ -230,40 +325,6 @@ def set_acis_params(form):
     #Format dates
     s_date, e_date = start_end_date_to_eight(form)
 
-    #Check for unreasonable start and end dates
-    unreasonable = False
-    if data_type == 'station':
-        today = set_back_date(0)
-        unreasonable = False
-        if s_date !='por' and e_date !='por':
-            if int(s_date[0:4]) <= 1900 and int(e_date[0:4]) - int(s_date[0:4]) >= 30:
-                unreasonable = True
-            if int(e_date[0:4]) > int(today[0:4]):
-                e_date = set_back_date(1)
-        if unreasonable:
-            meta_params = {
-                form['area_type']: form[form['area_type']],
-                'elems':','.join(form['elements']),
-                'meta':'valid_daterange'
-            }
-            meta_data = AcisWS.StnMeta(meta_params)
-            if 'meta' in meta_data.keys():
-                start_dts = []
-                end_dts = []
-                for stn_meta in meta_data['meta']:
-                    for el_vd in stn_meta['valid_daterange']:
-                        if el_vd and len(el_vd) == 2:
-                            start_dts.append(date_to_datetime(el_vd[0]))
-                            end_dts.append(date_to_datetime(el_vd[1]))
-            if start_dts:
-                s = min(start_dts)
-                if s > date_to_datetime(s_date):
-                    s_date = datetime_to_date(s,'')
-            if end_dts:
-                e = max(end_dts)
-                if e < date_to_datetime(e_date):
-                    e_date = datetime_to_date(e,'')
-
     params = {
             'sdate':s_date,
             'edate':e_date
@@ -272,11 +333,17 @@ def set_acis_params(form):
     f_key = None
     #Set up area parameter
     #Convert form area key to ACIS area key
-    if 'station_ids' in form.keys():
+    if 'station_ids' in form.keys() and not large_request:
         #Special case station finder download data
         p_key = WRCCData.FORM_TO_PARAMS['station_ids']
         f_key = 'station_ids'
         params[p_key] = str(form['station_ids'])
+    elif large_request:
+        #Need to make single calls
+        if data_type == 'station':
+            pass
+        if data_type == 'grid':
+            pass
     else:
         for area_key in area_keys:
             if area_key not in form.keys():
@@ -369,13 +436,12 @@ def request_and_format_data(form):
         'form':form
     }
     data_type = get_data_type(form)
-    #Set request parameters
-    params = set_acis_params(form)
     #Find correct data call functions
     if not data_type:
         error = 'Not a valid request. Could not find request type.'
         resultsdict['errors'].append( error)
         return resultsdict
+
     if data_type == 'station':
         if 'station_id' in form.keys():
             request_data = getattr(AcisWS,'StnData')
@@ -383,6 +449,10 @@ def request_and_format_data(form):
             request_data = getattr(AcisWS,'MultiStnData')
     if data_type == 'grid':
         request_data = getattr(AcisWS,'GridData')
+
+    #Set request parameters
+    large_request = False
+    params = set_acis_params(form, large_request)
     #Make data request
     #req = request_data(params)
     try:
@@ -2645,7 +2715,7 @@ def is_leap_year(year):
 ###############################
 #GEOSPATIAL
 ##############################
-def shapefile_to_ll(shp_file, feature_id):
+def shapefile_to_ll(app_name, shp_file, feature_id):
     poly_ll = ''
     ## Project all coordinates to WGS84
     output_osr = osr.SpatialReference()

@@ -7,10 +7,10 @@ Checks input form parameters
 '''
 import datetime
 import re
-import WRCCData,WRCCUtils
+import WRCCData, WRCCUtils, AcisWS
 
 today = datetime.datetime.today()
-stn_earliest = '18450101'
+stn_earliest = '18250101'
 stn_earliest_dt = WRCCUtils.date_to_datetime(stn_earliest)
 
 def check_start_year(form):
@@ -141,60 +141,59 @@ def check_end_window(form):
 
 def check_start_date(form):
     err = None
-    date = form['start_date'].replace('-','').replace('/','').replace(':','')
-    e_date = form['end_date'].replace('-','').replace('/','').replace(':','')
-    if date.lower() == 'por':
+    s_date = WRCCUtils.date_to_eight(form['start_date'])
+    e_date = WRCCUtils.date_to_eight(form['end_date'])
+    if s_date.lower() == 'por':
         if 'station_id' in form.keys():
             return err
         else:
             return '%s is not a valid option for a multi-station or grid request.' %form['start_date']
 
-    if len(date)!=8:
+    if len(s_date)!=8:
         return '%s is not a valid date.' %form['start_date']
     try:
-        int(date)
+        int(s_date)
     except:
         return '%s is not a valid date.' %form['start_date']
 
     #Check month
-    if int(date[4:6]) < 1 or int(date[4:6]) > 12:
-        return 'Not a valid month.'
+    if int(s_date[4:6]) < 1 or int(s_date[4:6]) > 12:
+        return '%s is not a valid date.' %form['start_date']
     #Check day
-    if int(date[6:8]) < 1 or int(date[4:6]) > 31:
-        return 'Not a valid day.'
+    if int(s_date[6:8]) < 1 or int(s_date[4:6]) > 31:
+        return '%s is not a valid date.' %form['start_date']
 
-    ml = WRCCData.MONTH_LENGTHS[int(date[4:6]) - 1]
-    if int(date[6:8]) > ml:
-        if str(date[4:6]) == '02' or str(date[4:6]) == '2':
-            if WRCCUtils.is_leap_year(date[0:4]):
-                return 'Month %s only has %s days. You entered: %s' %(WRCCData.NUMBER_TO_MONTH_NAME[str(date[4:6])],'29',str(date[6:8]))
+    #Check for month lengths
+    ml = WRCCData.MONTH_LENGTHS[int(s_date[4:6]) - 1]
+    if int(s_date[6:8]) > ml:
+        if str(s_date[4:6]) == '02' or str(s_date[4:6]) == '2':
+            if WRCCUtils.is_leap_year(s_date[0:4]):
+                return '%s only has %s days. You entered: %s' %(WRCCData.NUMBER_TO_MONTH_NAME[str(s_date[4:6])],'29',str(s_date[6:8]))
             else:
-                return 'Month %s only has %s days. You entered: %s' %(WRCCData.NUMBER_TO_MONTH_NAME[str(date[4:6])],str(ml),str(date[6:8]))
+                return '%s only has %s days. You entered: %s' %(WRCCData.NUMBER_TO_MONTH_NAME[str(s_date[4:6])],str(ml),str(s_date[6:8]))
         else:
-            return 'Month %s only has %s days. You entered: %s' %(WRCCData.NUMBER_TO_MONTH_NAME[str(date[4:6])],str(ml),str(date[6:8]))
+            return '%s only has %s days. You entered: %s' %(WRCCData.NUMBER_TO_MONTH_NAME[str(ds_ate[4:6])],str(ml),str(s_date[6:8]))
 
     #Check for leap year issue
-    if not WRCCUtils.is_leap_year(date[0:4]) and date[4:6] == '02' and date[6:8] == '29':
-        return '%s is not a leap year. Change start date to February 28.' %date[0:4]
+    if not WRCCUtils.is_leap_year(s_date[0:4]) and s_date[4:6] == '02' and s_date[6:8] == '29':
+        return '%s is not a leap year. Change start date to February 28.' %s_date[0:4]
 
     #Check that start date is earlier than end date
     if e_date.lower() == 'por':
         return err
     try:
-        sd = datetime.datetime(int(date[0:4]), int(date[4:6].lstrip('0')), int(date[6:8].lstrip('0')))
+        sd = datetime.datetime(int(s_date[0:4]), int(s_date[4:6].lstrip('0')), int(s_date[6:8].lstrip('0')))
     except:
-        return err
+        return '%s is not a valid date.' %form['start_date']
     try:
         ed = datetime.datetime(int(e_date[0:4]), int(e_date[4:6].lstrip('0')), int(e_date[6:8].lstrip('0')))
     except:
-        return err
+        return '%s is not a valid date.' %form['start_date']
+
     if ed < sd:
         return 'Start Date is later then End Year.'
 
-    #Check station  data dates
-    if 'station_id' in form.keys() or ('data_type' in form.keys() and form['data_type'] == 'station'):
-        if int(date[0:4]) < int(stn_earliest[0:4]):
-            return 'Not a valid Start Date. Year must be later than %s.' %(stn_earliest[0:4])
+
 
     #Check grid data dates
     if 'location' in form.keys() or ('data_type' in form.keys() and form['data_type'] == 'grid'):
@@ -216,42 +215,111 @@ def check_start_date(form):
                 flag = True
                 continue
         if flag:
-            return 'Date range is not in valid date range of this grid.'
+            grid_s = WRCCUtils.datetime_to_date(grid_s,'-')
+            grid_e = WRCCUtils.datetime_to_date(grid_e,'-')
+            return 'Valid date range for this grid is: ' +str(grid_s) + ' - ' + str(grid_e)
+
+        #Limit grid requests to max 10 years for multi point requests
+        if not 'location' in form.keys() and (ed - sd).days > 10 * 366:
+            err = 'Request for more than one grid point are limited to ten years or less! ' +\
+            'Please adjust your dates accordingly.'
+            return err
+
+
+    #Check for unreasonable start and end dates
+    #for station data requests
+    data_type = WRCCUtils.get_data_type(form)
+    unreasonable = False
+    if data_type == 'station':
+        #Limit multi station requests to 30 years
+        if not 'station_id' in form.keys() and (ed - sd).days > 30 * 366:
+            err = 'Request for more than one station are limited to thirty years or less! ' +\
+            'Please adjust your dates accordingly.'
+            return err
+        unreasonable = False
+        if s_date.lower() !='por' and int(s_date[0:4]) <= 1900:
+            unreasonable = True
+        if unreasonable:
+            meta_params = {
+                WRCCData.FORM_TO_META_PARAMS[form['area_type']]: form[form['area_type']],
+                'elems':','.join(form['elements']),
+                'meta':'valid_daterange'
+            }
+            meta_data = AcisWS.StnMeta(meta_params)
+            '''
+            try:
+                meta_data = AcisWS.StnMeta(meta_params)
+            except:
+                meta_data = {}
+            '''
+            start_dts = [];end_dts = []
+            if 'meta' in meta_data.keys():
+                for stn_meta in meta_data['meta']:
+                    for el_vd in stn_meta['valid_daterange']:
+                        if el_vd and len(el_vd) == 2:
+                            start_dts.append(WRCCUtils.date_to_datetime(el_vd[0]))
+                            end_dts.append(WRCCUtils.date_to_datetime(el_vd[1]))
+
+            if start_dts and end_dts:
+                start = min(start_dts)
+                end = max(end_dts)
+                if start > WRCCUtils.date_to_datetime(s_date) and  end < WRCCUtils.date_to_datetime(e_date):
+                    s = WRCCUtils.datetime_to_date(start,'-')
+                    e = WRCCUtils.datetime_to_date(end,'-')
+                    err = 'Please change Start and End Date to earliest/latest record found: ' +\
+                     s + ', ' + e
+                    return err
+            if start_dts:
+                start = min(start_dts)
+                if start > WRCCUtils.date_to_datetime(s_date):
+                    s = WRCCUtils.datetime_to_date(start,'-')
+                    err = 'Please change Start Date to earliest record found: ' + s
+                    return err
+
+    #Check station data start date for single station requesrs
+    if 'station_id' in form.keys():
+        if int(s_date[0:4]) < int(stn_earliest[0:4]):
+            return 'Not a valid Start Date. Year must be later than %s.' %(stn_earliest[0:4])
+
+
     return err
 
 def check_end_date(form):
     err = None
     s_date = form['start_date'].replace('-','').replace('/','').replace(':','')
-    date = form['end_date'].replace('-','').replace('/','').replace(':','')
-    if date.lower() == 'por':
+    e_date = form['end_date'].replace('-','').replace('/','').replace(':','')
+    if e_date.lower() == 'por':
         if 'station_id' in form.keys():
             return err
         else:
-            return '%s is not a valid Start Date  for a  multi-station or grid request!' %form['end_date']
+            return '%s is not a valid Start Date for a multi-station or grid request!' %form['end_date']
 
-    if len(date)!=8:
+    if len(e_date)!=8:
         return '%s is not a valid date.' %form['end_date']
 
     try:
-        int(date)
+        int(e_date)
     except:
         return 'Date should be an eight digit entry. You entered %s' %form['end_date']
 
     #Check month
-    if int(date[4:6]) < 1 or int(date[4:6]) > 12:
-        return 'Not a valid month.'
+    if int(e_date[4:6]) < 1 or int(e_date[4:6]) > 12:
+        return '%s is not a valid date.' %form['end_date']
     #Check day
-    if int(date[6:8]) < 1 or int(date[4:6]) > 31:
-        return 'Not a valid day.'
-    ml = WRCCData.MONTH_LENGTHS[int(date[4:6]) - 1]
-    if int(date[6:8]) > ml:
-        if str(date[4:6]) == '02' or str(date[4:6]) == '2':
-            if WRCCUtils.is_leap_year(date[0:4]):
-                return 'Month %s only has %s days. You entered: %s' %(WRCCData.NUMBER_TO_MONTH_NAME[str(date[4:6])],'29',str(date[6:8]))
+    if int(e_date[6:8]) < 1 or int(e_date[4:6]) > 31:
+        return '%s is not a valid date.' %form['end_date']
+
+
+    #Ceck for month length
+    ml = WRCCData.MONTH_LENGTHS[int(e_date[4:6]) - 1]
+    if int(e_date[6:8]) > ml:
+        if str(e_date[4:6]) == '02' or str(e_date[4:6]) == '2':
+            if WRCCUtils.is_leap_year(e_date[0:4]):
+                return '%s only has %s days. You entered: %s' %(WRCCData.NUMBER_TO_MONTH_NAME[str(e_date[4:6])],'29',str(e_date[6:8]))
             else:
-                return 'Month %s only has %s days. You entered: %s' %(WRCCData.NUMBER_TO_MONTH_NAME[str(date[4:6])],str(ml),str(date[6:8]))
+                return '%s only has %s days. You entered: %s' %(WRCCData.NUMBER_TO_MONTH_NAME[str(e_date[4:6])],str(ml),str(e_date[6:8]))
         else:
-            return 'Month %s only has %s days. You entered: %s' %(WRCCData.NUMBER_TO_MONTH_NAME[str(date[4:6])],str(ml),str(date[6:8]))
+            return '%s only has %s days. You entered: %s' %(WRCCData.NUMBER_TO_MONTH_NAME[str(e_date[4:6])],str(ml),str(e_date[6:8]))
 
     #Check that start date is ealier than end date
     if s_date.lower() == 'por':
@@ -259,19 +327,14 @@ def check_end_date(form):
     try:
         sd = datetime.datetime(int(s_date[0:4]), int(s_date[4:6].lstrip('0')), int(s_date[6:8].lstrip('0')))
     except:
-        return err
+        return '%s is not a valid date.' %form['end_date']
     try:
-        ed = datetime.datetime(int(date[0:4]), int(date[4:6].lstrip('0')), int(date[6:8].lstrip('0')))
+        ed = datetime.datetime(int(e_date[0:4]), int(e_date[4:6].lstrip('0')), int(e_date[6:8].lstrip('0')))
     except:
-        return err
+        return '%s is not a valid date.' %form['end_date']
     if ed < sd:
         return 'Start Date is later then End Year.'
 
-    #Check station data dates
-    if 'station_id' in form.keys() or ('data_type' in form.keys() and form['data_type'] == 'station'):
-        if date.lower() != 'por':
-            if WRCCUtils.date_to_datetime(date) > today:
-                return 'Not a valid End Date. Date should be today or ealier.'
 
     #Check grid data dates
     if 'location' in form.keys() or ('data_type' in form.keys() and form['data_type'] == 'grid'):
@@ -287,8 +350,34 @@ def check_end_date(form):
                 flag = True
                 continue
         if flag:
-            return 'User date range is not in valid date range of this grid.'
+            grid_s = WRCCUtils.datetime_to_date(grid_s,'-')
+            grid_e = WRCCUtils.datetime_to_date(grid_e,'-')
+            return 'Valid date range for this grid is: ' + grid_s + ' - ' + grid_e
 
+        #Limit grid requests to max 10 years for multi point requests
+        if not 'location' in form.keys() and (ed - sd).days > 10 * 366:
+            err = 'Request for more than one grid point are limited to ten years or less! ' +\
+            'Please adjust your dates accordingly.'
+            return err
+
+    #Check for unreasonable start and end dates
+    #for station data requests
+    data_type = WRCCUtils.get_data_type(form)
+    unreasonable = False
+    if data_type == 'station':
+        #Limit multi station requests to 30 years
+        if not 'station_id' in form.keys() and (ed - sd).days > 30 * 366:
+            err = 'Request for more than one station are limited to thirty years or less! ' +\
+            'Please adjust your dates accordingly.'
+
+    #Check that station data end date is today or earlier
+    if 'station_id' in form.keys() or ('data_type' in form.keys() and form['data_type'] == 'station'):
+        if e_date.lower() != 'por':
+            today = WRCCUtils.format_date_string(WRCCUtils.set_back_date(0),'-')
+            if WRCCUtils.date_to_datetime(e_date) >  WRCCUtils.date_to_datetime(today):
+                return 'Not a valid End Date. Date should be ' + today +' or ealier.'
+
+    return err
 
 def check_degree_days(form):
     err = None

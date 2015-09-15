@@ -494,6 +494,8 @@ STN_AREA_FORM_TO_PARAM = {
 
 #NEW
 FORM_TO_META_PARAMS = {
+    'sid':'sids',
+    'sids':'sids',
     'station_id':'sids',
     'station_ids':'sids',
     'station':'sids',
@@ -531,6 +533,7 @@ FORM_TO_PARAMS = {
     'basin':'basin',
     'shape':'bbox',
     'location':'loc',
+    'locations':'loc',
     'point':'loc'
 }
 #NEW

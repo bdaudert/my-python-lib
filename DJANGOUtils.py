@@ -54,12 +54,12 @@ def set_GET_list(request):
         Getlist = getattr(request.POST, 'getlist')
     return Getlist
 
-def set_initial(request,req_type):
+def set_initial(request,app_name):
     '''
     Set html form
     Args:
         request: django request object
-        req_type: application, one of
+        app_name: application, one of
             single_lister, multi_lister, station_finder
             map_overlay,
             sf_download
@@ -73,15 +73,15 @@ def set_initial(request,req_type):
         checkbox_vals: values for checkboxes (selected or '')
     '''
     initial = {}
-    initial['req_type'] = req_type
+    initial['app_name'] = app_name
     checkbox_vals = {}
     Get = set_GET(request)
     Getlist = set_GET_list(request)
     #Set area type: station_id(s), location, basin,...
     area_type = None
-    if req_type in ['single_lister','climatology','monann', 'interannual','intraannual']:
+    if app_name in ['single_lister','climatology','monann', 'interannual','intraannual']:
         initial['area_type'] = Get('area_type','station_id')
-    elif req_type in ['data_comparison']:
+    elif app_name in ['data_comparison']:
         initial['area_type'] = 'location'
     else:
         initial['area_type'] = Get('area_type','state')
@@ -90,7 +90,7 @@ def set_initial(request,req_type):
     initial['today_month'] = today_month
     initial['today_day'] = today_day
     #Set area depending on area_type
-    if req_type == 'data_comparison':
+    if app_name == 'data_comparison':
         location = Get('location',None)
         station_id = Get('station_id',None)
         if location is None and station_id is not None:
@@ -118,7 +118,7 @@ def set_initial(request,req_type):
         initial['autofill_list'] = 'US_' + initial['area_type']
         initial['data_type'] = Get('data_type','station')
     #Grid
-    if req_type not in ['station_finder', 'sf_download']:
+    if app_name not in ['station_finder', 'sf_download']:
         initial['grid'] = Get('grid','1')
     #Set up map parameters
     initial['overlay_state'] = Get('overlay_state','nv').lower()
@@ -131,7 +131,7 @@ def set_initial(request,req_type):
 
     #If station_finder download, we need to set the station_ids
     #and override the original area type fields
-    if req_type == 'sf_download':
+    if app_name == 'sf_download':
         #delete old are type
         del initial[str(initial['area_type'])]
         #set new area params
@@ -143,12 +143,12 @@ def set_initial(request,req_type):
         initial['station_json'] = Get('station_json','')
 
     #If station finder set hidden var station_ids_string for results
-    if req_type == 'station_finder':
+    if app_name == 'station_finder':
         initial['station_ids_string'] = str(Get('station_ids_string',''))
     #Set element(s)--> always as list if multiple
-    if req_type == 'map_overlay':
+    if app_name == 'map_overlay':
         initial['elements'] = Get('elements','maxt,mint,pcpn').split(',')
-    elif req_type in ['monann','data_comparison', 'interannual','intraannual']:
+    elif app_name in ['monann','data_comparison', 'interannual','intraannual']:
             initial['element'] = Get('element',None)
             if initial['element'] is not None and len(initial['element'].split(',')) > 1:
                 initial['element'] =  str(initial['element'].split(',')[0])
@@ -175,7 +175,7 @@ def set_initial(request,req_type):
     initial['units'] = Get('units','english')
 
     #Set degree days
-    if req_type not in ['station_finder', 'monann', 'climatology', 'data_comparison']:
+    if app_name not in ['station_finder', 'monann', 'climatology', 'data_comparison']:
         initial['add_degree_days'] = Get('add_degree_days', 'F')
         if initial['units'] == 'metric':
             initial['degree_days'] = Get('degree_days', 'gdd13,hdd21').replace(', ', ',')
@@ -183,7 +183,7 @@ def set_initial(request,req_type):
             initial['degree_days'] = Get('degree_days', 'gdd55,hdd70').replace(', ',',')
 
     #Set dates
-    if req_type in ['monann','climatology']:
+    if app_name in ['monann','climatology']:
         initial['start_year'] = Get('start_year', None)
         if initial['start_year'] is None:
             #Link from station finder
@@ -196,7 +196,7 @@ def set_initial(request,req_type):
             initial['end_year'] = Get('end_date', '9999')[0:4]
             if initial['end_year'] == '9999':
                 initial['end_year'] = 'POR'
-    elif req_type in ['interannual', 'intraannual']:
+    elif app_name in ['interannual', 'intraannual']:
         initial['start_date'] = None;initial['end_date'] = None
         if 'station_id' in initial.keys():
             stn_id, stn_name = WRCCUtils.find_id_and_name(initial['station_id'],settings.MEDIA_DIR + '/json/US_station_id.json')
@@ -219,10 +219,10 @@ def set_initial(request,req_type):
         initial['end_year'] = initial['end_date'][0:4]
         initial['start_month']  = Get('start_month', '1')
         initial['start_day']  = Get('start_day', '1')
-        if req_type == 'interannual':
+        if app_name == 'interannual':
             initial['end_month']  = Get('end_month', '1')
             initial['end_day']  = Get('end_day', '31')
-        if req_type in ['intraannual']:
+        if app_name in ['intraannual']:
             #Plotting vars
             initial['show_climatology'] = Get('show_climatology','F')
             initial['show_percentile_5'] = Get('show_percentile_5','F')
@@ -245,34 +245,34 @@ def set_initial(request,req_type):
     sw = '01-01'; ew = '01-31'
     if initial['start_date'] and initial['end_date']:
         sw, ew = WRCCUtils.set_start_end_window(initial['start_date'],initial['end_date'])
-    if req_type in ['single_lister', 'multi_lister']:
+    if app_name in ['single_lister', 'multi_lister']:
         initial['start_window'] = Get('start_window', sw)
         initial['end_window'] = Get('end_window',ew)
         initial['temporal_resolution'] = Get('temporal_resolution','dly')
         initial['show_flags'] = Get('show_flags', 'F')
         initial['show_observation_time'] = Get('show_observation_time', 'F')
-    if req_type in ['station_finder']:
+    if app_name in ['station_finder']:
         initial['start_window'] = Get('start_window', sw)
         initial['end_window'] = Get('end_window',ew)
     #data summaries
-    if req_type in  ['temporal_summary', 'interannual']:
+    if app_name in  ['temporal_summary', 'interannual']:
         initial['data_summary'] = Get('data_summary', 'temporal')
-    elif req_type in ['spatial_summary','multi_lister']:
+    elif app_name in ['spatial_summary','multi_lister']:
         initial['data_summary'] = Get('data_summary', 'spatial')
     else:
         initial['data_summary'] = Get('data_summary', 'none')
     if initial['data_summary'] == 'temporal':
-        if req_type in ['single_lister', 'multi_lister','temporal_summary', 'interannual', 'sf_download']:
+        if app_name in ['single_lister', 'multi_lister','temporal_summary', 'interannual', 'sf_download']:
             if initial['element'] in ['pcpn','snow','evap','pet']:
                 initial['temporal_summary'] = Get('temporal_summary', 'sum')
             else:
                 initial['temporal_summary'] = Get('temporal_summary', 'mean')
     if initial['data_summary'] == 'spatial':
-        if req_type in ['single_lister', 'multi_lister','spatial_summary','sf_download']:
+        if app_name in ['single_lister', 'multi_lister','spatial_summary','sf_download']:
             initial['spatial_summary'] = Get('spatial_summary', 'mean')
 
     #download options
-    if req_type in ['single_lister','multi_lister']:
+    if app_name in ['single_lister','multi_lister']:
         initial['data_format'] = Get('data_format', 'html')
     else:
         initial['data_format'] = Get('data_format', 'clm')
@@ -282,14 +282,14 @@ def set_initial(request,req_type):
     initial['user_email'] = Get('user_email', 'Your Email')
 
     #Set app specific params
-    if req_type in ['multi_lister']:
+    if app_name in ['multi_lister','spatial_summary','station_finder']:
         initial['feature_id'] = 0
-    if req_type in ['monann','climatology','sf_link']:
+    if app_name in ['monann','climatology','sf_link']:
         initial['max_missing_days']  = Get('max_missing_days', '5')
-    if req_type == 'station_finder':
+    if app_name == 'station_finder':
         initial['elements_constraints'] = Get('elements_constraints', 'all')
         initial['dates_constraints']  = Get('dates_constraints', 'all')
-    if req_type in  ['monann','sf_link']:
+    if app_name in  ['monann','sf_link']:
         initial['start_month'] = Get('start_month','01')
         if initial['element'] in ['pcpn','snow','evap','pet']:
             initial['statistic'] = Get('statistic','msum')
@@ -305,34 +305,34 @@ def set_initial(request,req_type):
         #Set initial plot options
         initial['chart_summary'] = Get('chart_summary','individual')
         #initial['plot_months'] = Get('plot_months','0,1')
-    if req_type == 'monann':
+    if app_name == 'monann':
         initial['base_temperature'] = Get('base_temperature','65')
         initial['statistic_period'] = Get('statistic_period','monthly')
-    if req_type in ['climatology','sf_link']:
+    if app_name in ['climatology','sf_link']:
         initial['summary_type'] = Get('summary_type', 'all')
 
     #Ploting options for all pages that have charts
-    if req_type in ['monann', 'spatial_summary','interannual', 'intraannual','data_comparison']:
-        if req_type in ['spatial_summary','monann','intraannual']:
-            if req_type == 'spatial_summary':
+    if app_name in ['monann', 'spatial_summary','interannual', 'intraannual','data_comparison']:
+        if app_name in ['spatial_summary','monann','intraannual']:
+            if app_name == 'spatial_summary':
                 shown_indices = ','.join([str(idx) for idx in range(len(initial['elements']))])
-            elif req_type == 'intraannual':
+            elif app_name == 'intraannual':
                 shown_indices = str(int(initial['target_year']) - int(initial['start_year']))
             else:
                 shown_indices = '0'
             initial['chart_indices_string'] = Get('chart_indices_string',shown_indices)
             index_list = initial['chart_indices_string'].replace(' ','').split(',')
-            if req_type in ['spatial_summary']:
+            if app_name in ['spatial_summary']:
                 #Keep track of elements
                 initial['chart_elements'] = [initial['elements'][int(idx)] for idx in index_list]
         initial['chart_type'] = Get('chart_type','spline')
         initial['show_running_mean'] = Get('show_running_mean','F')
-        if req_type in ['monann', 'interannual']:
+        if app_name in ['monann', 'interannual']:
             initial['running_mean_years'] = Get('running_mean_years',5)
         else:
             initial['running_mean_days'] = Get('running_mean_days',9)
         initial['show_average'] = Get('show_average','F')
-        if req_type in ['monann']:
+        if app_name in ['monann']:
             initial['show_range'] = Get('show_range','F')
     #Checkbox vals
     checkbox_vals['state_' + initial['overlay_state'] + '_selected'] = 'selected'
@@ -458,7 +458,7 @@ def set_initial(request,req_type):
             checkbox_vals['grid_' + g + '_selected'] =''
             if initial['grid'] == g:
                 checkbox_vals['grid_' + g + '_selected'] ='selected'
-    if req_type == 'climatology':
+    if app_name == 'climatology':
         for st in ['all','temp','prsn','both','hc','g']:
             checkbox_vals[st + '_selected'] =''
             if st == initial['summary_type']:

@@ -1290,7 +1290,7 @@ TEST_AREAS = {
     'shape':'-118.33,34.15,-118.15,34.06,-118.28,33.99'
 }
 
-DEFAULT_PARAMS = {
+DEFAULT_DATA_PARAMS = {
     'station_finder': {
         'area_type':'state',
         'state':'Nv',
@@ -1311,6 +1311,76 @@ DEFAULT_PARAMS = {
         'data_summary':'none',
         'show_flags':'F',
         'show_observation_time':'F',
+    },
+    'multi_lister':{
+        'area_type':'state',
+        'station_id':'NV',
+        'elements':['maxt', 'mint', 'pcpn'],
+        'add_special_degree_days':'F',
+        'start_date':fourtnight,
+        'end_date': yesterday,
+        'units':'english',
+        'data_summary':'spatial',
+        'spatial_summary':'mean'
+    },
+    'monann':{
+        'sid':'266779',
+        'start_date':'POR',
+        'end_date':'POR',
+        'element':'pcpn',
+        'units':'english'
+    },
+    'sodsum':{
+        'sid': '266779',
+        'start_date': '20100101',
+        'end_date': '20100131',
+        'element': 'multi'
+    },
+    'sodsumm':{
+        'sid':'266779',
+        'units':'english',
+        'start_date':'1971',
+        'end_date':'2000',
+        'element':'all'
+    },
+    'soddyrec':{
+        'sid':'266779',
+        'units':'english',
+        'start_date':'19710101',
+        'end_date':'19991231',
+        'element':'all'
+    },
+    'soddynorm':{
+        'sid':'266779',
+        'units':'english',
+        'start_date':'1971',
+        'end_date':'1999',
     }
 }
 
+DEFAULT_APP_PARAMS = {
+    'station_finder':{},
+    'single_lister':{},
+    'multi_lister':{},
+    'monann':{
+        'units':'english',
+        'max_missing_days':'5',
+        'start_month':'01',
+        'statistic_period': 'monthly',
+        'statistic': 'msum',
+        'departures_from_averages':'F',
+        'frequency_analysis': 'F'
+    },
+    'sodsum':{},
+    'sodsumm':{
+        'el_type':'both',
+        'units':'english',
+        'max_missing_days':'5'
+    },
+    'soddyrec':{},
+    'soddynorm':{
+        'filter_type':'rm',
+        'filter_days':9
+    }
+
+}

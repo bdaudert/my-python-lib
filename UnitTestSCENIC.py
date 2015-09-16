@@ -85,7 +85,7 @@ class setUp(object):
 ###########
 class TestStationFinder(unittest.TestCase):
     def setUp(self):
-        self.params = WRCCData.DEFAULT_PARAMS['station_finder']
+        self.params = WRCCData.DEFAULT_DATA_PARAMS['station_finder']
         self.setUp = setUp('station_finder')
 
     def test_station_finder(self):
@@ -139,7 +139,7 @@ class TestStationFinder(unittest.TestCase):
                     raise ValueError
 class TestSingleLister(unittest.TestCase):
     def setUp(self):
-        self.params = WRCCData.DEFAULT_PARAMS['single_lister']
+        self.params = WRCCData.DEFAULT_DATA_PARAMS['single_lister']
         self.setUp = setUp('station_finder')
 
     def test_single_lister(self):
@@ -173,6 +173,77 @@ class TestSingleLister(unittest.TestCase):
             self.assertIsInstance(stn_name, str)
             self.assertIsInstance(stn_id, str)
             self.assertNotEqual(stn_id,'')
+
+class TestSodxtrmts(unittest.TestCase):
+    def setUp(self):
+        self.data_params = WRCCData.DEFAULT_DATA_PARAMS['monann']
+        self.app_params = WRCCData.DEFAULT_APP_PARAMS['monann']
+
+    def test_sodxtrmts(self):
+        """
+        Test that Sodxtrmts wrapper works an the normal path.
+        """
+        print 'Testing Sodxtrmts with default values'
+        results = run_wrapper('Sodxtrmts', self.data_params, self.app_params)
+        self.assertIsInstance(results, list)
+        self.assertNotEqual(results, [])
+
+    def test_grid(self):
+        dp = copy.deepcopy(self.data_params)
+        ap = copy.deepcopy(self.app_params)
+        del dp['station_id']
+        dp['location'] = '-119,39'
+        dp['grid'] = '1'
+        dp['start_date'] = '19700101'
+        dp['end_date'] = '19800101'
+        self.assertIsInstance(results, list)
+        self.assertNotEqual(results, [])
+
+    def test_elements(self):
+        print 'Testing Sodxtrmts elements'
+        for el in ['maxt', 'mint', 'avgt','dtr', 'hdd', 'cdd', 'gdd','pet']:
+            dp = copy.deepcopy(self.data_params)
+            ap = copy.deepcopy(self.app_params)
+            dp['element'] = el
+            #Shorten time range
+            dp['start_date'] = '20000101'
+            dp['end_date'] = '20050101'
+            results = run_wrapper('Sodxtrmts', dp, ap)
+            self.assertIsInstance(results, list)
+            self.assertNotEqual(results, [])
+
+    def test_statistic(self):
+        print 'Testing Sodxtrmts statistic'
+        #NOTE: ndays not an option for sodxtrmts
+        for stat in ['mmax', 'mmin', 'mave','msum', 'rmon', 'sd']:
+            dp = copy.deepcopy(self.data_params)
+            ap = copy.deepcopy(self.app_params)
+            ap['statistic'] = stat
+            #Shorten time range
+            dp['start_date'] = '20000101'
+            dp['end_date'] = '20050101'
+            results = run_wrapper('Sodxtrmts', dp, ap)
+            self.assertIsInstance(results, list)
+            self.assertNotEqual(results, [])
+    def test_metric(self):
+        print 'Testing Sodxtrmts metric'
+        dp = copy.deepcopy(self.data_params)
+        ap = copy.deepcopy(self.app_params)
+        dp['units'] = 'metric'
+        ap['units'] = 'metric'
+        results = run_wrapper('Sodxtrmts', dp, ap)
+        self.assertIsInstance(results, list)
+        self.assertNotEqual(results, [])
+
+    def test_depart(self):
+        print 'Testing Sodxtrmts departures from averages'
+        dp = copy.deepcopy(self.data_params)
+        ap = copy.deepcopy(self.app_params)
+        ap['departures_from_averages'] = 'T'
+        results = run_wrapper('Sodxtrmts', dp, ap)
+        self.assertIsInstance(results, list)
+        self.assertNotEqual(results, [])
+
 
 ############
 # RUN TESTS

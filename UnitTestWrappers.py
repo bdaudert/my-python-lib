@@ -1,6 +1,6 @@
 import unittest
 
-import WRCCWrappers
+import WRCCWrappers, WRCCData
 import copy
 
 ###########
@@ -34,69 +34,80 @@ def run_wrapper(app, data_params, app_params):
 
 class TestSodxtrmts(unittest.TestCase):
     def setUp(self):
-        self.data_params = {
-            'sid':'266779',
-            'start_date':'POR',
-            'end_date':'POR',
-            'element':'pcpn',
-            'units':'english',
-            'base_temperature':'64'
-        }
-        self.app_params = {
-            'el_type':'pcpn',
-            'base_temperature':'64',
-            'units':'english',
-            'max_missing_days':'5',
-            'start_month':'01',
-            'statistic_period': 'monthly',
-            'statistic': 'msum',
-            'frequency_analysis': 'F',
-            'departures_from_averages':'F',
-            'threshold_for_less_or_greater':0.5,
-            'threshold_low_for_between':0.1,
-            'threshold_high_for_between':1.0
-        }
+        self.data_params = WRCCData.DEFAULT_DATA_PARAMS['monann']
+        self.app_params = WRCCData.DEFAULT_APP_PARAMS['monann']
+
     def test_sodxtrmts(self):
         """
         Test that Sodxtrmts wrapper works an the normal path.
         """
-        print 'Testing Sodxtrmts'
+        print 'Testing Sodxtrmts with default values'
         results = run_wrapper('Sodxtrmts', self.data_params, self.app_params)
         self.assertIsInstance(results, list)
         self.assertNotEqual(results, [])
+    '''
+    def test_grid(self):
+        dp = copy.deepcopy(self.data_params)
+        ap = copy.deepcopy(self.app_params)
+        del dp['station_id']
+        dp['location'] = '-119,39'
+        dp['grid'] = '1'
+        dp['start_date'] = '19700101'
+        dp['end_date'] = '19800101'
+        self.assertIsInstance(results, list)
+        self.assertNotEqual(results, [])
+    '''
 
     def test_elements(self):
         print 'Testing Sodxtrmts elements'
-        for el in ['maxt', 'mint', 'avgt','dtr', 'hdd', 'cdd', 'gdd']:
+        for el in ['maxt', 'mint', 'avgt','dtr', 'hdd', 'cdd', 'gdd','pet']:
             dp = copy.deepcopy(self.data_params)
             ap = copy.deepcopy(self.app_params)
             dp['element'] = el
-            ap['el_type'] = el
-            results = run_wrapper('Sodxtrmts', self.data_params, self.app_params)
+            #Shorten time range
+            dp['start_date'] = '20000101'
+            dp['end_date'] = '20050101'
+            results = run_wrapper('Sodxtrmts', dp, ap)
             self.assertIsInstance(results, list)
             self.assertNotEqual(results, [])
-        self.assertIsInstance(results, list)
-        self.assertNotEqual(results, [])
 
-    def test_stat(self):
+    def test_statistic(self):
         print 'Testing Sodxtrmts statistic'
-        for stat in ['mmax', 'mmin', 'mave','msum', 'rmon', 'sd','ndays']:
+        #NOTE: ndays not an option for sodxtrmts
+        for stat in ['mmax', 'mmin', 'mave','msum', 'rmon', 'sd']:
             dp = copy.deepcopy(self.data_params)
             ap = copy.deepcopy(self.app_params)
             ap['statistic'] = stat
-            results = run_wrapper('Sodxtrmts', self.data_params, self.app_params)
+            #Shorten time range
+            dp['start_date'] = '20000101'
+            dp['end_date'] = '20050101'
+            results = run_wrapper('Sodxtrmts', dp, ap)
             self.assertIsInstance(results, list)
             self.assertNotEqual(results, [])
 
+    def test_metric(self):
+        print 'Testing Sodxtrmts metric'
+        dp = copy.deepcopy(self.data_params)
+        ap = copy.deepcopy(self.app_params)
+        dp['units'] = 'metric'
+        ap['units'] = 'metric'
+        results = run_wrapper('Sodxtrmts', dp, ap)
+        self.assertIsInstance(results, list)
+        self.assertNotEqual(results, [])
+
+    def test_depart(self):
+        print 'Testing Sodxtrmts departures from averages'
+        dp = copy.deepcopy(self.data_params)
+        ap = copy.deepcopy(self.app_params)
+        ap['departures_from_averages'] = 'T'
+        results = run_wrapper('Sodxtrmts', dp, ap)
+        self.assertIsInstance(results, list)
+        self.assertNotEqual(results, [])
+
 class TestSodsum(unittest.TestCase):
     def setUp(self):
-        self.data_params = {
-            'sid': '266779',
-            'start_date': '20100101',
-            'end_date': '20100131',
-            'element': 'multi'
-        }
-        self.app_params = {}
+        self.data_params = WRCCData.DEFAULT_DATA_PARAMS['sodsum']
+        self.app_params =  WRCCData.DEFAULT_APP_PARAMS['sodsum']
 
     def test_sodsum(self):
         """
@@ -155,18 +166,8 @@ class TestSodsum(unittest.TestCase):
 
 class TestSodsumm(unittest.TestCase):
     def setUp(self):
-        self.data_params = {
-            'sid':'266779',
-            'units':'english',
-            'start_date':'1971',
-            'end_date':'2000',
-            'element':'all'
-        }
-        self.app_params = {
-            'el_type':'both',
-            'units':'english',
-            'max_missing_days':'5'
-        }
+        self.data_params = WRCCData.DEFAULT_DATA_PARAMS['sodsumm']
+        self.app_params =  WRCCData.DEFAULT_APP_PARAMS['sodsumm']
         self.results_keys = {
             'both':['prsn', 'temp'],
             'hc':['hdd','cdd'],
@@ -189,14 +190,8 @@ class TestSodsumm(unittest.TestCase):
 
 class TestSoddyrec(unittest.TestCase):
     def setUp(self):
-        self.data_params = {
-            'sid':'266779',
-            'units':'english',
-            'start_date':'19710101',
-            'end_date':'19991231',
-            'element':'all'
-        }
-        self.app_params = {}
+        self.data_params = WRCCData.DEFAULT_DATA_PARAMS['soddyrec']
+        self.app_params =  WRCCData.DEFAULT_APP_PARAMS['soddyrec']
 
     def test_soddyrec(self):
         """
@@ -210,16 +205,9 @@ class TestSoddyrec(unittest.TestCase):
 
 class TestSoddynorm(unittest.TestCase):
     def setUp(self):
-        self.data_params = {
-            'sid':'266779',
-            'units':'english',
-            'start_date':'1971',
-            'end_date':'1999',
-        }
-        self.app_params = {
-            'filter_type':'rm',
-            'filter_days':9
-        }
+        self.data_params = WRCCData.DEFAULT_DATA_PARAMS['soddynorm']
+        self.app_params =  WRCCData.DEFAULT_APP_PARAMS['soddynorm']
+
     def test_soddynorm(self):
         """
         Test that Sodsumm wrapper works on the normal path.
@@ -228,6 +216,7 @@ class TestSoddynorm(unittest.TestCase):
         results = run_wrapper('Soddynorm', self.data_params, self.app_params)
         self.assertIsInstance(results, list)
         self.assertNotEqual(results, [])
+
 
 if __name__ == '__main__':
     unittest.main()

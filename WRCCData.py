@@ -1,4 +1,4 @@
-#!/usr/bin/python
+
 
 '''
 Module WRCCData
@@ -1278,6 +1278,8 @@ TABLE_LIST_NO_GRAPHICS = {
 ###################################
 TEST_STATIONS = ['RENO TAHOE INTL AP, 266779','RENO TAHOE INTL AP','266779']
 
+TEST_DATES = [['ABCDEFGH',1234],['YO','1234']]
+
 TEST_AREAS = {
     'station_id':'303184',
     'station_ids':'72583,266514',
@@ -1290,7 +1292,7 @@ TEST_AREAS = {
     'shape':'-118.33,34.15,-118.15,34.06,-118.28,33.99'
 }
 
-DEFAULT_DATA_PARAMS = {
+SCENIC_DATA_PARAMS = {
     'station_finder': {
         'area_type':'state',
         'state':'Nv',
@@ -1302,7 +1304,7 @@ DEFAULT_DATA_PARAMS = {
     },
     'single_lister':{
         'area_type':'station_id',
-        'station_id':'266779',
+        'station_id':'RENO TAHOE INTL AP, 266779',
         'elements':['maxt', 'mint', 'pcpn'],
         'add_special_degree_days':'F',
         'start_date':'POR',
@@ -1314,7 +1316,8 @@ DEFAULT_DATA_PARAMS = {
     },
     'multi_lister':{
         'area_type':'state',
-        'station_id':'NV',
+        'state':'NV',
+        'data_type':'station',
         'elements':['maxt', 'mint', 'pcpn'],
         'add_special_degree_days':'F',
         'start_date':fourtnight,
@@ -1324,6 +1327,27 @@ DEFAULT_DATA_PARAMS = {
         'spatial_summary':'mean'
     },
     'monann':{
+        'station_id':'RENO TAHOE INTL AP, 266779',
+        'start_year':'POR',
+        'end_year':'POR',
+        'element':'pcpn',
+        'statistic':'msum',
+        'units':'english',
+        'max_missing_days':'5',
+        'departures_from_averages':'F'
+    },
+}
+
+WRAPPERS = {
+    'Sodxtrmts':'sodxtrmts_wrapper',
+    'Sodsum':'sodsum_wrapper',
+    'Sodsumm':'sodsumm_wrapper',
+    'Soddyrec':'soddyrec_wrapper',
+    'Soddynorm':'soddynorm_wrapper'
+}
+
+WRAPPER_DATA_PARAMS = {
+    'sodxtrmts':{
         'sid':'266779',
         'start_date':'POR',
         'end_date':'POR',
@@ -1357,12 +1381,8 @@ DEFAULT_DATA_PARAMS = {
         'end_date':'1999',
     }
 }
-
-DEFAULT_APP_PARAMS = {
-    'station_finder':{},
-    'single_lister':{},
-    'multi_lister':{},
-    'monann':{
+WRAPPER_APP_PARAMS = {
+    'sodxtrmts':{
         'units':'english',
         'max_missing_days':'5',
         'start_month':'01',

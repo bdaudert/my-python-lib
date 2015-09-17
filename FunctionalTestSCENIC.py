@@ -174,7 +174,7 @@ class setUp(object):
 ###########
 class Test_station_finder(unittest.TestCase):
     def setUp(self):
-        self.params = WRCCData.SCENIC_DATA_PARAMS['station_finder']
+        self.params = copy.deepcopy(WRCCData.SCENIC_DATA_PARAMS['station_finder'])
         self.setUp = setUp('station_finder')
 
     def test_default(self):
@@ -229,7 +229,7 @@ class Test_station_finder(unittest.TestCase):
 
 class Test_single_lister(unittest.TestCase):
     def setUp(self):
-        self.params = WRCCData.SCENIC_DATA_PARAMS['single_lister']
+        self.params = self.params = copy.deepcopy(WRCCData.SCENIC_DATA_PARAMS['single_lister'])
         self.setUp = setUp('single_lister')
 
     def test_default(self):
@@ -264,7 +264,7 @@ class Test_single_lister(unittest.TestCase):
 
 class Test_multi_lister(unittest.TestCase):
     def setUp(self):
-        self.params = WRCCData.SCENIC_DATA_PARAMS['multi_lister']
+        self.params = copy.deepcopy(WRCCData.SCENIC_DATA_PARAMS['multi_lister'])
         self.setUp = setUp('multi_lister')
 
     def test_default(self):
@@ -302,7 +302,7 @@ class Test_multi_lister(unittest.TestCase):
 
 class Test_monann(unittest.TestCase):
     def setUp(self):
-        self.params = WRCCData.SCENIC_DATA_PARAMS['monann']
+        self.params = self.params = copy.deepcopy(WRCCData.SCENIC_DATA_PARAMS['monann'])
         self.setUp = setUp('monann')
 
     def test_default(self):

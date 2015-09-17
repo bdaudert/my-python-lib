@@ -1339,11 +1339,11 @@ SCENIC_DATA_PARAMS = {
 }
 
 WRAPPERS = {
-    'Sodxtrmts':'sodxtrmts_wrapper',
-    'Sodsum':'sodsum_wrapper',
-    'Sodsumm':'sodsumm_wrapper',
-    'Soddyrec':'soddyrec_wrapper',
-    'Soddynorm':'soddynorm_wrapper'
+    'sodxtrmts':'sodxtrmts_wrapper',
+    'sodsum':'sodsum_wrapper',
+    'sodsumm':'sodsumm_wrapper',
+    'soddyrec':'soddyrec_wrapper',
+    'soddynorm':'soddynorm_wrapper'
 }
 
 WRAPPER_DATA_PARAMS = {

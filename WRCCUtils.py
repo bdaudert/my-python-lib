@@ -63,8 +63,8 @@ def get_data_type(form):
 
 def check_request_size(form):
     '''
-    Returns True if request is deemed large
-    False otherwise
+    Returns number of days and estimate
+    or number of points of request
     '''
     num_points = 1000000; num_days = 0
     #Find num_days
@@ -111,7 +111,6 @@ def check_request_size(form):
             'meta':'valid_daterange'
         }
         meta_data = AcisWS.StnMeta(meta_params)
-
         if 'meta' in meta_data.keys() and isinstance(meta_data['meta'], list):
             num_points = len(meta_data['meta'])
             return num_points, num_days
@@ -120,41 +119,66 @@ def check_request_size(form):
         #Estimate num_points by using smallest grid (4km)
         #using bbox estimate
         try:
-            bl = at_val.split(',')
+            bl = [float(v) for v in at_val.split(',')]
             dist_1 = haversine_distance(bl[0], bl[1], bl[2], bl[1])
             dist_2 = haversine_distance(bl[0], bl[1], bl[0], bl[3])
-            num_points = round(dist_1 / 4.0 * dist_2 / 4.0)
-            return num_poinst, num_days
-        except:
-            return num_poinst, num_days
-    elif data_type == 'grid':
-        at_list = ['county','county_warning_ara','climate_division','basin','state']
-        if form['area_type'] not in at_list:
+            num_points = int(round(dist_1 / 4.0 * dist_2 / 4.0))
             return num_points, num_days
+        except:
+            return num_points, num_days
+    elif data_type == 'grid' and not 'shape' in form.keys():
+        at_list = ['county','county_warning_area','climate_division','basin','state']
+        if str(form['area_type']) not in at_list:
+            return num_points, num_days
+        if form['area_type'] == 'state':
+            ID = form[form['area_type']]
+            name = ID
+            state = form[form['area_type']].lower()
+        else:
+            json_path = '/www/apps/csc/dj-projects/my_acis/media/json/US_' + form['area_type'] +'.json'
+            ID, name = find_id_and_name(form[form['area_type']],json_path)
+            state = form['overlay_state'].lower()
         #Run general call to ge bboxes,
         #take larges and estimate dist based on 4km grid
+        area = WRCCData.FORM_TO_META_PARAMS[form['area_type']]
+        params = {"state":state,"meta":"bbox,id"}
+        meta_data = AcisWS.General(area, params)
+        #Find bbox
         try:
-            state = form['overlay_state'].lower()
-            area = WRCCUtils.FORM_TO_META_PARAMS(form['area_type'])
-            params = {"state":state,"meta":"bbox,geojson,id"}
-            json_path = settings.MEDIA_DIR + '/json/US_' + form['area_type'] +'.json'
-            ID, name = find_id_and_name(form[form['area_type']],json_path)
-            meta_data = AcisWs.General(area, params)
-            #take firs bbox
+            meta_data = AcisWS.General(area, params)
             if 'meta' in meta_data.keys() and isinstance(meta_data['meta'], list):
-                #Find bbox
                 for item in meta_data['meta']:
-                    if item['id'] != ID:continue
-
-                    bl = meta_data['meta'][0]
+                    if item['id'].lower() != ID.lower():continue
+                    #Estimate numpoints based on 4km grid
+                    bl = item['bbox']
                     dist_1 = haversine_distance(bl[0], bl[1], bl[2], bl[1])
                     dist_2 = haversine_distance(bl[0], bl[1], bl[0], bl[3])
-                    num_points = round(dist_1 / 4.0 * dist_2 / 4.0)
-                    return num_poinst, num_days
-            return num_poinst, num_days
+                    num_points = int(round(dist_1 / 4.0 * dist_2 / 4.0))
+                    return num_points, num_days
         except:
             return num_points, num_days
     return num_points, num_days
+
+def check_if_large_request(form,num_points,num_days):
+    '''
+    Args:
+
+    Returns
+        large_request: boolean
+            True if request is deemed large, False otherwise
+        data_summary:
+            temporal
+            spatial
+            none
+            windowed_data
+    '''
+    large_request = False
+    data_summary = 'none'
+    if 'data_summary' in form.keys():
+        request_type = form['data_summary']
+    if int(num_points) * int(num_days) > 100000:
+        large_request = True
+    return large_request, data_summary
 
 def get_meta_keys(form):
     '''

@@ -2321,13 +2321,19 @@ def form_to_display_list(key_order_list, form):
         form -- user form input dictionary
     Returns: List of [key,val] pairs
     '''
-    keys = [k for k in key_order_list]
+    if key_order_list is None:
+        keys = [str(k) for k in form.keys()]
+    else:
+        keys = [k for k in key_order_list]
     display_list = []
     for key in keys:
+        display_list.append([WRCCData.DISPLAY_PARAMS[key]])
+        '''
         try:
             display_list.append([WRCCData.DISPLAY_PARAMS[key]])
         except:
             display_list.append([''])
+        '''
     #Special case window for interannual
     if 'window' in keys:
         idx = keys.index(str(key))
@@ -2371,6 +2377,8 @@ def form_to_display_list(key_order_list, form):
                 else:
                     s = WRCCData.DISPLAY_PARAMS[form[form['data_summary']+'_summary']]
                     display_list[idx]= [s_type, s]
+            if 'data_summary' in form.keys() and form['data_summary'] =='none':
+                display_list[idx].append('none')
         elif key in ['spatial_summary','temporal_summary']:
             display_list[idx].append(WRCCData.DISPLAY_PARAMS[form[key]])
         elif key in ['elements', 'element']:

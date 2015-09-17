@@ -692,6 +692,7 @@ DISPLAY_PARAMS = {
     'elements':'Elements',
     'elems_long':'Elements',
     'elements_string': 'Elements String',
+    'add_special_degree_days':'Add special degree days',
     'degree_days':'Degree Days',
     'element_selection': 'Element Selection',
     'el_type':'Climate Element Type',
@@ -1346,6 +1347,8 @@ WRAPPERS = {
     'soddynorm':'soddynorm_wrapper'
 }
 
+
+#For functional testing we use data params/app params
 WRAPPER_DATA_PARAMS = {
     'sodxtrmts':{
         'sid':'266779',

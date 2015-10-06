@@ -303,8 +303,11 @@ def station_meta_to_json(by_type, val, el_list=None, time_range=None, constraint
     stn_list = []
     stn_json={
         'network_codes': WRCCData.KELLY_NETWORK_CODES,
-        'network_icons': WRCCData.KELLY_NETWORK_ICONS
+        'network_icons': WRCCData.KELLY_NETWORK_ICONS,
+        'overlay_type':by_type,
+        'overlay_val':val
     }
+
     if el_list:
         vX_list = [str(el) for el in el_list]
         vX_tuple = ','.join(vX_list)

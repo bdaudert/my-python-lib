@@ -26,6 +26,7 @@ fips_codes ={'al':'01','az':'02','ar':'03','ca':'04',\
 
 def get_US_station_meta():
     #params = {"bbox":"-119,39,-116,42","meta":"name,sids,valid_daterange","elems":"maxt,pcpn,mint,snow,snwd"}
+
     params = {
         "bbox":"-177.1,13.71,-61.48,76.63",
         "meta":"name,state,sids,valid_daterange",

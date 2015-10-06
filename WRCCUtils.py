@@ -1989,8 +1989,8 @@ def get_single_interannaul_data(form):
     start_window = sm + sd; end_window = em + ed
     #check if we skip a year
     year_change = False
-    doy_start = compute_doy_leap(start_window[0:2], start_window[0:4])
-    doy_end = compute_doy_leap(end_window[0:2], end_window[0:4])
+    doy_start = compute_doy_leap(start_window[0:2], start_window[2:4])
+    doy_end = compute_doy_leap(end_window[0:2], end_window[2:4])
     if doy_end < doy_start:year_change = True
     #Get windowed data
     windowed_data = get_windowed_data(data, acis_params['sdate'], acis_params['edate'], start_window, end_window)
@@ -2755,6 +2755,8 @@ def shapefile_to_ll(app_name, shp_file, feature_id):
     ##output_osr.ImportFromEPSG(4269)  ## NAD83
     ## Get the spatial reference
     input_ds = ogr.Open(shp_file)
+    if not input_ds:
+        return None
     input_layer = input_ds.GetLayer()
     ## Get the projection
     input_osr = input_layer.GetSpatialRef()

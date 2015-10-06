@@ -170,7 +170,7 @@ class GraphDictWriter(object):
                 subTitle = 'Location: ' + self.form['location']
         if 'start_month' in self.form.keys() and 'start_day' in self.form.keys():
             #Interannual/Intraannual
-            if 'grid' in self.form.keys():
+            if 'location' in self.form.keys():
                 subTitle = 'Grid: ' + WRCCData.GRID_CHOICES[str(self.form['grid'])][0] + ', '
             else:
                 subTitle = ''

@@ -1,11 +1,18 @@
-import unittest
+import WRCCUtils, WRCCData, DJANGOUtils, AcisWS, WRCCClasses, WRCCWrappers
+import my_acis_settings as settings
 
-import WRCCWrappers, WRCCData
+import unittest
+import os, sys
 import copy
+import json
+
+import logging
 
 ###########
 #STATICS
 ###########
+log_dir = '/tmp/'
+log_file = 'FunctionalTestWRAPPERS.log'
 
 ###########
 #FUNCTIONS
@@ -28,9 +35,32 @@ def run_wrapper(app, data_params, app_params):
     return results
 
 
-#############
-#TEST CLASSES
-#############
+###########
+#ClASSES
+###########
+class LoggerWriter:
+    '''
+    Writes stderr and stdout to log file
+    '''
+    def __init__(self, level):
+        # self.level is really like using log.debug(message)
+        # at least in my case
+        self.level = level
+
+    def write(self, message):
+        # if statement reduces the amount of newlines that are
+        # printed to the logger
+        if message != '\n':
+            self.level(message)
+
+    def flush(self):
+        # create a flush method so things can be flushed when
+        # the system wants to. Not sure if simply 'printing'
+        # sys.stderr is the correct way to do it, but it seemed
+        # to work properly for me.
+        self.level(sys.stderr)
+
+
 class Test_sodxtrmts(unittest.TestCase):
     def setUp(self):
         self.data_params = WRCCData.WRAPPER_DATA_PARAMS['sodxtrmts']
@@ -40,13 +70,20 @@ class Test_sodxtrmts(unittest.TestCase):
         """
         Test that Sodxtrmts wrapper works with default values.
         """
-        print 'Testing Sodxtrmts with default values'
+        msg = 'Testing Sodxtrmts with default values'
+        logger.info(msg)
         results = run_wrapper('Sodxtrmts', self.data_params, self.app_params)
-        self.assertIsInstance(results, list)
-        self.assertNotEqual(results, [])
-
+        try:
+            self.assertIsInstance(results, list)
+        except AssertionError as err:
+            logger.error('AssertionError' + str(err))
+        try:
+            self.assertNotEqual(results, [])
+        except AssertionError as err:
+            logger.error('AssertionError' + str(err))
     def test_elements(self):
-        print 'Testing Sodxtrmts elements'
+        msg = 'Testing Sodxtrmts elements'
+        logger.info(msg)
         for el in ['maxt', 'mint', 'avgt','dtr', 'hdd', 'cdd', 'gdd','pet']:
             dp = copy.deepcopy(self.data_params)
             ap = copy.deepcopy(self.app_params)
@@ -55,11 +92,18 @@ class Test_sodxtrmts(unittest.TestCase):
             dp['start_date'] = '20000101'
             dp['end_date'] = '20050101'
             results = run_wrapper('Sodxtrmts', dp, ap)
-            self.assertIsInstance(results, list)
-            self.assertNotEqual(results, [])
+            try:
+                self.assertIsInstance(results, list)
+            except AssertionError as err:
+                logger.error('AssertionError' + str(err))
+            try:
+                self.assertNotEqual(results, [])
+            except AssertionError as err:
+                logger.error('AssertionError' + str(err))
 
     def test_statistic(self):
-        print 'Testing Sodxtrmts statistic'
+        msg = 'Testing Sodxtrmts statistic'
+        logger.info(msg)
         #NOTE: ndays not an option for sodxtrmts
         for stat in ['mmax', 'mmin', 'mave','msum', 'rmon', 'sd']:
             dp = copy.deepcopy(self.data_params)
@@ -69,11 +113,18 @@ class Test_sodxtrmts(unittest.TestCase):
             dp['start_date'] = '19400101'
             dp['end_date'] = '19450101'
             results = run_wrapper('Sodxtrmts', dp, ap)
-            self.assertIsInstance(results, list)
-            self.assertNotEqual(results, [])
+            try:
+                self.assertIsInstance(results, list)
+            except AssertionError as err:
+                logger.error('AssertionError' + str(err))
+            try:
+                self.assertNotEqual(results, [])
+            except AssertionError as err:
+                logger.error('AssertionError' + str(err))
 
     def test_metric(self):
-        print 'Testing Sodxtrmts metric'
+        msg = 'Testing Sodxtrmts metric'
+        logger.info(msg)
         dp = copy.deepcopy(self.data_params)
         ap = copy.deepcopy(self.app_params)
         dp['units'] = 'metric'
@@ -82,11 +133,18 @@ class Test_sodxtrmts(unittest.TestCase):
         dp['start_date'] = '19770501'
         dp['end_date'] = '19811012'
         results = run_wrapper('Sodxtrmts', dp, ap)
-        self.assertIsInstance(results, list)
-        self.assertNotEqual(results, [])
+        try:
+            self.assertIsInstance(results, list)
+        except AssertionError as err:
+            logger.error('AssertionError' + str(err))
+        try:
+            self.assertNotEqual(results, [])
+        except AssertionError as err:
+            logger.error('AssertionError' + str(err))
 
     def test_depart(self):
-        print 'Testing Sodxtrmts departures from averages'
+        msg = 'Testing Sodxtrmts departures from averages'
+        logger.info(msg)
         dp = copy.deepcopy(self.data_params)
         ap = copy.deepcopy(self.app_params)
         ap['departures_from_averages'] = 'T'
@@ -94,8 +152,14 @@ class Test_sodxtrmts(unittest.TestCase):
         dp['start_date'] = '20000101'
         dp['end_date'] = '20050101'
         results = run_wrapper('Sodxtrmts', dp, ap)
-        self.assertIsInstance(results, list)
-        self.assertNotEqual(results, [])
+        try:
+            self.assertIsInstance(results, list)
+        except AssertionError as err:
+            logger.error('AssertionError' + str(err))
+        try:
+            self.assertNotEqual(results, [])
+        except AssertionError as err:
+            logger.error('AssertionError' + str(err))
 
 class Test_sodsum(unittest.TestCase):
     def setUp(self):
@@ -106,7 +170,8 @@ class Test_sodsum(unittest.TestCase):
         """
         Test that Sodsum wrapper works with default values.
         """
-        print 'Testing Sodsum'
+        msg = 'Testing Sodsum'
+        logger.info(msg)
         results = results = run_wrapper('Sodsum', self.data_params, self.app_params)
         # results is a defaultdict(<type 'dict'>,
         # {0: {
@@ -115,17 +180,50 @@ class Test_sodsum(unittest.TestCase):
         #    'PSBL': '30', 'MISSG': 0, 'maxt': 31,
         #    'start': '20100101', 'end': '20100131',
         #    'station_name': 'RENO TAHOE INTL AP'}})
-        self.assertIsInstance(results, dict)
-        self.assertIn('station_id', results)
-        self.assertIn('PRSNT', results)
-        self.assertIn('LNGMS', results)
-        self.assertIn('LNGPR', results)
-        self.assertIn('PSBL', results)
-        self.assertIn('MISSG', results)
-        self.assertIn('maxt', results)
-        self.assertIn('start', results)
-        self.assertIn('end', results)
-        self.assertIn('station_name', results)
+        try:
+            self.assertIsInstance(results, dict)
+        except AssertionError as err:
+            logger.error('AssertionError' + str(err))
+        try:
+            self.assertIn('station_id', results)
+        except AssertionError as err:
+            logger.error('AssertionError' + str(err))
+        try:
+            self.assertIn('PRSNT', results)
+        except AssertionError as err:
+            logger.error('AssertionError' + str(err))
+        try:
+            self.assertIn('LNGMS', results)
+        except AssertionError as err:
+            logger.error('AssertionError' + str(err))
+        try:
+            self.assertIn('LNGPR', results)
+        except AssertionError as err:
+            logger.error('AssertionError' + str(err))
+        try:
+            self.assertIn('PSBL', results)
+        except AssertionError as err:
+            logger.error('AssertionError' + str(err))
+        try:
+            self.assertIn('MISSG', results)
+        except AssertionError as err:
+            logger.error('AssertionError' + str(err))
+        try:
+            self.assertIn('maxt', results)
+        except AssertionError as err:
+            logger.error('AssertionError' + str(err))
+        try:
+            self.assertIn('start', results)
+        except AssertionError as err:
+            logger.error('AssertionError' + str(err))
+        try:
+            self.assertIn('end', results)
+        except AssertionError as err:
+            logger.error('AssertionError' + str(err))
+        try:
+            self.assertIn('station_name', results)
+        except AssertionError as err:
+            logger.error('AssertionError' + str(err))
 
 class Test_sodsumm(unittest.TestCase):
     def setUp(self):
@@ -143,12 +241,19 @@ class Test_sodsumm(unittest.TestCase):
         """
         Test that Sodsumm wrapper works on the normal path.
         """
-        print 'Testing Sodsumm'
+        msg = 'Testing Sodsumm'
+        logger.info(msg)
         results = run_wrapper('Sodsumm', self.data_params, self.app_params)
-        self.assertIsInstance(results, dict)
+        try:
+            self.assertIsInstance(results, dict)
+        except AssertionError as err:
+            logger.error('AssertionError' + str(err))
         keys = self.results_keys[self.app_params['el_type']]
         for key in keys:
-            self.assertIn(key, results)
+            try:
+                self.assertIn(key, results)
+            except AssertionError as err:
+                logger.error('AssertionError' + str(err))
         #self.assertIn('station_id', results)
 
 class Test_soddyrec(unittest.TestCase):
@@ -160,11 +265,21 @@ class Test_soddyrec(unittest.TestCase):
         """
         Test that Soddyrec wrapper works with default values.
         """
-        print 'Testing Soddyrec'
+        msg = 'Testing Soddyrec'
+        logger.info(msg)
         results = run_wrapper('Soddyrec', self.data_params, self.app_params)
-        self.assertIsInstance(results, dict)
-        self.assertIsInstance(results[0], list)
-        self.assertNotEqual(results, [])
+        try:
+            self.assertIsInstance(results, dict)
+        except AssertionError as err:
+            logger.error('AssertionError' + str(err))
+        try:
+            self.assertIsInstance(results[0], list)
+        except AssertionError as err:
+            logger.error('AssertionError' + str(err))
+        try:
+            self.assertNotEqual(results, [])
+        except AssertionError as err:
+            logger.error('AssertionError' + str(err))
 
 class Test_soddynorm(unittest.TestCase):
     def setUp(self):
@@ -175,11 +290,25 @@ class Test_soddynorm(unittest.TestCase):
         """
         Test that Sodsumm wrapper works with default values.
         """
-        print 'Testing Soddynorm'
+        msg = 'Testing Soddynorm'
+        logger.info(msg)
         results = run_wrapper('Soddynorm', self.data_params, self.app_params)
-        self.assertIsInstance(results, list)
-        self.assertNotEqual(results, [])
+        try:
+            self.assertIsInstance(results, list)
+        except AssertionError as err:
+            logger.error('AssertionError' + str(err))
+        try:
+            self.assertNotEqual(results, [])
+        except AssertionError as err:
+            logger.error('AssertionError' + str(err))
 
 
 if __name__ == '__main__':
+    log_file_path = log_dir + log_file
+    if os.path.isfile(log_file_path):
+        os.remove(log_file_path)
+    Logger = WRCCClasses.Logger(log_dir,log_file,log_file.split('.')[0])
+    logger = Logger.start_logger()
+    sys.stdout = LoggerWriter(logger.info)
+    sys.stderr = LoggerWriter(logger.error)
     unittest.main()

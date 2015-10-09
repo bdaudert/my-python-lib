@@ -1,14 +1,46 @@
-import unittest
-
 import WRCCUtils, WRCCData, DJANGOUtils, AcisWS, WRCCClasses
+import my_acis_settings as settings
+
+import unittest
+import os, sys
 import copy
 import json
+
+import logging
 
 ###########
 #STATICS
 ###########
+log_dir = '/tmp/'
+log_file = 'FunctionalTestSCENIC.log'
+
 ###########
 #ClASSES
+###########
+class LoggerWriter:
+    '''
+    Writes stderr and stdout to log file
+    '''
+    def __init__(self, level):
+        # self.level is really like using log.debug(message)
+        # at least in my case
+        self.level = level
+
+    def write(self, message):
+        # if statement reduces the amount of newlines that are
+        # printed to the logger
+        if message != '\n':
+            self.level(message)
+
+    def flush(self):
+        # create a flush method so things can be flushed when
+        # the system wants to. Not sure if simply 'printing'
+        # sys.stderr is the correct way to do it, but it seemed
+        # to work properly for me.
+        self.level(sys.stderr)
+
+
+
 class setUp(object):
     '''
     Sets up forms and initials for application
@@ -178,29 +210,45 @@ class Test_station_finder(unittest.TestCase):
         self.setUp = setUp('station_finder')
 
     def test_default(self):
-        print 'Testing Station Finder with default values'
+        msg = 'Testing Station Finder with default values'
+        logger.info(msg)
         #Copy parameters
         params = copy.deepcopy(self.params)
         #Test Initializers
         initial, checkbox_vals, err = self.setUp.setInitial(params)
-        if err is not None:print err
-        self.assertIsNone(err)
+        if err is not None:
+            logger.error(err)
+        try:
+            self.assertIsNone(err)
+        except AssertionError as err:
+            logger.error('AssertionError' + str(err))
         form, err  = self.setUp.setForm(params)
-        if err is not None:print err
-        self.assertIsNone(err)
+        if err is not None:
+            logger.error(err)
+        try:
+            self.assertIsNone(err)
+        except AssertionError as err:
+            logger.error('AssertionError' + str(err))
         form_cleaned, err  = self.setUp.setFormCleaned(params)
-        if err is not None:print err
-        self.assertIsNone(err)
+        if err is not None:
+            logger.error(err)
+        try:
+            self.assertIsNone(err)
+        except AssertionError as err:
+            logger.error('AssertionError' + str(err))
         #Run station find
         station_json, f_name = self.setUp.run_station_finder(form_cleaned)
         with self.assertRaises(ValueError):
             try:
-                json_loads(station_json)
+                json.loads(station_json)
             except:
                 raise ValueError
+            if ValueError:
+                logger.error('STATION FNDER: cannot oad json data')
 
     def test_station_finder_areas(self):
-        print 'Testing Station Finder area options'
+        msg = 'Testing Station Finder area options'
+        logger.info(msg)
         params = copy.deepcopy(self.params)
         test_areas = ['station_id','station_ids','county',\
         'county_warning_area','climate_division','basin','shape']
@@ -210,22 +258,37 @@ class Test_station_finder(unittest.TestCase):
             params[at] = WRCCData.TEST_AREAS[at]
             #Test Initializers
             initial, checkbox_vals, err = self.setUp.setInitial(params)
-            if err is not None:print err
-            self.assertIsNone(err)
+            if err is not None:
+                logger.error(err)
+            try:
+                self.assertIsNone(err)
+            except AssertionError as err:
+                logger.error('AssertionError' + str(err))
             form, err  = self.setUp.setForm(params)
-            if err is not None:print err
-            self.assertIsNone(err)
+            if err is not None:
+                logger.error(err)
+            try:
+                self.assertIsNone(err)
+            except AssertionError as err:
+                logger.error('AssertionError' + str(err))
             form_cleaned, err  = self.setUp.setForm(params)
-            if err is not None:print err
-            self.assertIsNone(err)
+            if err is not None:
+                logger.error(err)
+            try:
+                self.assertIsNone(err)
+            except AssertionError as err:
+                logger.error('AssertionError' + str(err))
             #Run station find
-            print 'Testing station finder with area ' + at
+            msg = 'Testing station finder with area ' + at
+            logger.info(msg)
             station_json, f_name = self.setUp.run_station_finder(form_cleaned)
             with self.assertRaises(ValueError):
                 try:
-                    json_loads(station_json)
+                    json.loads(station_json)
                 except:
                     raise ValueError
+                if ValueError:
+                    logger.error('STATION FINDER: cannot load json data')
 
 class Test_single_lister(unittest.TestCase):
     def setUp(self):
@@ -237,30 +300,52 @@ class Test_single_lister(unittest.TestCase):
         Run a test for each of the parameters
         in the test parameter set.
         """
-        print 'Testing Single Lister with default values'
+        msg = 'Testing Single Lister with default values'
+        logger.info(msg)
         params = copy.deepcopy(self.params)
         results, err = self.setUp.run_single_lister(params)
-        if err is not None:print err
-        self.assertIsNone(err)
-        self.assertIsInstance(results, dict)
+        if err is not None:
+            logger.error(err)
+        try:
+            self.assertIsNone(err)
+        except AssertionError as err:
+            logger.error('AssertionError' + str(err))
+        try:
+            self.assertIsInstance(results, dict)
+        except AssertionError as err:
+            logger.error('AssertionError' + str(err))
         try:
             self.assertIn('data',results)
             self.assertIsInstance(results['data'], list)
             self.assertNotEqual(results['data'],[])
         except:
-            self.assertIn('smry', results)
-            self.assertIsInstance(results['smry'], list)
-            self.assertNotEqual(results['smry'],[])
+            try:
+                self.assertIn('smry', results)
+                self.assertIsInstance(results['smry'], list)
+                self.assertNotEqual(results['smry'],[])
+            except AssertionError as err:
+                logger.error('AssertionError' + str(err))
 
     def test_find_station_id_name(self):
-        print 'Testing Station ID/NAME finder for Single Lister'
+        msg = 'Testing Station ID/NAME finder for Single Lister'
+        logger.info(msg)
         for station in WRCCData.TEST_STATIONS:
-            print 'Station: ' + station
+            msg =  'Station: ' + station
+            logger.info(msg)
             station_json = '/www/apps/csc/dj-projects/my_acis/media/json/US_station_id.json'
             stn_id, stn_name = WRCCUtils.find_id_and_name(station,station_json)
-            self.assertIsInstance(stn_name, str)
-            self.assertIsInstance(stn_id, str)
-            self.assertNotEqual(stn_id,'')
+            try:
+                self.assertIsInstance(stn_name, str)
+            except AssertionError as err:
+                logger.error('AssertionError' + str(err))
+            try:
+                self.assertIsInstance(stn_id, str)
+            except AssertionError as err:
+                logger.error('AssertionError' + str(err))
+            try:
+                self.assertNotEqual(stn_id,'')
+            except AssertionError as err:
+                logger.error('AssertionError' + str(err))
 
 class Test_multi_lister(unittest.TestCase):
     def setUp(self):
@@ -272,33 +357,55 @@ class Test_multi_lister(unittest.TestCase):
         Run a test for each of the parameters
         in the test parameter set.
         """
-        print 'Testing Multi Lister with default values'
+        msg = 'Testing Multi Lister with default values'
+        logger.info(msg)
         params = copy.deepcopy(self.params)
         results, err = self.setUp.run_multi_lister(params)
-        if err is not None:print err
-        self.assertIsNone(err)
-        self.assertIsInstance(results, dict)
+        if err is not None:
+            logger.error(err)
+        try:
+            self.assertIsNone(err)
+        except AssertionError as err:
+                logger.error('AssertionError' + str(err))
+        try:
+            self.assertIsInstance(results, dict)
+        except AssertionError as err:
+                logger.error('AssertionError' + str(err))
         #Check that data or summary exists in results
         try:
             self.assertIn('data',results)
             self.assertIsInstance(results['data'], list)
             self.assertNotEqual(results['data'],[])
         except:
-            self.assertIn('smry', results)
-            self.assertIsInstance(results['smry'], list)
-            self.assertNotEqual(results['smry'],[])
+            try:
+                self.assertIn('smry', results)
+                self.assertIsInstance(results['smry'], list)
+                self.assertNotEqual(results['smry'],[])
+            except AssertionError as err:
+                logger.error('AssertionError' + str(err))
 
     def test_find_area(self):
-        print 'Testing Area finder for Multi Lister'
+        msg = 'Testing Area finder for Multi Lister'
+        logger.info(msg)
         for area_type, area in WRCCData.TEST_AREAS.iteritems():
             if area_type in ['station_id','station_ids','shape','location','state']:
                 continue
-            print 'Area: ' + area_type
+            msg = 'Area: ' + area_type
+            logger.info(msg)
             station_json = '/www/apps/csc/dj-projects/my_acis/media/json/US_'+area_type+'.json'
             ID, name = WRCCUtils.find_id_and_name(area,station_json)
-            self.assertIsInstance(name, str)
-            self.assertIsInstance(ID, str)
-            self.assertNotEqual(ID,'')
+            try:
+                self.assertIsInstance(name, str)
+            except AssertionError as err:
+                logger.error('AssertionError' + str(err))
+            try:
+                self.assertIsInstance(ID, str)
+            except AssertionError as err:
+                logger.error('AssertionError' + str(err))
+            try:
+                self.assertNotEqual(ID,'')
+            except AssertionError as err:
+                logger.error('AssertionError' + str(err))
 
 class Test_monann(unittest.TestCase):
     def setUp(self):
@@ -309,9 +416,13 @@ class Test_monann(unittest.TestCase):
         """
         Test that Sodxtrmts wrapper works an the normal path.
         """
-        print 'Testing Sodxtrmts with default values'
+        msg = 'Testing Sodxtrmts with default values'
+        logger.info(msg)
         results = self.setUp.run_monann(self.params)
-        self.assertNotEqual(results[0], [])
+        try:
+            self.assertNotEqual(results[0], [])
+        except AssertionError as err:
+            logger.error('AssertionError' + str(err))
 
     def test_grid(self):
         dp = copy.deepcopy(self.params)
@@ -322,10 +433,15 @@ class Test_monann(unittest.TestCase):
         dp['start_year'] = '1970'
         dp['end_year'] = '1980'
         results = self.setUp.run_monann(dp)
-        self.assertNotEqual(results[0], [])
+        try:
+            self.assertNotEqual(results[0], [])
+        except AssertionError as err:
+            logger.error('AssertionError' + str(err))
 
     def test_elements(self):
-        print 'Testing Sodxtrmts elements'
+        msg = 'Testing Sodxtrmts elements'
+        logger.info(msg)
+        sys.stdout.write(msg)
         for el in ['maxt', 'mint', 'avgt','dtr', 'hdd', 'cdd', 'gdd','pet']:
             dp = copy.deepcopy(self.params)
             dp['element'] = el
@@ -333,10 +449,14 @@ class Test_monann(unittest.TestCase):
             dp['start_date'] = '2010'
             dp['end_date'] = '2005'
             results = self.setUp.run_monann(dp)
-            self.assertNotEqual(results[0], [])
+            try:
+                self.assertNotEqual(results[0], [])
+            except AssertionError as err:
+                logger.error('AssertionError' + str(err))
 
     def test_statistic(self):
-        print 'Testing Sodxtrmts statistic'
+        msg = 'Testing Sodxtrmts statistic'
+        logger.info(msg)
         #NOTE: ndays not an option for sodxtrmts
         for stat in ['mmax', 'mmin', 'mave','msum', 'rmon', 'sd']:
             dp = copy.deepcopy(self.params)
@@ -345,26 +465,44 @@ class Test_monann(unittest.TestCase):
             dp['start_year'] = '1945'
             dp['end_year'] = '1950'
             results = self.setUp.run_monann(dp)
-            self.assertNotEqual(results[0], [])
+            try:
+                self.assertNotEqual(results[0], [])
+            except AssertionError as err:
+                logger.error('AssertionError' + str(err))
 
     def test_metric(self):
-        print 'Testing Sodxtrmts metric'
+        msg = 'Testing Sodxtrmts metric'
+        logger.info(msg)
         dp = copy.deepcopy(self.params)
         dp['units'] = 'metric'
         results = self.setUp.run_monann(dp)
-        self.assertNotEqual(results[0], [])
+        try:
+            self.assertNotEqual(results[0], [])
+        except AssertionError as err:
+            logger.error('AssertionError' + str(err))
 
     def test_depart(self):
-        print 'Testing Sodxtrmts departures from averages'
+        msg = 'Testing Sodxtrmts departures from averages'
+        logger.info(msg)
         dp = copy.deepcopy(self.params)
         dp['departures_from_averages'] = 'T'
         dp['start_year'] = '1998'
         dp['end_year'] = '2003'
         results = self.setUp.run_monann(dp)
-        self.assertNotEqual(results[0], [])
+        try:
+            self.assertNotEqual(results[0], [])
+        except AssertionError as err:
+            logger.error('AssertionError' + str(err))
 
 ############
 # RUN TESTS
 ###########
 if __name__ == '__main__':
+    log_file_path = log_dir + log_file
+    if os.path.isfile(log_file_path):
+        os.remove(log_file_path)
+    Logger = WRCCClasses.Logger(log_dir,log_file,log_file.split('.')[0])
+    logger = Logger.start_logger()
+    sys.stdout = LoggerWriter(logger.info)
+    sys.stderr = LoggerWriter(logger.error)
     unittest.main()

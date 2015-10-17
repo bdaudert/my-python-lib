@@ -83,7 +83,7 @@ def compose_email(params, ftp_server, ftp_dir, out_files):
             key = item[0]
             val = item[1]
             dp+=key + ': ' + val  +'\n' + '      '
-        zip_file = out_files[0]
+        zip_file = out_files[0].split('/')[-1]
         for f in out_files[1:]:
             files+= f + '\n' + '      '
         message_text ='''

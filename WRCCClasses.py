@@ -2156,7 +2156,7 @@ class LargeDataRequest(object):
         return chunks
 
     def set_zip_file_path(self):
-        time_stamp = datetime.datetime.now().strftime('%Y%m_%d_%H_%M_%S.%f')
+        time_stamp = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S.%f')
         fe = WRCCData.FILE_EXTENSIONS[self.form['data_format']]
         path_to_file = self.base_dir + self.form['output_file_name'] +  '_' + time_stamp +  '.zip'
         self.logger.info('zip archive path: %s.' %str(path_to_file))

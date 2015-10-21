@@ -119,6 +119,30 @@ class setUp(object):
                 return results, err
         return results, err
 
+    def test_single_lister_results(self, utClass,results, err):
+        if err is not None:
+            logger.error(err)
+        try:
+            utClass.assertIsNone(err)
+        except AssertionError as err:
+            logger.error('AssertionError' + str(err))
+        try:
+            utClass.assertIsInstance(results, dict)
+        except AssertionError as err:
+            logger.error('AssertionError' + str(err))
+        try:
+            utClass.assertIn('data',results)
+            utClass.assertIsInstance(results['data'], list)
+            utClass.assertNotEqual(results['data'],[])
+        except:
+            try:
+                utClass.assertIn('smry', results)
+                utClass.assertIsInstance(results['smry'], list)
+                utClass.assertNotEqual(results['smry'],[])
+            except AssertionError as err:
+                logger.error('AssertionError' + str(err))
+
+
     def run_multi_lister(self,params):
         results = {};err = None
         initial, checkbox_vals, err = self.setInitial(params)
@@ -133,6 +157,128 @@ class setUp(object):
             err = 'FAIL request_and_format_data. ERROR: ' + str(e) + ' PARAMS: ' + str(params)
             return results, err
         return results, err
+
+    def test_multi_lister_results(self,utClass,results,err):
+        if err is not None:
+            logger.error(err)
+        try:
+            utClass.assertIsNone(err)
+        except AssertionError as err:
+                logger.error('AssertionError' + str(err))
+        try:
+            utClass.assertIsInstance(results, dict)
+        except AssertionError as err:
+                logger.error('AssertionError' + str(err))
+        #Check that data or summary exists in results
+        try:
+            utClass.assertIn('data',results)
+            utClass.assertIsInstance(results['data'], list)
+            utClass.assertNotEqual(results['data'],[])
+        except:
+            try:
+                utClass.assertIn('smry', results)
+                utClass.assertIsInstance(results['smry'], list)
+                utClass.assertNotEqual(results['smry'],[])
+            except AssertionError as err:
+                logger.error('AssertionError' + str(err))
+
+    def run_interannual(self,params):
+        results = {};err = None
+        initial, checkbox_vals, err = self.setInitial(params)
+        if err is not None:return results, err
+        form, err = self.setForm(initial)
+        if err is not None:return results, err
+        form_cleaned, err = self.setFormCleaned(initial)
+        if err is not None:return results, err
+        try:
+            year_data, hc_data = WRCCUtils.get_single_interannaul_data(form_cleaned)
+        except Exception, e:
+            err = 'FAIL get_single_interannual_data. ERROR: ' + \
+            str(e) + ' PARAMS: ' + str(params)
+            return results, err
+        results['year_data'] = year_data
+        results['hc_data'] = hc_data
+        try:
+            GDWriter = WRCCClasses.GraphDictWriter(form_cleaned, hc_data)
+            graph_dict = GDWriter.write_dict()
+        except Exception, e:
+            err = 'FAIL WRCCClasses.GraphDictWriter.write_dict() ERROR: ' +\
+            str(e) + ' PARAMS: ' + str(params)
+            return results, err
+        results['graph_dict'] = graph_dict
+        return results, err
+
+    def test_interannual_results(self,utClass,results,err):
+        if err is not None:
+            logger.error(err)
+        try:
+            utClass.assertIsNone(err)
+        except AssertionError as err:
+                logger.error('AssertionError' + str(err))
+        try:
+            utClass.assertIsInstance(results['year_data'], list)
+            utClass.assertIsInstance(results['hc_data'], list)
+            utClass.assertIsInstance(results['graph_dict'], dict)
+            utClass.assertNotEqual(results['year_data'], [])
+            utClass.assertNotEqual(results['hc_data'], [])
+            utClass.assertNotEqual(results['graph_dict'], {})
+        except AssertionError as err:
+            logger.error('AssertionError' + str(err))
+
+    def run_intraannual(self,params):
+        results = {};err = None
+        initial, checkbox_vals, err = self.setInitial(params)
+        if err is not None:return results, err
+        form, err = self.setForm(initial)
+        if err is not None:return results, err
+        form_cleaned, err = self.setFormCleaned(initial)
+        if err is not None:return results, err
+        try:
+            year_txt_data, year_graph_data, climoData, percentileData =\
+            WRCCUtils.get_single_intraannual_data(form_cleaned)
+        except Exception, e:
+            err = 'FAIL get_single_intraanual_data. ERROR: ' + \
+            str(e) + ' PARAMS: ' + str(params)
+            return results, err
+        results['year_txt_data'] = year_txt_data
+        results['year_graph_data'] = year_graph_data
+        results['climoData'] = climoData
+        results['percentileData'] = percentileData
+        graph_data = []
+        for yr_idx, year in enumerate(year_graph_data.keys()):
+            year = int(form_cleaned['start_year']) + yr_idx
+            yr_data = year_graph_data[year]
+            try:
+                GDWriter = WRCCClasses.GraphDictWriter(form_cleaned, yr_data)
+                graph_dict = GDWriter.write_dict()
+                graph_data.append(graph_dict)
+            except Exception, e:
+                err = 'FAIL WRCCClasses.GraphDictWriter.write_dict() ERROR: ' +\
+                str(e) + ' PARAMS: ' + str(params)
+                return results, err
+        results['graph_dict'] = graph_dict
+        return results, err
+
+    def test_intraannual_results(self,utClass,results,err):
+        if err is not None:
+            logger.error(err)
+        try:
+            utClass.assertIsNone(err)
+        except AssertionError as err:
+                logger.error('AssertionError' + str(err))
+        try:
+            utClass.assertIsInstance(results['year_txt_data'], dict)
+            utClass.assertIsInstance(results['year_graph_data'], dict)
+            utClass.assertIsInstance(results['climoData'], list)
+            utClass.assertIsInstance(results['percentileData'], list)
+            utClass.assertNotEqual(results['year_txt_data'], {})
+            utClass.assertNotEqual(results['year_graph_data'], {})
+            utClass.assertNotEqual(results['climoData'], [])
+            utClass.assertEqual(len(results['percentileData']),3)
+            for p in results['percentileData']:
+                utClass.assertNotEqual(p, [])
+        except AssertionError as err:
+            logger.error('AssertionError' + str(err))
 
     def run_monann(self, params):
         results = [];err=''
@@ -304,48 +450,78 @@ class Test_single_lister(unittest.TestCase):
         logger.info(msg)
         params = copy.deepcopy(self.params)
         results, err = self.setUp.run_single_lister(params)
-        if err is not None:
-            logger.error(err)
-        try:
-            self.assertIsNone(err)
-        except AssertionError as err:
-            logger.error('AssertionError' + str(err))
-        try:
-            self.assertIsInstance(results, dict)
-        except AssertionError as err:
-            logger.error('AssertionError' + str(err))
-        try:
-            self.assertIn('data',results)
-            self.assertIsInstance(results['data'], list)
-            self.assertNotEqual(results['data'],[])
-        except:
-            try:
-                self.assertIn('smry', results)
-                self.assertIsInstance(results['smry'], list)
-                self.assertNotEqual(results['smry'],[])
-            except AssertionError as err:
-                logger.error('AssertionError' + str(err))
+        self.setUp.test_single_lister_results(self,results,err)
 
-    def test_find_station_id_name(self):
-        msg = 'Testing Station ID/NAME finder for Single Lister'
+    def test_areas(self):
+        msg = 'Testing single lister location'
         logger.info(msg)
-        for station in WRCCData.TEST_STATIONS:
-            msg =  'Station: ' + station
+        params = copy.deepcopy(self.params)
+        del params['station_id']
+        params['area_type'] = 'location'
+        params['location'] = '-119,39'
+        results, err = self.setUp.run_single_lister(params)
+        self.setUp.test_single_lister_results(self,results,err)
+
+    def test_elements(self):
+        msg = 'Testing single lister elements'
+        logger.info(msg)
+        params = copy.deepcopy(self.params)
+        elements = ['maxt','mint','avgt','obst','pcpn','snow','snwd','gdd50','hdd65','cdd65','evap']
+        for el in elements:
+            msg = 'Element: ' + el
             logger.info(msg)
-            station_json = '/www/apps/csc/dj-projects/my_acis/media/json/US_station_id.json'
-            stn_id, stn_name = WRCCUtils.find_id_and_name(station,station_json)
-            try:
-                self.assertIsInstance(stn_name, str)
-            except AssertionError as err:
-                logger.error('AssertionError' + str(err))
-            try:
-                self.assertIsInstance(stn_id, str)
-            except AssertionError as err:
-                logger.error('AssertionError' + str(err))
-            try:
-                self.assertNotEqual(stn_id,'')
-            except AssertionError as err:
-                logger.error('AssertionError' + str(err))
+            params['element'] = el
+            results, err = self.setUp.run_single_lister(params)
+            self.setUp.test_single_lister_results(self,results,err)
+
+    def test_special_degree_days(self):
+        msg = 'Testing single lister special degree days'
+        logger.info(msg)
+        params = copy.deepcopy(self.params)
+        params['add_degree_days'] = 'T'
+        params['degree_days'] = 'gdd54,hdd76,cdd66'
+        results, err = self.setUp.run_single_lister(params)
+        self.setUp.test_single_lister_results(self,results,err)
+
+    def test_units(self):
+        msg = 'Testing single lister units'
+        logger.info(msg)
+        params = copy.deepcopy(self.params)
+        params['add_degree_days'] = 'T'
+        params['degree_days'] = 'gdd54,hdd76,cdd66'
+        params['units'] = 'metric'
+        results, err = self.setUp.run_single_lister(params)
+        self.setUp.test_single_lister_results(self,results,err)
+
+    def test_flags_and_obs_time(self):
+        msg = 'Testing single lister flags and obs time'
+        logger.info(msg)
+        params = copy.deepcopy(self.params)
+        params['show_flags'] = 'T'
+        params['show_observation_time'] = 'T'
+        results, err = self.setUp.run_single_lister(params)
+        self.setUp.test_single_lister_results(self,results,err)
+
+    def test_data_summary(self):
+        msg = 'Testing single lister data summaries'
+        logger.info(msg)
+        data_summary = ['windowed_data','temporal']
+        for ds in data_summary:
+            params = copy.deepcopy(self.params)
+            msg = 'Data Summary: ' + ds
+            logger.info(msg)
+            params['data_summary'] = ds
+            if ds == 'windowed_data':
+                params['start_date'] = '20140101'
+                params['start_window'] = '02-28'
+                params['end_window'] = '03-01'
+                results, err = self.setUp.run_single_lister(params)
+                self.setUp.test_single_lister_results(self,results,err)
+            if ds == 'temporal':
+                for calc in ['max','min','mean','median','sum']:
+                    params['temporal_summary'] = calc
+                    results, err = self.setUp.run_single_lister(params)
+                    self.setUp.test_single_lister_results(self,results,err)
 
 class Test_multi_lister(unittest.TestCase):
     def setUp(self):
@@ -361,51 +537,104 @@ class Test_multi_lister(unittest.TestCase):
         logger.info(msg)
         params = copy.deepcopy(self.params)
         results, err = self.setUp.run_multi_lister(params)
-        if err is not None:
-            logger.error(err)
-        try:
-            self.assertIsNone(err)
-        except AssertionError as err:
-                logger.error('AssertionError' + str(err))
-        try:
-            self.assertIsInstance(results, dict)
-        except AssertionError as err:
-                logger.error('AssertionError' + str(err))
-        #Check that data or summary exists in results
-        try:
-            self.assertIn('data',results)
-            self.assertIsInstance(results['data'], list)
-            self.assertNotEqual(results['data'],[])
-        except:
-            try:
-                self.assertIn('smry', results)
-                self.assertIsInstance(results['smry'], list)
-                self.assertNotEqual(results['smry'],[])
-            except AssertionError as err:
-                logger.error('AssertionError' + str(err))
+        self.setUp.test_multi_lister_results(self,results,err)
 
-    def test_find_area(self):
-        msg = 'Testing Area finder for Multi Lister'
+    def test_areas(self):
+        msg = 'Testing multi lister areas'
         logger.info(msg)
-        for area_type, area in WRCCData.TEST_AREAS.iteritems():
-            if area_type in ['station_id','station_ids','shape','location','state']:
-                continue
-            msg = 'Area: ' + area_type
+        params = copy.deepcopy(self.params)
+        del params[params['area_type']]
+        del params['area_type']
+        for area in ['county','county_warning_area','climate_division','basin','shape']:
+            val = WRCCData.AREA_DEFAULTS[area]
+            params['area_type'] = area
+            params[params['area_type']] = val
+            results, err = self.setUp.run_multi_lister(params)
+            self.setUp.test_multi_lister_results(self,results,err)
+
+    def test_elements(self):
+        msg = 'Testing multi lister elements'
+        logger.info(msg)
+        params = copy.deepcopy(self.params)
+        elements = ['maxt','mint','avgt','obst','pcpn','snow','snwd','gdd50','hdd65','cdd65','evap']
+        for el in elements:
+            msg = 'Element: ' + el
             logger.info(msg)
-            station_json = '/www/apps/csc/dj-projects/my_acis/media/json/US_'+area_type+'.json'
-            ID, name = WRCCUtils.find_id_and_name(area,station_json)
-            try:
-                self.assertIsInstance(name, str)
-            except AssertionError as err:
-                logger.error('AssertionError' + str(err))
-            try:
-                self.assertIsInstance(ID, str)
-            except AssertionError as err:
-                logger.error('AssertionError' + str(err))
-            try:
-                self.assertNotEqual(ID,'')
-            except AssertionError as err:
-                logger.error('AssertionError' + str(err))
+            params['element'] = el
+            results, err = self.setUp.run_multi_lister(params)
+            self.setUp.test_multi_lister_results(self,results,err)
+
+    def test_special_degree_days(self):
+        msg = 'Testing multi lister special degree days'
+        logger.info(msg)
+        params = copy.deepcopy(self.params)
+        params['add_degree_days'] = 'T'
+        params['degree_days'] = 'gdd54,hdd76,cdd66'
+        results, err = self.setUp.run_multi_lister(params)
+        self.setUp.test_multi_lister_results(self,results,err)
+
+    def test_units(self):
+        msg = 'Testing multi lister units'
+        logger.info(msg)
+        params = copy.deepcopy(self.params)
+        params['add_degree_days'] = 'T'
+        params['degree_days'] = 'gdd54,hdd76,cdd66'
+        params['units'] = 'metric'
+        results, err = self.setUp.run_multi_lister(params)
+        self.setUp.test_multi_lister_results(self,results,err)
+
+    def test_flags_and_obs_time(self):
+        msg = 'Testing multi lister flags and obs time'
+        logger.info(msg)
+        params = copy.deepcopy(self.params)
+        params['data_summary'] = 'None'
+        params['show_flags'] = 'T'
+        params['show_observation_time'] = 'T'
+        results, err = self.setUp.run_multi_lister(params)
+        self.setUp.test_multi_lister_results(self,results,err)
+
+    def test_data_summary(self):
+        msg = 'Testing multi lister data summaries'
+        logger.info(msg)
+        data_summary = ['windowed_data','temporal','spatial']
+        for ds in data_summary:
+            params = copy.deepcopy(self.params)
+            msg = 'Data Summary: ' + ds
+            logger.info(msg)
+            params['data_summary'] = ds
+            if ds == 'windowed_data':
+                params['start_date'] = '20140101'
+                params['start_window'] = '02-28'
+                params['end_window'] = '03-01'
+                results, err = self.setUp.run_multi_lister(params)
+                self.setUp.test_multi_lister_results(self,results,err)
+            if ds in ['temporal','spatial']:
+                for calc in ['max','min','mean','median','sum']:
+                    params[ds + '_summary'] = calc
+                    results, err = self.setUp.run_multi_lister(params)
+                    self.setUp.test_multi_lister_results(self,results,err)
+
+class Test_interannual(unittest.TestCase):
+    def setUp(self):
+        self.params = self.params = copy.deepcopy(WRCCData.SCENIC_DATA_PARAMS['interannual'])
+        self.setUp = setUp('interannual')
+
+    def test_default(self):
+        msg = 'Testing Yearly Summaries with default values'
+        logger.info(msg)
+        results, err = self.setUp.run_interannual(self.params)
+        self.setUp.test_interannual_results(self,results,err)
+
+class Test_intraannual(unittest.TestCase):
+    def setUp(self):
+        self.params = self.params = copy.deepcopy(WRCCData.SCENIC_DATA_PARAMS['intraannual'])
+        self.setUp = setUp('intraannual')
+
+    def test_default(self):
+        msg = 'Testing Sodxtrmts with default values'
+        logger.info(msg)
+        results, err = self.setUp.run_intraannual(self.params)
+        self.setUp.test_intraannual_results(self,results,err)
 
 class Test_monann(unittest.TestCase):
     def setUp(self):
@@ -413,9 +642,6 @@ class Test_monann(unittest.TestCase):
         self.setUp = setUp('monann')
 
     def test_default(self):
-        """
-        Test that Sodxtrmts wrapper works an the normal path.
-        """
         msg = 'Testing Sodxtrmts with default values'
         logger.info(msg)
         results = self.setUp.run_monann(self.params)

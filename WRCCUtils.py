@@ -3668,11 +3668,17 @@ def get_el_and_base_temp(el, units='english'):
     Keyword arguments:
     el -- climate element abbreviation
     '''
-    element = el
+    #element = el
     base_temp = None
     el_strip = re.sub(r'(\d+)(\d+)', '', el)   #strip digits from gddxx, hddxx, cddxx
     #el_strip = re.sub(r'(\d+)(\.?)(\d+)', '', el)
     #b = el[-2:len(el)]
+    #Strip mly_, yly_ from monthly/yearly els
+    el_strip_list = el_strip.split('_')
+    if len(el_strip_list) == 2 and el_strip_list[0] in ['mly','yly']:
+        el_strip = el_strip_list[1]
+    element = el_strip
+    #find base temp
     try:
         b = el[3:]
     except:

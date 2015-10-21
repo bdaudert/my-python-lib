@@ -5,6 +5,8 @@ import unittest
 import os, sys
 import copy
 import json
+#Testing feedback form
+from django.core.mail import send_mail
 
 import logging
 
@@ -67,6 +69,34 @@ class TestIDNameFind(unittest.TestCase):
         except AssertionError as err:
             logger.error('AssertionError' + str(err))
 
+class TestGetElAndBaseTemp(unittest.TestCase):
+    def setUp(self):
+        self.elements = WRCCData.ACIS_ELEMENTS_DICT.keys()
+        self.elements+=['gdd67','hdd34','cdd65']
+        self.units = ['english','metric']
+
+    def test_get_el_and_base_temp(self):
+        for unit in self.units:
+            for el in self.elements:
+                el, base_temp = WRCCUtils.get_el_and_base_temp(el,units=unit)
+                self.assertIsInstance(el, basestring)
+                self.assertIn(el,WRCCData.ACIS_ELEMENTS_DICT.keys())
+                try:
+                    int(base_temp)
+                except:
+                    self.assertEqual(base_temp,None)
+
+class TestElementsToTableHeaders(unittest.TestCase):
+    def setUp(self):
+        self.elements = WRCCData.ACIS_ELEMENTS_DICT.keys()
+        self.units = ['english','metric']
+
+    def test_elements_to_headers(self):
+        for unit in self.units:
+            el_list_header = WRCCUtils.elements_to_table_headers(self.elements,unit)
+            self.assertIsInstance(el_list_header, list)
+            self.assertNotEqual(el_list_header,[])
+
 class TestFormToDisplay(unittest.TestCase):
     def setUp(self):
         self.test_params = copy.deepcopy(WRCCData.SCENIC_DATA_PARAMS)
@@ -91,6 +121,54 @@ class TestFormToDisplay(unittest.TestCase):
                     self.assertEqual(len(dp),2)
                 except AssertionError as err:
                     logger.error('AssertionError' + str(err))
+
+class TestFindArea(unittest.TestCase):
+
+    def setUp(self):
+        self.area_dict =  WRCCData.TEST_AREAS
+
+    def test_find_area(self):
+        msg = 'Testing Area finder for Multi Lister'
+        logger.info(msg)
+        for area_type, area in self.area_dict.iteritems():
+            if area_type in ['station_id','station_ids','shape','location','state']:
+                continue
+            msg = 'Area: ' + area_type
+            logger.info(msg)
+            station_json = '/www/apps/csc/dj-projects/my_acis/media/json/US_'+area_type+'.json'
+            ID, name = WRCCUtils.find_id_and_name(area,station_json)
+            try:
+                self.assertIsInstance(name, str)
+            except AssertionError as err:
+                logger.error('AssertionError' + str(err))
+            try:
+                self.assertIsInstance(ID, str)
+            except AssertionError as err:
+                logger.error('AssertionError' + str(err))
+            try:
+                self.assertNotEqual(ID,'')
+            except AssertionError as err:
+                logger.error('AssertionError' + str(err))
+
+
+'''
+class TestFeedback(unittest.TestCase):
+    def setUp(self):
+        self.subject = 'TestFeedback'
+        self.message = 'SUCCESS'
+        self.from_email = 'scenic@dri.edu'
+        self.to_email = 'scenic@dri.edu'
+    def test_mailing(self):
+        try:
+            send_mail(
+                self.subject,
+                self.message,
+                self.from_email,
+                [self.to_email],
+            )
+        except:
+            raise AssertionError
+'''
 ############
 # RUN TESTS
 ###########

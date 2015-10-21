@@ -1337,6 +1337,26 @@ SCENIC_DATA_PARAMS = {
         'max_missing_days':'5',
         'departures_from_averages':'F'
     },
+    'interannual':{
+        'area_type':'station_id',
+        'station_id':'RENO TAHOE INTL AP, 266779',
+        'element':'pcpn',
+        'units':'english',
+        'start_month':'01',
+        'start_day':'01',
+        'end_month':'01',
+        'end_day':'31',
+        'temporal_summary':'sum'
+    },
+    'intraannual':{
+        'area_type':'station_id',
+        'station_id':'RENO TAHOE INTL AP, 266779',
+        'element':'pcpn',
+        'calculation':'cumulative',
+        'units':'english',
+        'start_month':'01',
+        'start_day':'01'
+    }
 }
 
 WRAPPERS = {

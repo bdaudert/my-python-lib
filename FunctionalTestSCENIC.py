@@ -121,15 +121,15 @@ class setUp(object):
 
     def test_single_lister_results(self, utClass,results, err):
         if err is not None:
-            logger.error(err)
+            logger.error(err + '\n')
         try:
             utClass.assertIsNone(err)
         except AssertionError as err:
-            logger.error('AssertionError' + str(err))
+            logger.error('AssertionError ' + str(err) + '\n')
         try:
             utClass.assertIsInstance(results, dict)
         except AssertionError as err:
-            logger.error('AssertionError' + str(err))
+            logger.error('AssertionError ' + str(err) + '\n')
         try:
             utClass.assertIn('data',results)
             utClass.assertIsInstance(results['data'], list)
@@ -140,7 +140,7 @@ class setUp(object):
                 utClass.assertIsInstance(results['smry'], list)
                 utClass.assertNotEqual(results['smry'],[])
             except AssertionError as err:
-                logger.error('AssertionError' + str(err))
+                logger.error('AssertionError ' + str(err) + '\n')
 
 
     def run_multi_lister(self,params):
@@ -160,15 +160,15 @@ class setUp(object):
 
     def test_multi_lister_results(self,utClass,results,err):
         if err is not None:
-            logger.error(err)
+            logger.error(err + '\n')
         try:
             utClass.assertIsNone(err)
         except AssertionError as err:
-                logger.error('AssertionError' + str(err))
+                logger.error('AssertionError ' + str(err) + '\n')
         try:
             utClass.assertIsInstance(results, dict)
         except AssertionError as err:
-                logger.error('AssertionError' + str(err))
+                logger.error('AssertionError ' + str(err) + '\n')
         #Check that data or summary exists in results
         try:
             utClass.assertIn('data',results)
@@ -180,7 +180,7 @@ class setUp(object):
                 utClass.assertIsInstance(results['smry'], list)
                 utClass.assertNotEqual(results['smry'],[])
             except AssertionError as err:
-                logger.error('AssertionError' + str(err))
+                logger.error('AssertionError ' + str(err) + '\n')
 
     def run_interannual(self,params):
         results = {};err = None
@@ -210,11 +210,11 @@ class setUp(object):
 
     def test_interannual_results(self,utClass,results,err):
         if err is not None:
-            logger.error(err)
+            logger.error(err + '\n')
         try:
             utClass.assertIsNone(err)
         except AssertionError as err:
-                logger.error('AssertionError' + str(err))
+                logger.error('AssertionError ' + str(err) + '\n')
         try:
             utClass.assertIsInstance(results['year_data'], list)
             utClass.assertIsInstance(results['hc_data'], list)
@@ -223,7 +223,7 @@ class setUp(object):
             utClass.assertNotEqual(results['hc_data'], [])
             utClass.assertNotEqual(results['graph_dict'], {})
         except AssertionError as err:
-            logger.error('AssertionError' + str(err))
+            logger.error('AssertionError ' + str(err) + '\n')
 
     def run_intraannual(self,params):
         results = {};err = None
@@ -261,11 +261,11 @@ class setUp(object):
 
     def test_intraannual_results(self,utClass,results,err):
         if err is not None:
-            logger.error(err)
+            logger.error(err + '\n')
         try:
             utClass.assertIsNone(err)
         except AssertionError as err:
-                logger.error('AssertionError' + str(err))
+                logger.error('AssertionError ' + str(err) + '\n')
         try:
             utClass.assertIsInstance(results['year_txt_data'], dict)
             utClass.assertIsInstance(results['year_graph_data'], dict)
@@ -278,7 +278,7 @@ class setUp(object):
             for p in results['percentileData']:
                 utClass.assertNotEqual(p, [])
         except AssertionError as err:
-            logger.error('AssertionError' + str(err))
+            logger.error('AssertionError ' + str(err) + '\n')
 
     def run_monann(self, params):
         results = [];err=''
@@ -357,31 +357,32 @@ class Test_station_finder(unittest.TestCase):
 
     def test_default(self):
         msg = 'Testing Station Finder with default values'
-        logger.info(msg)
+        logger.info(msg + '\n')
         #Copy parameters
         params = copy.deepcopy(self.params)
+        logger.info(str(params) + '\n')
         #Test Initializers
         initial, checkbox_vals, err = self.setUp.setInitial(params)
         if err is not None:
-            logger.error(err)
+            logger.error(err + '\n')
         try:
             self.assertIsNone(err)
         except AssertionError as err:
-            logger.error('AssertionError' + str(err))
+            logger.error('AssertionError ' + str(err) + '\n')
         form, err  = self.setUp.setForm(params)
         if err is not None:
-            logger.error(err)
+            logger.error(err + '\n')
         try:
             self.assertIsNone(err)
         except AssertionError as err:
-            logger.error('AssertionError' + str(err))
+            logger.error('AssertionError ' + str(err) + '\n')
         form_cleaned, err  = self.setUp.setFormCleaned(params)
         if err is not None:
-            logger.error(err)
+            logger.error(err + '\n')
         try:
             self.assertIsNone(err)
         except AssertionError as err:
-            logger.error('AssertionError' + str(err))
+            logger.error('AssertionError ' + str(err) + '\n')
         #Run station find
         station_json, f_name = self.setUp.run_station_finder(form_cleaned)
         with self.assertRaises(ValueError):
@@ -390,43 +391,45 @@ class Test_station_finder(unittest.TestCase):
             except:
                 raise ValueError
             if ValueError:
-                logger.error('STATION FNDER: cannot oad json data')
+                logger.error('STATION FNDER: cannot oad json data\n')
 
     def test_station_finder_areas(self):
         msg = 'Testing Station Finder area options'
-        logger.info(msg)
+        logger.info(msg + '\n')
         params = copy.deepcopy(self.params)
         test_areas = ['station_id','station_ids','county',\
         'county_warning_area','climate_division','basin','shape']
         #Run a test for each area
         for at in test_areas:
             params['area_type'] = at
+            logger.info('Area: ' + str(at) +'\n')
             params[at] = WRCCData.TEST_AREAS[at]
+            logger.info(str(params) + '\n')
             #Test Initializers
             initial, checkbox_vals, err = self.setUp.setInitial(params)
             if err is not None:
-                logger.error(err)
+                logger.error(err + '\n')
             try:
                 self.assertIsNone(err)
             except AssertionError as err:
-                logger.error('AssertionError' + str(err))
+                logger.error('AssertionError ' + str(err) + '\n')
             form, err  = self.setUp.setForm(params)
             if err is not None:
-                logger.error(err)
+                logger.error(err + '\n')
             try:
                 self.assertIsNone(err)
             except AssertionError as err:
-                logger.error('AssertionError' + str(err))
+                logger.error('AssertionError ' + str(err) + '\n')
             form_cleaned, err  = self.setUp.setForm(params)
             if err is not None:
-                logger.error(err)
+                logger.error(err + '\n')
             try:
                 self.assertIsNone(err)
             except AssertionError as err:
-                logger.error('AssertionError' + str(err))
+                logger.error('AssertionError ' + str(err) + '\n')
             #Run station find
             msg = 'Testing station finder with area ' + at
-            logger.info(msg)
+            logger.info(msg + '\n')
             station_json, f_name = self.setUp.run_station_finder(form_cleaned)
             with self.assertRaises(ValueError):
                 try:
@@ -434,7 +437,7 @@ class Test_station_finder(unittest.TestCase):
                 except:
                     raise ValueError
                 if ValueError:
-                    logger.error('STATION FINDER: cannot load json data')
+                    logger.error('STATION FINDER: cannot load json data\n')
 
 class Test_single_lister(unittest.TestCase):
     def setUp(self):
@@ -447,79 +450,90 @@ class Test_single_lister(unittest.TestCase):
         in the test parameter set.
         """
         msg = 'Testing Single Lister with default values'
-        logger.info(msg)
+        logger.info(msg + '\n')
         params = copy.deepcopy(self.params)
+        logger.info(str(params) + '\n')
         results, err = self.setUp.run_single_lister(params)
         self.setUp.test_single_lister_results(self,results,err)
 
     def test_areas(self):
         msg = 'Testing single lister location'
-        logger.info(msg)
+        logger.info(msg + '\n')
         params = copy.deepcopy(self.params)
         del params['station_id']
         params['area_type'] = 'location'
         params['location'] = '-119,39'
+        params['start_date'] = WRCCData.set_back_date(14)
+        params['end_date'] = WRCCData.set_back_date(1)
+        params['grid'] = 1
+        logger.info(str(params) + '\n')
         results, err = self.setUp.run_single_lister(params)
         self.setUp.test_single_lister_results(self,results,err)
 
     def test_elements(self):
         msg = 'Testing single lister elements'
-        logger.info(msg)
+        logger.info(msg + '\n')
         params = copy.deepcopy(self.params)
-        elements = ['maxt','mint','avgt','obst','pcpn','snow','snwd','gdd50','hdd65','cdd65','evap']
+        elements = ['maxt','mint','avgt','obst','pcpn','snow','snwd','gdd50','hdd65','cdd65']
         for el in elements:
             msg = 'Element: ' + el
-            logger.info(msg)
+            logger.info(msg + '\n')
             params['element'] = el
+            logger.info(str(params) + '\n')
             results, err = self.setUp.run_single_lister(params)
             self.setUp.test_single_lister_results(self,results,err)
 
     def test_special_degree_days(self):
         msg = 'Testing single lister special degree days'
-        logger.info(msg)
+        logger.info(msg + '\n')
         params = copy.deepcopy(self.params)
         params['add_degree_days'] = 'T'
         params['degree_days'] = 'gdd54,hdd76,cdd66'
+        logger.info(str(params) + '\n')
         results, err = self.setUp.run_single_lister(params)
         self.setUp.test_single_lister_results(self,results,err)
 
     def test_units(self):
         msg = 'Testing single lister units'
-        logger.info(msg)
+        logger.info(msg + '\n')
         params = copy.deepcopy(self.params)
         params['add_degree_days'] = 'T'
         params['degree_days'] = 'gdd54,hdd76,cdd66'
         params['units'] = 'metric'
+        logger.info(str(params) + '\n')
         results, err = self.setUp.run_single_lister(params)
         self.setUp.test_single_lister_results(self,results,err)
 
     def test_flags_and_obs_time(self):
         msg = 'Testing single lister flags and obs time'
-        logger.info(msg)
+        logger.info(msg + '\n')
         params = copy.deepcopy(self.params)
         params['show_flags'] = 'T'
         params['show_observation_time'] = 'T'
+        logger.info(str(params) + '\n')
         results, err = self.setUp.run_single_lister(params)
         self.setUp.test_single_lister_results(self,results,err)
 
     def test_data_summary(self):
         msg = 'Testing single lister data summaries'
-        logger.info(msg)
+        logger.info(msg + '\n')
         data_summary = ['windowed_data','temporal']
         for ds in data_summary:
             params = copy.deepcopy(self.params)
             msg = 'Data Summary: ' + ds
-            logger.info(msg)
+            logger.info(msg + '\n')
             params['data_summary'] = ds
             if ds == 'windowed_data':
                 params['start_date'] = '20140101'
                 params['start_window'] = '02-28'
                 params['end_window'] = '03-01'
+                logger.info(str(params) + '\n')
                 results, err = self.setUp.run_single_lister(params)
                 self.setUp.test_single_lister_results(self,results,err)
             if ds == 'temporal':
                 for calc in ['max','min','mean','median','sum']:
                     params['temporal_summary'] = calc
+                    logger.info(str(params) + '\n')
                     results, err = self.setUp.run_single_lister(params)
                     self.setUp.test_single_lister_results(self,results,err)
 
@@ -534,191 +548,235 @@ class Test_multi_lister(unittest.TestCase):
         in the test parameter set.
         """
         msg = 'Testing Multi Lister with default values'
-        logger.info(msg)
+        logger.info(msg + '\n')
         params = copy.deepcopy(self.params)
+        logger.info(str(params) + '\n')
         results, err = self.setUp.run_multi_lister(params)
         self.setUp.test_multi_lister_results(self,results,err)
 
     def test_areas(self):
         msg = 'Testing multi lister areas'
-        logger.info(msg)
+        logger.info(msg + '\n')
         params = copy.deepcopy(self.params)
         del params[params['area_type']]
         del params['area_type']
         for area in ['county','county_warning_area','climate_division','basin','shape']:
+            logger.info('Area: ' + area)
             val = WRCCData.AREA_DEFAULTS[area]
             params['area_type'] = area
             params[params['area_type']] = val
+            logger.info(str(params) + '\n')
             results, err = self.setUp.run_multi_lister(params)
             self.setUp.test_multi_lister_results(self,results,err)
 
     def test_elements(self):
         msg = 'Testing multi lister elements'
-        logger.info(msg)
+        logger.info(msg + '\n')
         params = copy.deepcopy(self.params)
-        elements = ['maxt','mint','avgt','obst','pcpn','snow','snwd','gdd50','hdd65','cdd65','evap']
+        elements = ['maxt','mint','avgt','obst','pcpn','snow','snwd','gdd50','hdd65','cdd65']
         for el in elements:
             msg = 'Element: ' + el
-            logger.info(msg)
+            logger.info(msg + '\n')
             params['element'] = el
+            logger.info(str(params) + '\n')
             results, err = self.setUp.run_multi_lister(params)
             self.setUp.test_multi_lister_results(self,results,err)
 
     def test_special_degree_days(self):
         msg = 'Testing multi lister special degree days'
-        logger.info(msg)
+        logger.info(msg + '\n')
         params = copy.deepcopy(self.params)
         params['add_degree_days'] = 'T'
         params['degree_days'] = 'gdd54,hdd76,cdd66'
+        logger.info(str(params) + '\n')
         results, err = self.setUp.run_multi_lister(params)
         self.setUp.test_multi_lister_results(self,results,err)
 
     def test_units(self):
         msg = 'Testing multi lister units'
-        logger.info(msg)
+        logger.info(msg + '\n')
         params = copy.deepcopy(self.params)
         params['add_degree_days'] = 'T'
         params['degree_days'] = 'gdd54,hdd76,cdd66'
         params['units'] = 'metric'
+        logger.info(str(params) + '\n')
         results, err = self.setUp.run_multi_lister(params)
         self.setUp.test_multi_lister_results(self,results,err)
 
     def test_flags_and_obs_time(self):
         msg = 'Testing multi lister flags and obs time'
-        logger.info(msg)
+        logger.info(msg + '\n')
         params = copy.deepcopy(self.params)
-        params['data_summary'] = 'None'
+        try:
+            del params[params['data_summary'] + '_summary']
+        except:
+            try:
+                del params['windowed_data']
+            except:
+                pass
+        params['data_summary'] = 'none'
         params['show_flags'] = 'T'
         params['show_observation_time'] = 'T'
+        logger.info(str(params) + '\n')
         results, err = self.setUp.run_multi_lister(params)
         self.setUp.test_multi_lister_results(self,results,err)
 
     def test_data_summary(self):
         msg = 'Testing multi lister data summaries'
-        logger.info(msg)
+        logger.info(msg + '\n')
         data_summary = ['windowed_data','temporal','spatial']
         for ds in data_summary:
             params = copy.deepcopy(self.params)
             msg = 'Data Summary: ' + ds
-            logger.info(msg)
+            logger.info(msg + '\n')
             params['data_summary'] = ds
             if ds == 'windowed_data':
+                try:del self.params['temporal_summary']
+                except:pass
+                try:del self.params['spatial_summary']
+                except:pass
                 params['start_date'] = '20140101'
                 params['start_window'] = '02-28'
                 params['end_window'] = '03-01'
+                logger.info(str(params) + '\n')
                 results, err = self.setUp.run_multi_lister(params)
                 self.setUp.test_multi_lister_results(self,results,err)
             if ds in ['temporal','spatial']:
+                try:del self.params['windowed_data']
+                except:pass
+                if ds == 'spatial':
+                    try:del self.params['temporal_summary']
+                    except:pass
+                if ds == 'temporal':
+                    try:del self.params['spatial_summary']
+                    except:pass
                 for calc in ['max','min','mean','median','sum']:
+                    #No median for temp summary
+                    if ds == 'temporal' and calc == 'median':continue
                     params[ds + '_summary'] = calc
+                    logger.info(str(params) + '\n')
                     results, err = self.setUp.run_multi_lister(params)
                     self.setUp.test_multi_lister_results(self,results,err)
 
 class Test_interannual(unittest.TestCase):
     def setUp(self):
-        self.params = self.params = copy.deepcopy(WRCCData.SCENIC_DATA_PARAMS['interannual'])
+        self.params = copy.deepcopy(WRCCData.SCENIC_DATA_PARAMS['interannual'])
         self.setUp = setUp('interannual')
 
     def test_default(self):
         msg = 'Testing Yearly Summaries with default values'
-        logger.info(msg)
-        results, err = self.setUp.run_interannual(self.params)
+        logger.info(msg + '\n')
+        params = copy.deepcopy(self.params)
+        logger.info(str(params) + '\n')
+        results, err = self.setUp.run_interannual(params)
         self.setUp.test_interannual_results(self,results,err)
 
 class Test_intraannual(unittest.TestCase):
     def setUp(self):
-        self.params = self.params = copy.deepcopy(WRCCData.SCENIC_DATA_PARAMS['intraannual'])
+        self.params = copy.deepcopy(WRCCData.SCENIC_DATA_PARAMS['intraannual'])
         self.setUp = setUp('intraannual')
 
     def test_default(self):
         msg = 'Testing Sodxtrmts with default values'
-        logger.info(msg)
-        results, err = self.setUp.run_intraannual(self.params)
+        logger.info(msg + '\n')
+        params = copy.deepcopy(self.params)
+        logger.info(str(params) + '\n')
+        results, err = self.setUp.run_intraannual(params)
         self.setUp.test_intraannual_results(self,results,err)
 
 class Test_monann(unittest.TestCase):
     def setUp(self):
-        self.params = self.params = copy.deepcopy(WRCCData.SCENIC_DATA_PARAMS['monann'])
+        self.params = copy.deepcopy(WRCCData.SCENIC_DATA_PARAMS['monann'])
         self.setUp = setUp('monann')
 
     def test_default(self):
-        msg = 'Testing Sodxtrmts with default values'
-        logger.info(msg)
-        results = self.setUp.run_monann(self.params)
+        msg = 'Testing Monthly Summaries with default values'
+        logger.info(msg + '\n')
+        params = copy.deepcopy(self.params)
+        logger.info(str(params) + '\n')
+        results = self.setUp.run_monann(params)
         try:
             self.assertNotEqual(results[0], [])
         except AssertionError as err:
-            logger.error('AssertionError' + str(err))
+            logger.error('AssertionError ' + str(err) + '\n')
 
     def test_grid(self):
-        dp = copy.deepcopy(self.params)
-        del dp['station_id']
-        dp['location'] = '-119,39'
-        dp['grid'] = '1'
+        msg = 'Testing Monthly Summaries grid'
+        logger.info(msg + '\n')
+        params = copy.deepcopy(self.params)
+        del params['station_id']
+        params['location'] = '-119,39'
+        params['grid'] = '1'
         #Shorten dates
-        dp['start_year'] = '1970'
-        dp['end_year'] = '1980'
-        results = self.setUp.run_monann(dp)
+        params['start_year'] = '1970'
+        params['end_year'] = '1980'
+        logger.info(str(params) + '\n')
+        results = self.setUp.run_monann(params)
         try:
             self.assertNotEqual(results[0], [])
         except AssertionError as err:
-            logger.error('AssertionError' + str(err))
+            logger.error('AssertionError ' + str(err) + '\n')
 
     def test_elements(self):
-        msg = 'Testing Sodxtrmts elements'
-        logger.info(msg)
-        sys.stdout.write(msg)
+        msg = 'Testing Monthly Summaries elements'
+        logger.info(msg + '\n')
         for el in ['maxt', 'mint', 'avgt','dtr', 'hdd', 'cdd', 'gdd','pet']:
-            dp = copy.deepcopy(self.params)
-            dp['element'] = el
+            logger.info('Element: ' + el + '\n')
+            params = copy.deepcopy(self.params)
+            params['element'] = el
             #Shorten time range
-            dp['start_date'] = '2010'
-            dp['end_date'] = '2005'
-            results = self.setUp.run_monann(dp)
+            params['start_date'] = '2010'
+            params['end_date'] = '2005'
+            logger.info(str(params) + '\n')
+            results = self.setUp.run_monann(params)
             try:
                 self.assertNotEqual(results[0], [])
             except AssertionError as err:
-                logger.error('AssertionError' + str(err))
+                logger.error('AssertionError ' + str(err) + '\n')
 
     def test_statistic(self):
-        msg = 'Testing Sodxtrmts statistic'
-        logger.info(msg)
+        msg = 'Testing Monthly Summaries statistic'
+        logger.info(msg + '\n')
         #NOTE: ndays not an option for sodxtrmts
         for stat in ['mmax', 'mmin', 'mave','msum', 'rmon', 'sd']:
-            dp = copy.deepcopy(self.params)
-            dp['statistic'] = stat
+            logger.info('Statistic: ' + stat + '\n')
+            params = copy.deepcopy(self.params)
+            params['statistic'] = stat
             #Shorten time range
-            dp['start_year'] = '1945'
-            dp['end_year'] = '1950'
-            results = self.setUp.run_monann(dp)
+            params['start_year'] = '1945'
+            params['end_year'] = '1950'
+            logger.info(str(params) + '\n')
+            results = self.setUp.run_monann(params)
             try:
                 self.assertNotEqual(results[0], [])
             except AssertionError as err:
-                logger.error('AssertionError' + str(err))
+                logger.error('AssertionError ' + str(err) + '\n')
 
     def test_metric(self):
-        msg = 'Testing Sodxtrmts metric'
-        logger.info(msg)
-        dp = copy.deepcopy(self.params)
-        dp['units'] = 'metric'
-        results = self.setUp.run_monann(dp)
+        msg = 'Testing Monthly Summaries metric'
+        logger.info(msg + '\n')
+        params = copy.deepcopy(self.params)
+        params['units'] = 'metric'
+        logger.info(str(params) + '\n')
+        results = self.setUp.run_monann(params)
         try:
             self.assertNotEqual(results[0], [])
         except AssertionError as err:
-            logger.error('AssertionError' + str(err))
+            logger.error('AssertionError ' + str(err) + '\n')
 
     def test_depart(self):
-        msg = 'Testing Sodxtrmts departures from averages'
-        logger.info(msg)
-        dp = copy.deepcopy(self.params)
-        dp['departures_from_averages'] = 'T'
-        dp['start_year'] = '1998'
-        dp['end_year'] = '2003'
-        results = self.setUp.run_monann(dp)
+        msg = 'Testing Monthly Summaries departures from averages'
+        logger.info(msg + '\n')
+        params = copy.deepcopy(self.params)
+        params['departures_from_averages'] = 'T'
+        params['start_year'] = '1998'
+        params['end_year'] = '2003'
+        logger.info(str(params) + '\n')
+        results = self.setUp.run_monann(params)
         try:
             self.assertNotEqual(results[0], [])
         except AssertionError as err:
-            logger.error('AssertionError' + str(err))
+            logger.error('AssertionError ' + str(err) + '\n')
 
 ############
 # RUN TESTS

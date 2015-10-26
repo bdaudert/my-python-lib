@@ -264,7 +264,7 @@ def set_initial(request,app_name):
     else:
         initial['data_summary'] = Get('data_summary', 'none')
     if initial['data_summary'] == 'temporal':
-        if app_name in ['single_lister','temporal_summary', 'interannual', 'sf_download']:
+        if app_name in ['temporal_summary', 'interannual', 'sf_download']:
             if initial['element'] in ['pcpn','snow','evap','pet']:
                 initial['temporal_summary'] = Get('temporal_summary', 'sum')
             else:

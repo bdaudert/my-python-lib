@@ -15,8 +15,11 @@ to a list and pass this list pack to the perl script
 '''
 import sys
 import WRCCUtils, AcisWS, WRCCDataApps, WRCCClasses, WRCCData
-#Logging
 import logging
+
+########################################
+# SET UP LOGGER
+########################################
 logger = logging.getLogger('WrapperLogger')
 logger.setLevel(logging.DEBUG)
 sh = logging.StreamHandler()
@@ -25,9 +28,9 @@ formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(lineno
 sh.setFormatter(formatter)
 logger.addHandler(sh)
 
-###########
-#STATICS
-##########
+########################################
+# STATICS
+########################################
 thismodule =  sys.modules[__name__]
 today = WRCCUtils.set_back_date(0)
 today_year = today[0:4]
@@ -51,46 +54,9 @@ param_check_function = {
     'filter_days':'check_max_missing_days'
 }
 
-
-#########
-# CLASSES
-#########
-class Wrapper:
-    def __init__(self, app_name, data_params, app_specific_params=None):
-        self.params = data_params
-        self.app_specific_params = app_specific_params
-        self.app_name = app_name
-        self.data = []; self.dates = []
-        self.elements  = [];self.station_ids = []
-        self.station_names  = []
-        self.station_states = []
-
-    def get_data(self):
-        #(self.data, self.dates, self.elements, self.station_ids, self.station_names) = \
-        #AcisWS.get_sod_data(self.params, self.app_name)
-        DJ = WRCCClasses.SODDataJob(self.app_name,self.params)
-        #self.station_ids, self.station_names = DJ.get_station_ids_names()
-        data = DJ.get_data_station()
-        meta_dict = DJ.get_station_meta()
-        self.station_names = meta_dict['names']
-        self.station_states = meta_dict['states']
-        self.station_ids = meta_dict['ids']
-        self.station_networks = meta_dict['networks']
-        self.station_lls = meta_dict['lls']
-        self.station_elevs = meta_dict['elevs']
-        self.station_uids = meta_dict['uids']
-        if 'valid_dateranges' in meta_dict.keys():
-            self.station_valid_dateranges = meta_dict['valid_dateranges']
-        return data
-
-    def run_app(self, data):
-        SSApp = WRCCClasses.SODApplication(self.app_name,data,app_specific_params=self.app_specific_params)
-        results = SSApp.run_app()
-        return results
-
-####################
-#Parameter checks
-####################
+########################################
+# PARAMETER CHECK FUNCTIONS
+########################################
 def check_station_id(sid):
     '''
     Checks that sid is in ACIS metatdata
@@ -216,19 +182,10 @@ def check_filter_type(ft):
     if ft not in ['rm','gauss']:
         return 'FilterError: %s is not a valid filter!' %ft
     return err
-######################
-#CUSTOM EXCEPTION
-######################
-class InputParameterError(Exception):
-    def __init__(self, value):
-        self.value = value
-    def __str__(self):
-        return repr(self.value)
 
-
-######################
-#UTILITY FUNCTIONS
-######################
+########################################
+# UTILITY FUNCTIONS
+########################################
 def por_to_valid_daterange(sid):
     valid_daterange = WRCCUtils.find_valid_daterange(sid)
     if not valid_daterange or valid_daterange == ['','']:
@@ -244,6 +201,55 @@ def run_soddyrec(arg_list, output_file=None):
     if output_file:
         sys.stdout = open(output_file, 'w')
     soddyrec_wrapper(arg_list)
+
+########################################
+# CLASSES
+########################################
+######################
+## CUSTOM EXCEPTION
+######################
+class InputParameterError(Exception):
+    def __init__(self, value):
+        self.value = value
+    def __str__(self):
+        return repr(self.value)
+
+######################
+## CUSTOM EXCEPTION
+######################
+class Wrapper:
+    def __init__(self, app_name, data_params, app_specific_params=None):
+        self.params = data_params
+        self.app_specific_params = app_specific_params
+        self.app_name = app_name
+        self.data = []; self.dates = []
+        self.elements  = [];self.station_ids = []
+        self.station_names  = []
+        self.station_states = []
+
+    def get_data(self):
+        #(self.data, self.dates, self.elements, self.station_ids, self.station_names) = \
+        #AcisWS.get_sod_data(self.params, self.app_name)
+        DJ = WRCCClasses.SODDataJob(self.app_name,self.params)
+        #self.station_ids, self.station_names = DJ.get_station_ids_names()
+        data = DJ.get_data_station()
+        meta_dict = DJ.get_station_meta()
+        self.station_names = meta_dict['names']
+        self.station_states = meta_dict['states']
+        self.station_ids = meta_dict['ids']
+        self.station_networks = meta_dict['networks']
+        self.station_lls = meta_dict['lls']
+        self.station_elevs = meta_dict['elevs']
+        self.station_uids = meta_dict['uids']
+        if 'valid_dateranges' in meta_dict.keys():
+            self.station_valid_dateranges = meta_dict['valid_dateranges']
+        return data
+
+    def run_app(self, data):
+        SSApp = WRCCClasses.SODApplication(self.app_name,data,app_specific_params=self.app_specific_params)
+        results = SSApp.run_app()
+        return results
+
 
 ################################################
 #Wrapper functions for Kelly's SOD applications

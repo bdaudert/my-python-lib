@@ -477,6 +477,7 @@ def request_and_format_data(form):
     #Set request parameters
     large_request = False
     params = set_acis_params(form, large_request)
+    print params
     #Make data request
     #req = request_data(params)
     try:
@@ -485,7 +486,6 @@ def request_and_format_data(form):
         error = 'Data request failed with error: %s.' %str(e)
         resultsdict['errors'].append( error)
         return resultsdict
-
     #Sanity checks
     if req is None:
         error = 'No data found for these parameters.'

@@ -201,7 +201,9 @@ def set_initial(request,app_name):
         initial['start_date'] = None;initial['end_date'] = None
         if 'station_id' in initial.keys():
             stn_id, stn_name = WRCCUtils.find_id_and_name(initial['station_id'],settings.MEDIA_DIR + '/json/US_station_id.json')
-            vd = WRCCUtils.find_valid_daterange(stn_id,el_list=[initial['element']])
+            els = [initial['element']]
+            if initial['element'] == 'dtr':els = ['maxt','mint']
+            vd = WRCCUtils.find_valid_daterange(stn_id,el_list=els,max_or_min='min')
             if vd and len(vd) >=1:
                 initial['start_date'] = vd[0]
             if vd and len(vd) >1:

@@ -314,7 +314,6 @@ def set_initial(request,app_name):
         initial['statistic_period'] = Get('statistic_period','monthly')
     if app_name in ['climatology','sf_link']:
         initial['summary_type'] = Get('summary_type', 'all')
-
     #Ploting options for all pages that have charts
     if app_name in ['monann', 'spatial_summary','interannual', 'intraannual','data_comparison']:
         if app_name in ['spatial_summary','monann','intraannual']:

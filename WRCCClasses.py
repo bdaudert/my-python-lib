@@ -1716,8 +1716,8 @@ class GridFigure(object) :
         'error':'bad request, check parameters %s' %str(self.params)}
         try:
             self.data = AcisWS.GridData(self.params)
-            #levels = self.set_levels()
-            #self.params['image']['levels'] = levels
+            levels = self.set_levels()
+            self.params['image']['levels'] = levels
             if not 'data' in self.data.keys():
                 self.data = empty_img
         except:
@@ -1839,10 +1839,13 @@ class GridFigure(object) :
             ctx.move_to((idx+1)*w,10)
             ctx.rel_line_to(0,5)
             ctx.rel_move_to(-2,3)
+            self.place_text('%.2f'%(value),j='c',v='t')
+            '''
             if value >0.0 and value < 1.0:
                 self.place_text('%.2f'%(value),j='c',v='t')
             else:
                 self.place_text('%d'%(value),j='c',v='t')
+            '''
         ctx.stroke()
 
     def draw_thumbnail(self, image_info, out_name) :

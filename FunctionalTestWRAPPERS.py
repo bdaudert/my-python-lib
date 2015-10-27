@@ -179,11 +179,12 @@ class WrapperTest(object):
             'prsn':['prsn']
 
         }
-        for key in keys[self.app_params['el_type']]:
-            try:
-                utClass.assertIn(key, results)
-            except AssertionError as err:
-                logger.error('ERROR: AssertionError' + str(err) + '\n')
+        for el, tables in keys.iteritems():
+            for table in tables:
+                try:
+                    utClass.assertIn(table, results)
+                except AssertionError as err:
+                    logger.error('ERROR: AssertionError' + str(err) + '\n')
         #utClass.assertIn('station_id', results)
 
     def test_Soddyrec_results(self, utClass, results, err):

@@ -766,7 +766,10 @@ def station_data_trim_and_summary(req,form):
         if not point_in:
             continue
         #point is in shape, add to data and compute summary
-        new_meta.append(stn_data['meta'])
+        key_order_list = ['name', 'sids','state','ll']
+        meta_display_list = metadict_to_display_list(stn_data['meta'], key_order_list,form)
+        new_meta.append(meta_display_list)
+        #new_meta.append(stn_data['meta'])
         stn_name = str(stn_data['meta']['name'])
         new_data.append([])
         for date_idx, date_data in enumerate(stn_data['data']):
@@ -903,8 +906,15 @@ def grid_data_trim_and_summary(req,form):
             if not point_in:
                 continue
             #points is in shape, add tp data and compute summary
-            meta_dict = {'lon':lon,'lat':lat,'elev':unit_convert('elev',req['meta']['elev'][grid_idx][lon_idx])}
-            new_meta.append(meta_dict)
+            #meta_dict = {'lon':lon,'lat':lat,'elev':unit_convert('elev',req['meta']['elev'][grid_idx][lon_idx])}
+            #new_meta.append(meta_dict)
+            meta_dict = {
+                'll':str(lon)+','+str(lat),
+                'elev':str(unit_convert('elev',req['meta']['elev'][grid_idx][lon_idx]))
+            }
+            key_order_list = ['ll', 'elev']
+            meta_display_list = metadict_to_display_list(meta_dict, key_order_list,form)
+            new_meta.append(meta_display_list)
             new_lons.append(lon)
             new_elevs.append(elevs[grid_idx][lon_idx])
             new_data.append([])
@@ -992,8 +1002,15 @@ def format_grid_spatial_summary(req,form):
         generator_lon = ((lon_idx, lon) for lon_idx, lon in enumerate(lons[grid_idx]))
         lat = lat_grid[0]
         for (lon_idx, lon) in generator_lon:
-            meta_dict = {'lon':lon,'lat':lat,'elev':unit_convert('elev',req['meta']['elev'][grid_idx][lon_idx])}
-            new_meta.append(meta_dict)
+            #meta_dict = {'lon':lon,'lat':lat,'elev':unit_convert('elev',req['meta']['elev'][grid_idx][lon_idx])}
+            #new_meta.append(meta_dict)
+            meta_dict = {
+                'll':[str(lon)+','+str(lat)],
+                'elev':str(unit_convert('elev',req['meta']['elev'][grid_idx][lon_idx]))
+            }
+            key_order_list = ['ll', 'elev']
+            meta_display_list = metadict_to_display_list(meta_dict, key_order_list,form)
+            new_meta.append(meta_display_list)
             for date_idx,date_data in enumerate(data):
                 for el_idx,el in enumerate(els):
                     try:
@@ -1054,8 +1071,15 @@ def format_grid_no_summary(req,form):
         generator_lon = ((lon_idx, lon) for lon_idx, lon in enumerate(lons[grid_idx]))
         lat = lat_grid[0]
         for (lon_idx, lon) in generator_lon:
-            meta_dict = {'lon':lon,'lat':lat,'elev':unit_convert('elev',req['meta']['elev'][grid_idx][lon_idx])}
-            new_meta.append(meta_dict)
+            #meta_dict = {'lon':lon,'lat':lat,'elev':unit_convert('elev',req['meta']['elev'][grid_idx][lon_idx])}
+            #new_meta.append(meta_dict)
+            meta_dict = {
+                'll':[str(lon)+','+str(lat)],
+                'elev':str(unit_convert('elev',req['meta']['elev'][grid_idx][lon_idx]))
+            }
+            key_order_list = ['ll', 'elev']
+            meta_display_list = metadict_to_display_list(meta_dict, key_order_list,form)
+            new_meta.append(meta_display_list)
             new_data.append([header_data])
             for date_data in data:
                 d_data = [format_date(str(date_data[0]),sep)]
@@ -1113,8 +1137,15 @@ def format_grid_windowed_data(req,form):
         generator_lon = ((lon_idx, lon) for lon_idx, lon in enumerate(lons[grid_idx]))
         lat = lat_grid[0]
         for (lon_idx, lon) in generator_lon:
-            meta_dict = {'lon':lon,'lat':lat,'elev':unit_convert('elev',req['meta']['elev'][grid_idx][lon_idx])}
-            new_meta.append(meta_dict)
+            #meta_dict = {'lon':lon,'lat':lat,'elev':unit_convert('elev',req['meta']['elev'][grid_idx][lon_idx])}
+            #new_meta.append(meta_dict)
+            meta_dict = {
+                'll':[str(lon)+','+str(lat)],
+                'elev':str(unit_convert('elev',req['meta']['elev'][grid_idx][lon_idx]))
+            }
+            key_order_list = ['ll', 'elev']
+            meta_display_list = metadict_to_display_list(meta_dict, key_order_list,form)
+            new_meta.append(meta_display_list)
             new_data.append([])
             for date_data in data:
                 d_data = [format_date(str(date_data[0]),sep)]
@@ -1177,8 +1208,15 @@ def format_grid_temporal_summary(req,form):
         generator_lon = ((lon_idx, lon) for lon_idx, lon in enumerate(lons[grid_idx]))
         lat = lat_grid[0]
         for (lon_idx, lon) in generator_lon:
-            meta_dict = {'lon':lon,'lat':lat,'elev':unit_convert('elev',req['meta']['elev'][grid_idx][lon_idx])}
-            new_meta.append(meta_dict)
+            #meta_dict = {'lon':lon,'lat':lat,'elev':unit_convert('elev',req['meta']['elev'][grid_idx][lon_idx])}
+            #new_meta.append(meta_dict)
+            meta_dict = {
+                'll':[str(lon)+','+str(lat)],
+                'elev':str(unit_convert('elev',req['meta']['elev'][grid_idx][lon_idx]))
+            }
+            key_order_list = ['ll', 'elev']
+            meta_display_list = metadict_to_display_list(meta_dict, key_order_list,form)
+            new_meta.append(meta_display_list)
             for date_data in data:
                 for el_idx,el in enumerate(els):
                     try:
@@ -1246,7 +1284,10 @@ def format_station_spatial_summary(req,form):
         unit_convert = getattr(thismodule,'convert_to_metric')
     #Station loop over data
     for stn_idx, stn_data in enumerate(req['data']):
-        new_meta.append(stn_data['meta'])
+        key_order_list = ['name', 'sids','state','ll']
+        meta_display_list = metadict_to_display_list(stn_data['meta'], key_order_list,form)
+        new_meta.append(meta_display_list)
+        #new_meta.append(stn_data['meta'])
         for date_idx,date_data in enumerate(stn_data['data']):
             for el_idx, el_data in enumerate(date_data):
                 strp_val, flag = strip_data(el_data)
@@ -1313,10 +1354,14 @@ def format_station_no_summary(req,form):
     unit_convert = getattr(thismodule,'convert_nothing')
     if 'units' in form.keys() and form['units'] == 'metric':
         unit_convert = getattr(thismodule,'convert_to_metric')
+
     #Station loop over data
     for stn_idx, stn_data in enumerate(req['data']):
         #point is in shape, add to data and compute summary
-        new_meta.append(stn_data['meta'])
+        key_order_list = ['name','sids','state','ll']
+        meta_display_list = metadict_to_display_list(stn_data['meta'], key_order_list,form)
+        #new_meta.append(stn_data['meta'])
+        new_meta.append(meta_display_list)
         new_data.append([header_data])
         for date_idx,date_data in enumerate(stn_data['data']):
             d_data = [format_date(dates[date_idx],sep)]
@@ -1393,7 +1438,10 @@ def format_station_windowed_data(req,form):
         unit_convert = getattr(thismodule,'convert_to_metric')
     #Station loop over data
     for stn_idx, stn_data in enumerate(req['data']):
-        new_meta.append(stn_data['meta'])
+        key_order_list = ['name', 'sids','state','ll']
+        meta_display_list = metadict_to_display_list(stn_data['meta'], key_order_list,form)
+        new_meta.append(meta_display_list)
+        #new_meta.append(stn_data['meta'])
         sd = form['start_date']
         ed = form['end_date']
         sw = form['start_window']
@@ -1469,7 +1517,10 @@ def format_station_temporal_summary(req,form):
         unit_convert = getattr(thismodule,'convert_to_metric')
     #Station loop over data
     for stn_idx, stn_data in enumerate(req['data']):
-        new_meta.append(stn_data['meta'])
+        key_order_list = ['name', 'sids','state','ll']
+        meta_display_list = metadict_to_display_list(stn_data['meta'], key_order_list,form)
+        new_meta.append(meta_display_list)
+        #new_meta.append(stn_data['meta'])
         stn_name = str(stn_data['meta']['name'])
         try:
             stn_ids = ','.join([sid.split(' ')[0] for sid in stn_data['meta']['sids']])
@@ -2430,7 +2481,7 @@ def metadict_to_display_list(metadata, key_order_list,form):
         if not k in metadata.keys():
             if k == 'data_summary':
                 if form['data_summary'] !='none':
-                    metadict[i].append([WRCCData.DISPLAY_PARAMS[form[form['data_summary']]]])
+                    metadict[i].append(WRCCData.DISPLAY_PARAMS[form[form['data_summary']]])
             else:
                 meta[i].append([' '])
     for key, val in metadata.iteritems():
@@ -2441,17 +2492,17 @@ def metadict_to_display_list(metadata, key_order_list,form):
         if key == 'sids':
             #sid_list = sids_to_display(metadata['sids'])
             sid_str = sids_to_display(metadata['sids'])
-            meta[idx].append([sid_str])
+            meta[idx].append(sid_str)
         elif key == 'valid_daterange':
             els = form['elements']
             units = form['units']
             vd = metadata['valid_daterange']
             el_list_long = elements_to_display(els, units, valid_daterange=vd)
-            meta[idx].append(el_list_long)
+            meta[idx].append(', '.join(el_list_long))
         else:
-            meta[idx].append([str(val)])
+            meta[idx].append(str(val))
     if 'units' in form.keys():
-        meta.append(['Units', [form['units']]])
+        meta.append(['Units', form['units']])
     return meta
 
 #######################

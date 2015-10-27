@@ -1,4 +1,4 @@
-import WRCCUtils, WRCCData, DJANGOUtils, AcisWS, WRCCClasses, WRCCWrappers
+import WRCCUtils, WRCCData, AcisWS, WRCCClasses, WRCCWrappers
 import my_acis_settings as settings
 
 import unittest
@@ -98,22 +98,22 @@ class WrapperTest(object):
 
     def test_error(self, utClass, err):
         if err is not None:
-            logger.error(err)
+            logger.error(err + '\n')
         try:
             utClass.assertIsNone(err)
         except AssertionError as err:
-            logger.error('ERROR: AssertionError' + str(err))
+            logger.error('ERROR: AssertionError' + str(err) + '\n')
 
     def test_Sodxtrmts_results(self, utClass, results, err):
         self.test_error(utClass, err)
         try:
             utClass.assertIsInstance(results, list)
         except AssertionError as err:
-            logger.error('ERROR: AssertionError' + str(err))
+            logger.error('ERROR: AssertionError' + str(err) + '\n')
         try:
             utClass.assertNotEqual(results, [])
         except AssertionError as err:
-            logger.error('ERROR: AssertionError' + str(err))
+            logger.error('ERROR: AssertionError' + str(err) + '\n')
 
     def test_Sodsum_results(self, utClass, results, err):
         self.test_error(utClass, err)
@@ -127,50 +127,50 @@ class WrapperTest(object):
         try:
             utClass.assertIsInstance(results, dict)
         except AssertionError as err:
-            logger.error('ERROR: AssertionError' + str(err))
+            logger.error('ERROR: AssertionError' + str(err) + '\n')
         try:
             utClass.assertIn('station_id', results)
         except AssertionError as err:
-            logger.error('ERROR station_id: AssertionError' + str(err))
+            logger.error('ERROR station_id: AssertionError' + str(err) + '\n')
         try:
             utClass.assertIn('PRSNT', results)
         except AssertionError as err:
-            logger.error('ERROR PRSNT: AssertionError' + str(err))
+            logger.error('ERROR PRSNT: AssertionError' + str(err) + '\n')
         try:
             utClass.assertIn('LNGMS', results)
         except AssertionError as err:
-            logger.error('ERROR: LNGMS AssertionError' + str(err))
+            logger.error('ERROR: LNGMS AssertionError' + str(err) + '\n')
         try:
             utClass.assertIn('LNGPR', results)
         except AssertionError as err:
-            logger.error('ERROR: LNGPR AssertionError' + str(err))
+            logger.error('ERROR: LNGPR AssertionError' + str(err) + '\n')
         try:
             utClass.assertIn('PSBL', results)
         except AssertionError as err:
-            logger.error('ERROR: PSBL AssertionError' + str(err))
+            logger.error('ERROR: PSBL AssertionError' + str(err) + '\n')
         try:
             utClass.assertIn('MISSG', results)
         except AssertionError as err:
-            logger.error('ERROR: MISSG AssertionError' + str(err))
+            logger.error('ERROR: MISSG AssertionError' + str(err) + '\n')
         try:
             utClass.assertIn('start', results)
         except AssertionError as err:
-            logger.error('ERROR: start AssertionError' + str(err))
+            logger.error('ERROR: start AssertionError' + str(err) + '\n')
         try:
             utClass.assertIn('end', results)
         except AssertionError as err:
-            logger.error('ERROR: end AssertionError' + str(err))
+            logger.error('ERROR: end AssertionError' + str(err) + '\n')
         try:
             utClass.assertIn('station_name', results)
         except AssertionError as err:
-            logger.error('ERROR: station_name AssertionError' + str(err))
+            logger.error('ERROR: station_name AssertionError' + str(err) + '\n')
 
     def test_Sodsumm_results(self, utClass,results, err):
         self.test_error(utClass, err)
         try:
             utClass.assertIsInstance(results, dict)
         except AssertionError as err:
-            logger.error('ERROR: AssertionError' + str(err))
+            logger.error('ERROR: AssertionError' + str(err) + '\n')
         keys = {
             'both':['prsn', 'temp'],
             'hc':['hdd','cdd'],
@@ -183,7 +183,7 @@ class WrapperTest(object):
             try:
                 utClass.assertIn(key, results)
             except AssertionError as err:
-                logger.error('ERROR: AssertionError' + str(err))
+                logger.error('ERROR: AssertionError' + str(err) + '\n')
         #utClass.assertIn('station_id', results)
 
     def test_Soddyrec_results(self, utClass, results, err):
@@ -191,26 +191,26 @@ class WrapperTest(object):
         try:
             utClass.assertIsInstance(results, dict)
         except AssertionError as err:
-            logger.error('ERROR: AssertionError' + str(err))
+            logger.error('ERROR: AssertionError' + str(err) + '\n')
         try:
             utClass.assertIsInstance(results[0], list)
         except AssertionError as err:
-            logger.error('ERROR: AssertionError' + str(err))
+            logger.error('ERROR: AssertionError' + str(err) + '\n')
         try:
             utClass.assertNotEqual(results, [])
         except AssertionError as err:
-            logger.error('ERROR: AssertionError' + str(err))
+            logger.error('ERROR: AssertionError' + str(err) + '\n')
 
     def test_Soddynorm_results(self, utClass, results, err):
         self.test_error(utClass, err)
         try:
             utClass.assertIsInstance(results, list)
         except AssertionError as err:
-            logger.error('ERROR: AssertionError' + str(err))
+            logger.error('ERROR: AssertionError' + str(err) + '\n')
         try:
             utClass.assertNotEqual(results, [])
         except AssertionError as err:
-            logger.error('ERROR: AssertionError' + str(err))
+            logger.error('ERROR: AssertionError' + str(err) + '\n')
 
 class Test_sodxtrmts(unittest.TestCase):
     def setUp(self):
@@ -222,15 +222,27 @@ class Test_sodxtrmts(unittest.TestCase):
         Test that Sodxtrmts wrapper works with default values.
         """
         msg = 'Testing Sodxtrmts with default values'
-        logger.info(msg)
+        logger.info(msg + '\n')
         #results = run_wrapper('Sodxtrmts',self.data_params, self.app_params)
         WT = WrapperTest('Sodxtrmts',self.data_params, self.app_params)
         results, err = WT.run_wrapper()
         WT.test_Sodxtrmts_results(self, results, err)
 
+    def test_stations(self):
+        msg = 'Testing Sodxtrmts stations'
+        logger.info(msg + '\n')
+        for station in ['914229', '303184']:
+            data_params = copy.deepcopy(self.data_params)
+            app_params = copy.deepcopy(self.app_params)
+            data_params['sid'] = station
+            #Shorten time range
+            WT = WrapperTest('Sodxtrmts', self.data_params, self.app_params)
+            results, err = WT.run_wrapper()
+            WT.test_Sodxtrmts_results(self, results, err)
+
     def test_elements(self):
         msg = 'Testing Sodxtrmts elements'
-        logger.info(msg)
+        logger.info(msg + '\n')
         for el in ['maxt', 'mint', 'avgt','dtr', 'hdd', 'cdd', 'gdd','pet']:
             data_params = copy.deepcopy(self.data_params)
             app_params = copy.deepcopy(self.app_params)
@@ -244,7 +256,7 @@ class Test_sodxtrmts(unittest.TestCase):
 
     def test_statistic(self):
         msg = 'Testing Sodxtrmts statistic'
-        logger.info(msg)
+        logger.info(msg + '\n')
         #NOTE: ndays not an option for sodxtrmts
         for stat in ['mmax', 'mmin', 'mave','msum', 'rmon', 'sd']:
             data_params = copy.deepcopy(self.data_params)
@@ -256,10 +268,9 @@ class Test_sodxtrmts(unittest.TestCase):
             WT = WrapperTest('Sodxtrmts', self.data_params, self.app_params)
             results, err = WT.run_wrapper()
             WT.test_Sodxtrmts_results(self, results, err)
-
     def test_metric(self):
         msg = 'Testing Sodxtrmts metric'
-        logger.info(msg)
+        logger.info(msg + '\n')
         data_params = copy.deepcopy(self.data_params)
         app_params = copy.deepcopy(self.app_params)
         data_params['units'] = 'metric'
@@ -273,7 +284,7 @@ class Test_sodxtrmts(unittest.TestCase):
 
     def test_depart(self):
         msg = 'Testing Sodxtrmts departures from averages'
-        logger.info(msg)
+        logger.info(msg + '\n')
         data_params = copy.deepcopy(self.data_params)
         app_params = copy.deepcopy(self.app_params)
         app_params['departures_from_averages'] = 'T'
@@ -294,10 +305,38 @@ class Test_sodsum(unittest.TestCase):
         Test that Sodsum wrapper works with default values.
         """
         msg = 'Testing Sodsum'
-        logger.info(msg)
-        WT = WrapperTest('Sodsum', self.data_params, self.app_params)
+        logger.info(msg + '\n')
+        data_params = copy.deepcopy(self.data_params)
+        app_params = copy.deepcopy(self.app_params)
+        WT = WrapperTest('Sodsum', data_params, app_params)
         results, err = WT.run_wrapper()
         WT.test_Sodsum_results(self, results, err)
+
+    def test_stations(self):
+        msg = 'Testing Sodsum stations'
+        logger.info(msg + '\n')
+        for station in ['914229', '303184']:
+            data_params = copy.deepcopy(self.data_params)
+            app_params = copy.deepcopy(self.app_params)
+            data_params['sid'] = station
+            #Shorten time range
+            WT = WrapperTest('Sodsum', self.data_params, self.app_params)
+            results, err = WT.run_wrapper()
+            WT.test_Sodsum_results(self, results, err)
+
+    def test_elements(self):
+        msg = 'Testing Sodsum elements'
+        logger.info(msg + '\n')
+        for el in ['pcpn', 'snow', 'snwd', 'maxt', 'mint', 'obst']:
+            data_params = copy.deepcopy(self.data_params)
+            app_params = copy.deepcopy(self.app_params)
+            data_params['element'] = el
+            #Shorten time range
+            data_params['start_date'] = '20000101'
+            data_params['end_date'] = '20050101'
+            WT = WrapperTest('Sodsum', self.data_params, self.app_params)
+            results, err = WT.run_wrapper()
+            WT.test_Sodsum_results(self, results, err)
 
 class Test_sodsumm(unittest.TestCase):
     def setUp(self):
@@ -309,10 +348,42 @@ class Test_sodsumm(unittest.TestCase):
         Test that Sodsumm wrapper works on the normal path.
         """
         msg = 'Testing Sodsumm'
-        logger.info(msg)
-        WT = WrapperTest('Sodsumm', self.data_params, self.app_params)
+        logger.info(msg + '\n')
+        data_params = copy.deepcopy(self.data_params)
+        app_params = copy.deepcopy(self.app_params)
+        WT = WrapperTest('Sodsumm', data_params, app_params)
         results, err = WT.run_wrapper()
         WT.test_Sodsumm_results(self, results, err)
+
+    def test_stations(self):
+        msg = 'Testing Sodsumm stations'
+        logger.info(msg + '\n')
+        for station in ['914229', '303184']:
+            data_params = copy.deepcopy(self.data_params)
+            app_params = copy.deepcopy(self.app_params)
+            data_params['sid'] = station
+            #Shorten time range
+            WT = WrapperTest('Sodsumm', data_params, app_params)
+            results, err = WT.run_wrapper()
+            WT.test_Sodsumm_results(self, results, err)
+
+    def test_elements(self):
+        msg = 'Testing Sodsumm elements'
+        logger.info(msg + '\n')
+        for table_name in ['temp', 'prsn', 'hdd', 'cdd', 'gdd', 'ts_tps','ts_tp']:
+            data_params = copy.deepcopy(self.data_params)
+            app_params = copy.deepcopy(self.app_params)
+            if table_name in ['hdd','cdd']:tbls = 'hc'
+            elif table_name == 'gdd':tbls = 'g'
+            elif table_name in ['ts_tps','ts_tp']:tbls = 'both'
+            else:tbls = table_name
+            app_params['el_type'] = tbls
+            #Shorten time range
+            data_params['start_date'] = '2000'
+            data_params['end_date'] = '2005'
+            WT = WrapperTest('Sodsumm', data_params, app_params)
+            results, err = WT.run_wrapper()
+            WT.test_Sodsumm_results(self, results, err)
 
 class Test_soddyrec(unittest.TestCase):
     def setUp(self):
@@ -324,10 +395,40 @@ class Test_soddyrec(unittest.TestCase):
         Test that Soddyrec wrapper works with default values.
         """
         msg = 'Testing Soddyrec'
-        logger.info(msg)
-        WT = WrapperTest('Soddyrec', self.data_params, self.app_params)
+        logger.info(msg + '\n')
+        data_params = copy.deepcopy(self.data_params)
+        app_params = copy.deepcopy(self.app_params)
+        WT = WrapperTest('Soddyrec', data_params, app_params)
         results, err = WT.run_wrapper()
         WT.test_Soddyrec_results(self, results, err)
+
+    def test_stations(self):
+        msg = 'Testing Soddyrec stations'
+        logger.info(msg + '\n')
+        for station in ['914229', '303184']:
+            data_params = copy.deepcopy(self.data_params)
+            app_params = copy.deepcopy(self.app_params)
+            data_params['sid'] = station
+            #Shorten time range
+            WT = WrapperTest('Soddyrec', self.data_params, self.app_params)
+            results, err = WT.run_wrapper()
+            WT.test_Sodsumm_results(self, results, err)
+
+
+    def test_elements(self):
+        msg = 'Testing Soddyrec elements'
+        logger.info(msg + '\n')
+        for el in ['all','tmp', 'wtr', 'pcpn','snow','snwd', 'cdd', 'hdd', 'maxt','mint']:
+            data_params = copy.deepcopy(self.data_params)
+            app_params = copy.deepcopy(self.app_params)
+            data_params['element'] = el
+            #Shorten time range
+            data_params['start_date'] = '2000'
+            data_params['end_date'] = '2005'
+            WT = WrapperTest('Soddyrec', self.data_params, self.app_params)
+            results, err = WT.run_wrapper()
+            WT.test_Soddyrec_results(self, results, err)
+
 
 class Test_soddynorm(unittest.TestCase):
     def setUp(self):
@@ -339,10 +440,33 @@ class Test_soddynorm(unittest.TestCase):
         Test that Sodsumm wrapper works with default values.
         """
         msg = 'Testing Soddynorm'
-        logger.info(msg)
-        WT = WrapperTest('Soddynorm', self.data_params, self.app_params)
+        logger.info(msg + '\n')
+        data_params = copy.deepcopy(self.data_params)
+        app_params = copy.deepcopy(self.app_params)
+        WT = WrapperTest('Soddynorm', data_params, app_params)
         results, err = WT.run_wrapper()
         WT.test_Soddynorm_results(self, results, err)
+
+    def test_stations(self):
+        msg = 'Testing Soddynorm stations'
+        logger.info(msg + '\n')
+        for station in ['914229', '303184']:
+            data_params = copy.deepcopy(self.data_params)
+            app_params = copy.deepcopy(self.app_params)
+            data_params['sid'] = station
+            #Shorten time range
+            WT = WrapperTest('Soddynorm', self.data_params, self.app_params)
+            results, err = WT.run_wrapper()
+            WT.test_Soddynorm_results(self, results, err)
+
+    def test_filter_type(self):
+        data_params = copy.deepcopy(self.data_params)
+        app_params = copy.deepcopy(self.app_params)
+        app_params['filter_type'] = 'gauss'
+        WT = WrapperTest('Soddynorm', data_params, app_params)
+        results, err = WT.run_wrapper()
+        WT.test_Soddynorm_results(self, results, err)
+
 
 if __name__ == '__main__':
     log_file_path = log_dir + log_file

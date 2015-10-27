@@ -1379,29 +1379,29 @@ WRAPPER_DATA_PARAMS = {
     },
     'sodsum':{
         'sid': '266779',
-        'start_date': '20100101',
-        'end_date': '20100131',
+        'start_date': 'POR',
+        'end_date': 'POR',
         'element': 'multi'
     },
     'sodsumm':{
         'sid':'266779',
         'units':'english',
-        'start_date':'1971',
-        'end_date':'2000',
+        'start_date':'POR',
+        'end_date':'POR',
         'element':'all'
     },
     'soddyrec':{
         'sid':'266779',
         'units':'english',
-        'start_date':'19710101',
-        'end_date':'19991231',
+        'start_date':'POR',
+        'end_date':'POR',
         'element':'all'
     },
     'soddynorm':{
         'sid':'266779',
         'units':'english',
-        'start_date':'1971',
-        'end_date':'1999',
+        'start_date':'POR',
+        'end_date':'POR',
     }
 }
 WRAPPER_APP_PARAMS = {

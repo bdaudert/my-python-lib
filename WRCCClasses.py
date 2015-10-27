@@ -1500,6 +1500,9 @@ class SODDataJob(object):
                     'station_names':station_names,
                     'lls':meta_dict['lls']
         }
+        #Override el for sodxtrmts, otherwise avgt,dtr don't work
+        if self.app_name == 'Sodxtrmts':
+            resultsdict['elements'] = [self.params['element']]
         #Make data request
         data_params = self.set_request_params()
         request = AcisWS.MultiStnData(data_params)
@@ -1523,6 +1526,8 @@ class SODDataJob(object):
                     'location_list':locations_list,
                     'lls':meta_dict['lls']
         }
+        if self.app_name == 'Sodxtrmts':
+            resultsdict['elements'] = [self.params['element']]
         #Make data request
         #Each location requires separate request
         #request = {'meta':{'lat':'', 'lon':'','elev':''},'data':[]}

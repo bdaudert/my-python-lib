@@ -330,14 +330,11 @@ def sodxtrmts_wrapper(argv):
     #Define parameters
     data_params = {
         'sid':args['station_id'],
-        'start_date':args['start_year'],
-        'end_date':args['end_year'],
         'element':args['element'],
-        'units':'english',
-        'base_temperature':args['base_temperature']
+        'start_date':args['start_year'],
+        'end_date':args['end_year']
     }
     app_params = {
-        'el_type':args['element'],
         'base_temperature':args['base_temperature'],
         'units':'english',
         'max_missing_days':args['max_missing_days'],

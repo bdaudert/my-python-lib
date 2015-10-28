@@ -1416,7 +1416,7 @@ WRAPPER_APP_PARAMS = {
     },
     'sodsum':{},
     'sodsumm':{
-        'el_type':'both',
+        'el_type':'all',
         'units':'english',
         'max_missing_days':'5'
     },

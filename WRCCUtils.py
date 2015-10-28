@@ -1541,77 +1541,6 @@ def format_station_temporal_summary(req,form):
     }
     return resultsdict
 
-def get_window_data(data, start_date, end_date, start_window, end_window):
-    '''
-    Routine to filter out data according to window specification
-    Args:
-        data         -- data array
-        start_date   -- start date of data array
-        end_date     -- end date of data array
-        start_window -- start date of window
-        end_window   -- end date of window
-    Returns:
-        list of windowed data
-    '''
-    if start_window == '0101' and end_window == '1231':
-        windowed_data = data
-    else:
-        windowed_data = []
-        start_indices=[]
-        end_indices=[]
-        #Pick first and last data from data array,
-        #Note: data[0] is header so we start with index 1
-        start_d = ''.join(data[1][0].split('-'))
-        end_d = ''.join(data[-1][0].split('-'))
-        st_yr = int(start_d[0:4])
-        st_mon = int(start_d[4:6])
-        st_day = int(start_d[6:8])
-        end_yr = int(end_d[0:4])
-        end_mon = int(end_d[4:6])
-        end_day = int(end_d[6:8])
-        #Date formatting needed to deal with end of data and window size
-        #doy = day of year
-        if is_leap_year(st_yr) and st_mon > 2:
-            doy_first = dt.datetime(st_yr, st_mon, st_day).timetuple().tm_yday -1
-        else:
-            doy_first = dt.datetime(st_yr, st_mon, st_day).timetuple().tm_yday
-        if is_leap_year(end_yr) and end_mon > 2:
-            doy_last = dt.datetime(end_yr, end_mon, end_day).timetuple().tm_yday - 1
-        else:
-            doy_last = dt.datetime(end_yr, end_mon, end_day).timetuple().tm_yday
-        doy_window_st = compute_doy(start_window[0:2], start_window[2:4])
-        doy_window_end = compute_doy(end_window[0:2], end_window[2:4])
-        dates = [data[i][0] for i  in range(len(data))]
-        start_w = '%s-%s' % (start_window[0:2], start_window[2:4])
-        end_w = '%s-%s' % (end_window[0:2], end_window[2:4])
-        #silly python doesn't have list.indices() method
-        #Look for windows in data
-        for i, date in enumerate(dates):
-            if date[5:] == start_w:
-                start_indices.append(i)
-            if date[5:] == end_w:
-                end_indices.append(i)
-        #Check end conditions at endpoints:
-        if doy_window_st == doy_window_end:
-            pass
-        elif doy_window_st < doy_window_end:
-            if doy_first <= doy_window_end and doy_window_st < doy_first:
-                start_indices.insert(0, 0)
-            if doy_last < doy_window_end and doy_window_st <= doy_last:
-                end_indices.insert(len(dates),len(dates)-1)
-        else: #doy_window_st > doy_window_end
-            if (doy_window_st > doy_first and doy_first <= doy_window_end) or (doy_window_st < doy_first and doy_first >= doy_window_end):
-                start_indices.insert(0, 0)
-            if (doy_last <= doy_window_st and doy_last < doy_window_end) or (doy_window_st <= doy_last and doy_last > doy_window_end):
-                end_indices.insert(len(dates),len(dates)-1)
-        #Sanity check
-        if len(start_indices)!= len(end_indices):
-            return []
-        for j in range(len(start_indices)):
-            add_data = data[start_indices[j]:end_indices[j]+1]
-            windowed_data = windowed_data + add_data
-    return windowed_data
-
 ################################
 # INTERANNUAL/INTRAANNUAL DATA MODULES
 ############################
@@ -4029,73 +3958,78 @@ def get_windowed_data(data, start_date, end_date, start_window, end_window):
     start_window -- start date of window
     end_window   -- end date of window
     '''
-    if start_window == '0101' and end_window == '1231':
-        windowed_data = data
+    start_w = ''.join(start_window.split('-'))
+    end_w = ''.join(end_window.split('-'))
+    if start_w == '0101' and end_w == '1231':
+        return data
+
+    windowed_data = []
+    start_indices=[]
+    end_indices=[]
+    if start_date.lower() == 'por':
+        #start_d = ''.join(data[0][0].split('-'))
+        start_d = date_to_eight(data[0][0])
     else:
-        windowed_data = []
-        start_indices=[]
-        end_indices=[]
-        if start_date.lower() == 'por':
-            start_d = ''.join(data[0][0].split('-'))
-        else:
-            start_d = start_date
-        if end_date.lower() == 'por':
-            end_d = ''.join(data[-1][0].split('-'))
-        else:
-            end_d = end_date
-        st_yr = int(start_d[0:4])
-        st_mon = int(start_d[4:6])
-        st_day = int(start_d[6:8])
-        end_yr = int(end_d[0:4])
-        end_mon = int(end_d[4:6])
-        end_day = int(end_d[6:8])
-        #Date formatting needed to deal with end of data and window size
-        #doy = day of year
-        if is_leap_year(st_yr) and st_mon > 2:
-            doy_first = dt.datetime(st_yr, st_mon, st_day).timetuple().tm_yday -1
-        else:
-            doy_first = dt.datetime(st_yr, st_mon, st_day).timetuple().tm_yday
-        if is_leap_year(end_yr) and end_mon > 2:
-            doy_last = dt.datetime(end_yr, end_mon, end_day).timetuple().tm_yday - 1
-        else:
-            doy_last = dt.datetime(end_yr, end_mon, end_day).timetuple().tm_yday
-        doy_window_st = compute_doy(start_window[0:2], start_window[2:4])
-        doy_window_end = compute_doy(end_window[0:2], end_window[2:4])
-        dates = [data[i][0] for i  in range(len(data))]
-        #match dates and window formats
-        if len(dates[0]) == 8:
-            start_w = start_window;end_w = end_window
-        else:
-            start_w = '%s-%s' % (start_window[0:2], start_window[2:4])
-            end_w = '%s-%s' % (end_window[0:2], end_window[2:4])
-        #silly python doesn't have list.indices() method
-        #Look for windows in data
-        for i, date in enumerate(dates):
-            if len(date) == 8:sidx = 4
-            else:sidx = 5
-            if date[sidx:] == start_w:
-                start_indices.append(i)
-            if date[sidx:] == end_w:
-                end_indices.append(i)
-        #Check end conditions at endpoints:
-        if doy_window_st == doy_window_end:
-            pass
-        elif doy_window_st < doy_window_end:
-            if doy_first <= doy_window_end and doy_window_st < doy_first:
-                start_indices.insert(0, 0)
-            if doy_last < doy_window_end and doy_window_st <= doy_last:
-                end_indices.insert(len(dates),len(dates)-1)
-        else: #doy_window_st > doy_window_end
-            if (doy_window_st > doy_first and doy_first <= doy_window_end) or (doy_window_st < doy_first and doy_first >= doy_window_end):
-                start_indices.insert(0, 0)
-            if (doy_last <= doy_window_st and doy_last < doy_window_end) or (doy_window_st <= doy_last and doy_last > doy_window_end):
-                end_indices.insert(len(dates),len(dates)-1)
-        #Sanity check
-        if len(start_indices)!= len(end_indices):
-            return []
-        for j in range(len(start_indices)):
-            add_data = data[start_indices[j]:end_indices[j]+1]
-            windowed_data = windowed_data + add_data
+        start_d = date_to_eight(start_date)
+    if end_date.lower() == 'por':
+        #end_d = ''.join(data[-1][0].split('-'))
+        end_d = date_to_eight(data[-1][0])
+    else:
+        end_d = date_to_eight(end_date)
+    st_yr = int(start_d[0:4])
+    st_mon = int(start_d[4:6])
+    st_day = int(start_d[6:8])
+    end_yr = int(end_d[0:4])
+    end_mon = int(end_d[4:6])
+    end_day = int(end_d[6:8])
+    print data
+    #Date formatting needed to deal with end of data and window size
+    #doy = day of year
+    if is_leap_year(st_yr) and st_mon > 2:
+        doy_first = dt.datetime(st_yr, st_mon, st_day).timetuple().tm_yday -1
+    else:
+        doy_first = dt.datetime(st_yr, st_mon, st_day).timetuple().tm_yday
+    if is_leap_year(end_yr) and end_mon > 2:
+        doy_last = dt.datetime(end_yr, end_mon, end_day).timetuple().tm_yday - 1
+    else:
+        doy_last = dt.datetime(end_yr, end_mon, end_day).timetuple().tm_yday
+    doy_window_st = compute_doy(start_w[0:2], start_w[2:4])
+    doy_window_end = compute_doy(end_w[0:2], end_w[2:4])
+    dates = [data[i][0] for i  in range(len(data))]
+    #match dates and window formats
+    if len(dates[0]) == 8:
+        start_win = start_w;end_win = end_w
+    else:
+        start_win = '%s-%s' % (start_w[0:2], start_w[2:4])
+        end_win = '%s-%s' % (end_w[0:2], end_w[2:4])
+    #silly python doesn't have list.indices() method
+    #Look for windows in data
+    for i, date in enumerate(dates):
+        if len(date) == 8:sidx = 4
+        else:sidx = 5
+        if date[sidx:] == start_win:
+            start_indices.append(i)
+        if date[sidx:] == end_win:
+            end_indices.append(i)
+    #Check end conditions at endpoints:
+    if doy_window_st == doy_window_end:
+        pass
+    elif doy_window_st < doy_window_end:
+        if doy_first <= doy_window_end and doy_window_st < doy_first:
+            start_indices.insert(0, 0)
+        if doy_last < doy_window_end and doy_window_st <= doy_last:
+            end_indices.insert(len(dates),len(dates)-1)
+    else: #doy_window_st > doy_window_end
+        if (doy_window_st > doy_first and doy_first <= doy_window_end) or (doy_window_st < doy_first and doy_first >= doy_window_end):
+            start_indices.insert(0, 0)
+        if (doy_last <= doy_window_st and doy_last < doy_window_end) or (doy_window_st <= doy_last and doy_last > doy_window_end):
+            end_indices.insert(len(dates),len(dates)-1)
+    #Sanity check
+    if len(start_indices)!= len(end_indices):
+        return []
+    for j in range(len(start_indices)):
+        add_data = data[start_indices[j]:end_indices[j]+1]
+        windowed_data = windowed_data + add_data
     return windowed_data
 
 ###########################################################

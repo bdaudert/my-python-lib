@@ -48,7 +48,8 @@ class LoggerWriter:
         # if statement reduces the amount of newlines that are
         # printed to the logger
         if message != '\n':
-            self.level(message)
+            try:self.level(str(message))
+            except:pass
 
     def flush(self):
         # create a flush method so things can be flushed when
@@ -165,26 +166,17 @@ class WrapperTest(object):
         except AssertionError as err:
             logger.error('ERROR: station_name AssertionError' + str(err) + '\n')
 
-    def test_Sodsumm_results(self, utClass,results, err):
+    def test_Sodsumm_results(self, utClass,results, err, element):
         self.test_error(utClass, err)
         try:
             utClass.assertIsInstance(results, dict)
         except AssertionError as err:
             logger.error('ERROR: AssertionError' + str(err) + '\n')
-        keys = {
-            'both':['prsn', 'temp'],
-            'hc':['hdd','cdd'],
-            'g':['gdd'],
-            'temp':['temp'],
-            'prsn':['prsn']
-
-        }
-        for el, tables in keys.iteritems():
-            for table in tables:
-                try:
-                    utClass.assertIn(table, results)
-                except AssertionError as err:
-                    logger.error('ERROR: AssertionError' + str(err) + '\n')
+        for table in WRCCData.TAB_LIST_NO_GRAPHICS[element]:
+            try:
+                utClass.assertIn(table, results)
+            except AssertionError as err:
+                logger.error('ERROR: AssertionError' + str(err) + '\n')
         #utClass.assertIn('station_id', results)
 
     def test_Soddyrec_results(self, utClass, results, err):
@@ -212,7 +204,9 @@ class WrapperTest(object):
             utClass.assertNotEqual(results, [])
         except AssertionError as err:
             logger.error('ERROR: AssertionError' + str(err) + '\n')
-
+###########################
+# TEST CASES
+###########################
 class Test_sodxtrmts(unittest.TestCase):
     def setUp(self):
         self.data_params = WRCCData.WRAPPER_DATA_PARAMS['sodxtrmts']
@@ -344,17 +338,14 @@ class Test_sodsumm(unittest.TestCase):
         self.data_params = WRCCData.WRAPPER_DATA_PARAMS['sodsumm']
         self.app_params =  WRCCData.WRAPPER_APP_PARAMS['sodsumm']
 
-    def test_sodsumm(self):
-        """
-        Test that Sodsumm wrapper works on the normal path.
-        """
-        msg = 'Testing Sodsumm'
+    def test_default(self):
+        msg = 'Testing Sodsumm with default values'
         logger.info(msg + '\n')
         data_params = copy.deepcopy(self.data_params)
         app_params = copy.deepcopy(self.app_params)
         WT = WrapperTest('Sodsumm', data_params, app_params)
         results, err = WT.run_wrapper()
-        WT.test_Sodsumm_results(self, results, err)
+        WT.test_Sodsumm_results(self, results, err,data_params['element'])
 
     def test_stations(self):
         msg = 'Testing Sodsumm stations'
@@ -366,25 +357,24 @@ class Test_sodsumm(unittest.TestCase):
             #Shorten time range
             WT = WrapperTest('Sodsumm', data_params, app_params)
             results, err = WT.run_wrapper()
-            WT.test_Sodsumm_results(self, results, err)
+            WT.test_Sodsumm_results(self, results, err, data_params['element'])
 
     def test_elements(self):
         msg = 'Testing Sodsumm elements'
         logger.info(msg + '\n')
-        for table_name in ['temp', 'prsn', 'hdd', 'cdd', 'gdd', 'ts_tps','ts_tp']:
+
+        for el, table_name_list in WRCCData.TAB_LIST_NO_GRAPHICS.iteritems():
+            logger.info('Testing Sodsumm element: ' + str(el) + '\n')
             data_params = copy.deepcopy(self.data_params)
             app_params = copy.deepcopy(self.app_params)
-            if table_name in ['hdd','cdd']:tbls = 'hc'
-            elif table_name == 'gdd':tbls = 'g'
-            elif table_name in ['ts_tps','ts_tp']:tbls = 'both'
-            else:tbls = table_name
-            app_params['el_type'] = tbls
+            data_params['element'] = el
+            app_params['el_type'] = el
             #Shorten time range
             data_params['start_date'] = '2000'
             data_params['end_date'] = '2005'
             WT = WrapperTest('Sodsumm', data_params, app_params)
             results, err = WT.run_wrapper()
-            WT.test_Sodsumm_results(self, results, err)
+            WT.test_Sodsumm_results(self, results, err, data_params['element'])
 
 class Test_soddyrec(unittest.TestCase):
     def setUp(self):
@@ -413,7 +403,7 @@ class Test_soddyrec(unittest.TestCase):
             #Shorten time range
             WT = WrapperTest('Soddyrec', self.data_params, self.app_params)
             results, err = WT.run_wrapper()
-            WT.test_Sodsumm_results(self, results, err)
+            WT.test_Soddyrec_results(self, results, err)
 
 
     def test_elements(self):
@@ -467,7 +457,6 @@ class Test_soddynorm(unittest.TestCase):
         WT = WrapperTest('Soddynorm', data_params, app_params)
         results, err = WT.run_wrapper()
         WT.test_Soddynorm_results(self, results, err)
-
 
 if __name__ == '__main__':
     log_file_path = log_dir + log_file

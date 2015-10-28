@@ -104,15 +104,14 @@ class setUp(object):
         except Exception, e:
             err = 'FAIL request_and_format_data. ERROR: ' + str(e) + ' PARAMS: ' + str(params)
             return results, err
-
         if 'data_summary' in params.keys() and params['data_summary'] == 'windowed_data':
-            d = results['data'][0]
+            d = copy.deepcopy(results['data'][0])
             sd = params['start_date']
             ed = params['end_date']
             sw = params['start_window']
             ew = params['end_window']
             try:
-                results['data'] = WRCCUtils.get_window_data(d, sd, ed, sw, ew)
+                results['data'] = WRCCUtils.get_windowed_data(d, sd, ed, sw, ew)
             except Exception, e:
                 results = {}
                 err = 'FAIL get_windowed_data. ERROR: ' + str(e) + ' PARAMS: ' + str(params)
@@ -439,6 +438,7 @@ class Test_station_finder(unittest.TestCase):
                 if ValueError:
                     logger.error('STATION FINDER: cannot load json data\n')
 
+
 class Test_single_lister(unittest.TestCase):
     def setUp(self):
         self.params = self.params = copy.deepcopy(WRCCData.SCENIC_DATA_PARAMS['single_lister'])
@@ -525,6 +525,7 @@ class Test_single_lister(unittest.TestCase):
             params['data_summary'] = ds
             if ds == 'windowed_data':
                 params['start_date'] = '20140101'
+                params['end_date'] = '20150901'
                 params['start_window'] = '02-28'
                 params['end_window'] = '03-01'
                 logger.info(str(params) + '\n')
@@ -777,7 +778,6 @@ class Test_monann(unittest.TestCase):
             self.assertNotEqual(results[0], [])
         except AssertionError as err:
             logger.error('AssertionError ' + str(err) + '\n')
-
 ############
 # RUN TESTS
 ###########

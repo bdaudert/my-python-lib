@@ -20,6 +20,28 @@ from osgeo import gdal, ogr, osr
 
 import WRCCClasses, AcisWS, WRCCData
 
+##########################
+#DATE/TIME FUNCTIONS
+##########################
+def set_back_date(days_back):
+    '''
+    Calculates today - days_back
+    and returns the back date in format
+    yyyymmdd
+    '''
+    try:
+        int(days_back)
+    except:
+        return '99990101'
+    tdy = dt.datetime.today()
+    #Choose default start_date 4 weeks back
+    b = dt.datetime.today() - dt.timedelta(days=int(days_back))
+    yr_b = str(b.year);mon_b = str(b.month);day_b = str(b.day)
+    if len(mon_b) == 1:mon_b = '0%s' % mon_b
+    if len(day_b) == 1:day_b = '0%s' % day_b
+    back_date = '%s%s%s' % (yr_b, mon_b, day_b)
+    return back_date
+
 #########
 #STATICS
 ########
@@ -33,6 +55,13 @@ station_reduction_areas = ['county', 'county_warning_area','basin',\
 'climate_division','state','bounding_box']
 grid_reduction_areas = ['state','bounding_box']
 
+today = set_back_date(0)
+today_year = today[0:4]
+today_month = today[5:7]
+today_day = today[8:10]
+begin_10yr = set_back_date(3660)
+yesterday = set_back_date(1)
+fourtnight = set_back_date(14)
 ###################################
 #DATA  LSITER MODULES
 ###################################
@@ -193,12 +222,16 @@ def get_meta_keys(form):
         if form['data_type'] == 'station':
             meta_keys = ['name', 'state', 'sids', 'elev', 'll', 'valid_daterange']
         else:
-            meta_keys = ['ll','elev']
+            #LOCAFIX ME LOCA NO ELEVS
+            #meta_keys = ['ll','elev']
+            meta_keys = ['ll']
     else:
         if 'station_id' in form.keys() or 'station_ids' in form.keys():
             meta_keys = ['name', 'state', 'sids', 'elev', 'll', 'valid_daterange']
         else:
-            meta_keys = ['ll','elev']
+            #LOCAFIX ME LOCA NO ELEVS
+            #meta_keys = ['ll','elev']
+            meta_keys = ['ll']
     return meta_keys
 
 def convert_elements_to_list(elements):
@@ -243,7 +276,9 @@ def set_acis_meta(data_type):
         #return 'name,state,sids,ll,elev,uid,county,climdiv,valid_daterange'
         return 'name,state,sids,ll,elev,uid,valid_daterange'
     if data_type == 'grid':
-        return 'll,elev'
+        #LOCAFIX ME LOCA NO ELEVS
+        #return 'll,elev'
+        return 'll'
 
 def set_acis_els(form):
     '''
@@ -477,7 +512,6 @@ def request_and_format_data(form):
     #Set request parameters
     large_request = False
     params = set_acis_params(form, large_request)
-    print params
     #Make data request
     #req = request_data(params)
     try:
@@ -867,7 +901,11 @@ def grid_data_trim_and_summary(req,form):
     try:
         lats = req['meta']['lat']
         lons = req['meta']['lon']
-        elevs = req['meta']['elev']
+        #LOCAFIX ME LOCA NO ELEVS
+        try:
+            elevs = req['meta']['elev']
+        except:
+            elevs = copy.deepcopy(lats)
         data = req['data']
         els = form['elements']
     except:
@@ -910,13 +948,17 @@ def grid_data_trim_and_summary(req,form):
             #new_meta.append(meta_dict)
             meta_dict = {
                 'll':str(lon)+','+str(lat),
-                'elev':str(unit_convert('elev',req['meta']['elev'][grid_idx][lon_idx]))
+                #LOCAFIX ME LOCA NO ELEVS
+                #'elev':str(unit_convert('elev',req['meta']['elev'][grid_idx][lon_idx]))
+                'elev':'-9999'
             }
             key_order_list = ['ll', 'elev']
             meta_display_list = metadict_to_display_list(meta_dict, key_order_list,form)
             new_meta.append(meta_display_list)
             new_lons.append(lon)
-            new_elevs.append(elevs[grid_idx][lon_idx])
+            #LOCAFIX ME LOCA NO ELEVS
+            #new_elevs.append(elevs[grid_idx][lon_idx])
+            new_elevs.append(-9999)
             new_data.append([])
             for date_idx, date_data in enumerate(data):
                 d_data = [format_date(date_data[0],sep)]
@@ -979,7 +1021,12 @@ def format_grid_spatial_summary(req,form):
     try:
         lats = req['meta']['lat']
         lons = req['meta']['lon']
-        elevs = req['meta']['elev']
+        #LOCAFIX ME LOCA NO ELEVS
+        #elevs = req['meta']['elev']
+        try:
+            elevs = req['meta']['elev']
+        except:
+            elevs = copy.deepcopy(lats)
         data = req['data']
         els = form['elements']
     except:
@@ -1006,7 +1053,9 @@ def format_grid_spatial_summary(req,form):
             #new_meta.append(meta_dict)
             meta_dict = {
                 'll':[str(lon)+','+str(lat)],
-                'elev':str(unit_convert('elev',req['meta']['elev'][grid_idx][lon_idx]))
+                #LOCAFIX ME LOCA NO ELEVS
+                'elev':'-9999'
+                #'elev':str(unit_convert('elev',req['meta']['elev'][grid_idx][lon_idx]))
             }
             key_order_list = ['ll', 'elev']
             meta_display_list = metadict_to_display_list(meta_dict, key_order_list,form)
@@ -1049,7 +1098,12 @@ def format_grid_no_summary(req,form):
     try:
         lats = req['meta']['lat']
         lons = req['meta']['lon']
-        elevs = req['meta']['elev']
+        #LOCAFIX ME LOCA NO ELEVS
+        #elevs = req['meta']['elev']
+        try:
+            elevs = req['meta']['elev']
+        except:
+            elevs = copy.deepcopy(lats)
         data = req['data']
         els = form['elements']
     except:
@@ -1075,7 +1129,9 @@ def format_grid_no_summary(req,form):
             #new_meta.append(meta_dict)
             meta_dict = {
                 'll':[str(lon)+','+str(lat)],
-                'elev':str(unit_convert('elev',req['meta']['elev'][grid_idx][lon_idx]))
+                #LOCAFIX ME LOCA NO ELEVS
+                'elev':'-9999'
+                #'elev':str(unit_convert('elev',req['meta']['elev'][grid_idx][lon_idx]))
             }
             key_order_list = ['ll', 'elev']
             meta_display_list = metadict_to_display_list(meta_dict, key_order_list,form)
@@ -1115,7 +1171,12 @@ def format_grid_windowed_data(req,form):
     try:
         lats = req['meta']['lat']
         lons = req['meta']['lon']
-        elevs = req['meta']['elev']
+        #LOCAFIX ME LOCA NO ELEVS
+        #elevs = req['meta']['elev']
+        try:
+            elevs = req['meta']['elev']
+        except:
+            elevs = copy.deepcopy(lats)
         data = req['data']
         els = form['elements']
     except:
@@ -1141,7 +1202,9 @@ def format_grid_windowed_data(req,form):
             #new_meta.append(meta_dict)
             meta_dict = {
                 'll':[str(lon)+','+str(lat)],
-                'elev':str(unit_convert('elev',req['meta']['elev'][grid_idx][lon_idx]))
+                #LOCAFIX ME LOCA NO ELEVS
+                'elev':'-9999'
+                #'elev':str(unit_convert('elev',req['meta']['elev'][grid_idx][lon_idx]))
             }
             key_order_list = ['ll', 'elev']
             meta_display_list = metadict_to_display_list(meta_dict, key_order_list,form)
@@ -1188,7 +1251,12 @@ def format_grid_temporal_summary(req,form):
     try:
         lats = req['meta']['lat']
         lons = req['meta']['lon']
-        elevs = req['meta']['elev']
+        #LOCAFIX ME LOCA NO ELEVS
+        #elevs = req['meta']['elev']
+        try:
+            elevs = req['meta']['elev']
+        except:
+            elevs = copy.deepcopy(lats)
         data = req['smry']
         els = form['elements']
     except:
@@ -1212,7 +1280,9 @@ def format_grid_temporal_summary(req,form):
             #new_meta.append(meta_dict)
             meta_dict = {
                 'll':[str(lon)+','+str(lat)],
-                'elev':str(unit_convert('elev',req['meta']['elev'][grid_idx][lon_idx]))
+                #LOCAFIX ME LOCA NO ELEVS
+                'elev':'-9999'
+                #'elev':str(unit_convert('elev',req['meta']['elev'][grid_idx][lon_idx]))
             }
             key_order_list = ['ll', 'elev']
             meta_display_list = metadict_to_display_list(meta_dict, key_order_list,form)
@@ -1713,8 +1783,10 @@ def get_single_intraannual_data(form):
     climoData = []; percentileData = [[] for p in percentiles]
     #Set up time vars
     doyS = compute_doy(form['start_month'],form['start_day'])
-    yS = form['start_date'][0:4]
-    yE = form['end_date'][0:4]
+    #yS = form['start_date'][0:4]
+    #yE = form['end_date'][0:4]
+    yS = form['start_year']
+    yE = form['end_year']
     target_year = int(form['target_year'])
     #Sanity check on  target year
     if target_year < int(yS) or target_year > int(yE):
@@ -1741,24 +1813,35 @@ def get_single_intraannual_data(form):
     else:
         elems = [{'vX':WRCCData.ACIS_ELEMENTS_DICT[form['element']]['vX']}]
     acis_params = {
-        'sdate':form['start_date'],
-        'edate':form['end_date'],
+        #'sdate':form['start_date'],
+        #'edate':form['end_date'],
+        'sdate':form['start_year'] + '0101',
         'elems': elems,
         'meta':'ll'
     }
-
+    if form['end_year'] == str(today_year):
+        acis_params['edate'] = form['end_year'] + today_month + today_day
+    else:
+        acis_params['edate'] = form['end_year'] + '1231'
     #Data request
     if 'station_id' in form.keys():
         acis_params['sid'] = form['station_id']
-        #find valid_dateange for station and element:
+        '''
         if form['start_date'] != '9999-99-99' and form['start_date'] != '9999-99-99':
             req = AcisWS.StnData(acis_params)
         else:
+            req = {}
+        '''
+        try:
+            req = AcisWS.StnData(acis_params)
+        except:
             req = {}
     if 'location' in form.keys():
         acis_params['loc'] = form['location']
         acis_params['grid'] = form['grid']
         req = AcisWS.GridData(acis_params)
+    if not req or req is None or not isinstance(req,dict):
+        req = {}
     #Check for empty request
     if 'data' not in req.keys():
         return year_txt_data, year_graph_data, climoData, percentileData
@@ -1932,30 +2015,41 @@ def get_single_interannaul_data(form):
     Returns: yearly summarized values and highcarts data
     '''
     year_data = []; hc_data = []
-    today_str = set_back_date(0)
-    today_year = today_str[0:4]
     if form['units'] == 'metric':
         unit_convert = getattr(thismodule, 'convert_to_metric')
     else:
         unit_convert =  getattr(thismodule,'convert_nothing')
     el_vX = WRCCData.ACIS_ELEMENTS_DICT[form['element']]['vX']
     acis_params = {
-        'sdate':form['start_date'],
-        'edate':form['end_date'],
+        #'sdate':form['start_date'],
+        #'edate':form['end_date'],
+        'sdate':form['start_year']+ '0101',
         'elems': [{'vX':el_vX}]
     }
+    if form['end_year'] == str(today_year):
+        acis_params['edate'] = form['end_year'] + today_month + today_day
+    else:
+        acis_params['edate'] = form['end_year'] + '1231'
     #Data request
     if 'station_id' in form.keys():
         acis_params['sid'] = form['station_id']
+        '''
         #find valid_dateange for station and element:
         if form['start_date'] != '9999-99-99' and form['start_date'] != '9999-99-99':
             req = AcisWS.StnData(acis_params)
         else:
             req = {}
+        '''
+        try:
+            req = AcisWS.StnData(acis_params)
+        except:
+            req = {}
     if 'location' in form.keys():
         acis_params['loc'] = form['location']
         acis_params['grid'] = form['grid']
         req = AcisWS.GridData(acis_params)
+    if not req or req is None or not isinstance(req, dict):
+        return year_data, hc_data
     if 'data' not in req.keys():
         return year_data, hc_data
     data = req['data']
@@ -2175,7 +2269,7 @@ def find_id_and_name(form_name_field, json_file_path):
         #check if i is id
         if entry['id'] == i:
             #Check that names match
-            if name:
+            if name or name is not None:
                 #kml file names have special chars removed
                 n = re.sub('[^a-zA-Z0-9\n\.]', ' ', entry['name'])
                 if entry['name'].upper() != name.upper() and n.upper() != name.upper():
@@ -2183,7 +2277,9 @@ def find_id_and_name(form_name_field, json_file_path):
                 else:
                     return i, name
             else:
-                return i,''
+                if 'name' in entry.keys() and entry['name']:return i, entry['name']
+                else:return i,''
+                #return i,''
         #Check if i is name
         if entry['name'].upper() == i.upper():
             return entry['id'], entry['name']
@@ -2307,13 +2403,10 @@ def form_to_display_list(key_order_list, form):
         keys = [k for k in key_order_list]
     display_list = []
     for key in keys:
-        display_list.append([WRCCData.DISPLAY_PARAMS[key]])
-        '''
         try:
             display_list.append([WRCCData.DISPLAY_PARAMS[key]])
         except:
             display_list.append([''])
-        '''
     #Special case window for interannual
     if 'window' in keys:
         idx = keys.index(str(key))
@@ -2376,6 +2469,8 @@ def form_to_display_list(key_order_list, form):
             display_list[idx].append(WRCCData.GRID_CHOICES[form['grid']][0])
         elif key in ['start_month','end_month']:
             display_list[idx].append(WRCCData.MONTH_NAMES_SHORT_CAP[int(form[key]) - 1])
+        elif key in ['start_date','end_date']:
+            display_list[idx].append(format_date_string(form[key],'dash'))
         else:
             display_list[idx].append(str(val))
     return display_list
@@ -2453,25 +2548,6 @@ def set_url_params(initial):
 ##########################
 #DATE/TIME FUNCTIONS
 ##########################
-def set_back_date(days_back):
-    '''
-    Calculates today - days_back
-    and returns the back date in format
-    yyyymmdd
-    '''
-    try:
-        int(days_back)
-    except:
-        return '99990101'
-    tdy = dt.datetime.today()
-    #Choose default start_date 4 weeks back
-    b = dt.datetime.today() - dt.timedelta(days=int(days_back))
-    yr_b = str(b.year);mon_b = str(b.month);day_b = str(b.day)
-    if len(mon_b) == 1:mon_b = '0%s' % mon_b
-    if len(day_b) == 1:day_b = '0%s' % day_b
-    back_date = '%s%s%s' % (yr_b, mon_b, day_b)
-    return back_date
-
 def advance_date(date, days, back_or_forward):
     d = date_to_eight(date)
     if len(date) == 8:sep = ''
@@ -3982,7 +4058,6 @@ def get_windowed_data(data, start_date, end_date, start_window, end_window):
     end_yr = int(end_d[0:4])
     end_mon = int(end_d[4:6])
     end_day = int(end_d[6:8])
-    print data
     #Date formatting needed to deal with end of data and window size
     #doy = day of year
     if is_leap_year(st_yr) and st_mon > 2:

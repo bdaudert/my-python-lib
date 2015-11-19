@@ -464,6 +464,6 @@ if __name__ == '__main__':
         os.remove(log_file_path)
     Logger = WRCCClasses.Logger(log_dir,log_file,log_file.split('.')[0])
     logger = Logger.start_logger()
-    sys.stdout = LoggerWriter(logger.info)
-    sys.stderr = LoggerWriter(logger.error)
+    #sys.stdout = LoggerWriter(logger.info)
+    #sys.stderr = LoggerWriter(logger.error)
     unittest.main()

@@ -1278,6 +1278,7 @@ def format_sodxtrmts_results_web(results, data, data_params, app_params, wrapper
                 month_names_list = []
                 for mon in range(s_month,13):
                     month_names_list.append(WRCCData.NUMBER_TO_MONTH_NAME[str(mon)].upper())
+
                 if s_month!=1:
                     for mon in range(1,s_month):
                         month_names_list.append(WRCCData.NUMBER_TO_MONTH_NAME[str(mon)].upper())
@@ -1285,26 +1286,37 @@ def format_sodxtrmts_results_web(results, data, data_params, app_params, wrapper
                     header+='<TD ALIGN=CENTER COLSPAN=2>' + mon + '</TD>'
                 header+='<TD ALIGN=CENTER COLSPAN=2>ANN</TD></TR>'
                 print header
+                #Loop over years
                 for yr_idx,yr_data in enumerate(results[0]):
                     if yr_idx == len(results[0]) - 6:
-                        print '<TR> <TD ALIGN=CENTER COLSPAN=26> Period of Record Statistics  </TD> </TR>'
-                    row = '<TR>'
-                    for idx,val in enumerate(yr_data):
-                        if str(val) == '-9999.00':
-                            v = '-9999'
-                        elif  str(val) == '9999.00':
-                            v = '9999'
-                        else:
-                            v = str(val)
-                        if idx == 0:
-                            row+='<TD ALIGN=CENTER WIDTH=8%>'
-                        elif idx % 2 == 0:
-                            row+='<TD ALIGN=LEFT WIDTH=1%>'
-                        else:
-                            row+='<TD ALIGN=RIGHT WIDTH=6%>'
+                        print '<TR><TD ALIGN=CENTER COLSPAN=26> Period of Record Statistics</TD></TR>'
+                    row = '<TR><TD ALIGN=CENTER WIDTH=8%>' + yr_data[0] + '</TD>'
+                    for idx,val in enumerate(yr_data[2*s_month - 1 :25] + yr_data[1:2*s_month - 1]):
+                        if str(val) == '-9999.00':v = '-9999'
+                        elif  str(val) == '9999.00':v = '9999'
+                        else:v = str(val)
 
+                        if idx % 2 == 0:row+='<TD ALIGN=RIGHT WIDTH=6%>'
+                        else:row+='<TD ALIGN=LEFT WIDTH=1%>'
                         row+=v + '</TD>'
-                    row+='</TR>'
+                    '''
+                    #If start month not Jan, get rest of data
+                    for idx,val in enumerate(yr_data[1:2*s_month - 1]):
+                        if str(val) == '-9999.00':v = '-9999'
+                        elif  str(val) == '9999.00':v = '9999'
+                        else:v = str(val)
+
+                        if idx % 2 == 0:row+='<TD ALIGN=RIGHT WIDTH=6%>'
+                        else:row+='<TD ALIGN=LEFT WIDTH=1%>'
+                        row+=v + '</TD>'
+                    '''
+                    #Annual value
+                    ann_val = yr_data[-2]
+                    if str(ann_val) == '-9999.00':v = '-9999'
+                    elif str(ann_val) == '9999.00':v = '9999'
+                    else:v = str(ann_val)
+                    row+='<TD ALIGN=RIGHT WIDTH=6%>' + v + '</TD>'
+                    row+='<TD ALIGN=LEFT WIDTH=1%>' + yr_data[-1] + '</TD></TR>'
                     print row
                 print '</TABLE>'
                 print '</CENTER>'

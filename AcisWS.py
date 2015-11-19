@@ -41,40 +41,18 @@ def make_request(url,params) :
     except urllib2.HTTPError as error:
         #if error.code == 400 : print error.msg
         return None
-'''
-def MultiStnData(params):
-    req = {}
-    for url in settings.ACIS_SERVERS:
-        try:
-            req = make_request(url + 'MultiStnData',params)
-            if req:
-                return req
-                break
-        except:
-            continue
-    return req
 
-def StnData(params):
-    #return make_request(settings.ACIS_BASE_URL+'StnData',params)
-    req = {}
-    for url in settings.ACIS_SERVERS:
-        try:
-            req = make_request(url + 'StnData',params)
-            if req:
-                return req
-                break
-        except:
-            continue
-    return req
-'''
 def DataCall(acis_call, params):
     req = {}
     for url in settings.ACIS_SERVERS:
         try:
             req = make_request(url + acis_call,params)
-            if req:
+            if req and not 'error' in req.keys():
+                print 'Server userd: ' + url
                 return req
                 break
+            else:
+                continue
         except:
             continue
     return req

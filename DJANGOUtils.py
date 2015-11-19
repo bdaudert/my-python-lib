@@ -198,30 +198,42 @@ def set_initial(request,app_name):
             if initial['end_year'] == '9999':
                 initial['end_year'] = 'POR'
     elif app_name in ['interannual', 'intraannual']:
-        initial['start_date'] = None;initial['end_date'] = None
+        sd = None;ed = None
         if 'station_id' in initial.keys():
             stn_id, stn_name = WRCCUtils.find_id_and_name(initial['station_id'],settings.MEDIA_DIR + '/json/US_station_id.json')
             els = [initial['element']]
             if initial['element'] == 'dtr':els = ['maxt','mint']
             vd = WRCCUtils.find_valid_daterange(stn_id,el_list=els,max_or_min='min')
             if vd and len(vd) >=1:
-                initial['start_date'] = vd[0]
+                sd = vd[0]
             if vd and len(vd) >1:
-                initial['end_date'] = vd[1]
-            if initial['start_date'] is None or initial['end_date'] is None:
-                initial['start_date'] = '9999-99-99'
-                initial['end_date'] = '9999-99-99'
+                ed = vd[1]
+            if sd is None or ed is None:
+                sd = '9999-99-99'
+                ed = '9999-99-99'
         if 'location' in initial.keys():
             if str(initial['grid']) != '21':
-                initial['start_date'] = WRCCData.GRID_CHOICES[str(initial['grid'])][3][0][0]
-                initial['end_date'] = WRCCData.GRID_CHOICES[str(initial['grid'])][3][0][1]
+                sd = WRCCData.GRID_CHOICES[str(initial['grid'])][3][0][0]
+                ed = WRCCData.GRID_CHOICES[str(initial['grid'])][3][0][1]
             else:
-                initial['start_date'] = WRCCData.GRID_CHOICES[str(initial['grid'])][3][1][0]
-                initial['end_date'] = WRCCData.GRID_CHOICES[str(initial['grid'])][3][1][1]
-        initial['start_year'] = initial['start_date'][0:4]
-        initial['end_year'] = initial['end_date'][0:4]
+                sd = WRCCData.GRID_CHOICES[str(initial['grid'])][3][1][0]
+                ed = WRCCData.GRID_CHOICES[str(initial['grid'])][3][1][1]
+        initial['start_year'] = Get('start_year',sd[0:4])
+        initial['end_year'] = Get('end_year',ed[0:4])
+        #initial['start_date'] = initial['start_year'] + '-01-01'
+        #initial['end_date'] = initial['end_year'] + '-12-31'
         initial['start_month']  = Get('start_month', '1')
         initial['start_day']  = Get('start_day', '1')
+        initial['min_year'] = Get('min_year',sd[0:4])
+        initial['max_year'] = Get('max_year', ed[0:4])
+        #Narcapp
+        if initial['grid'] in ['5','6','8','10','12','13','15','16']:
+            initial['min_year_fut'] = '2040'
+            initial['max_year_fut'] = '2070'
+        #CMIP5
+        if initial['grid'] in range(22,43):
+            initial['min_year_fut'] = '2006'
+            initial['max_year_fut'] = '2100'
         if app_name == 'interannual':
             initial['end_month']  = Get('end_month', '1')
             initial['end_day']  = Get('end_day', '31')
@@ -459,7 +471,7 @@ def set_initial(request,app_name):
             if initial['departures_from_averages'] == bl:
                 checkbox_vals['departures_from_averages_' + bl + '_selected'] = 'selected'
     if 'grid' in initial.keys():
-        for g in ['1','21','3','4','5','6','7','8','9','10','11','12','13','14','15','16']:
+        for g in ['1','21','3','22','23','24','25','4','5','6','7','8','9','10','11','12','13','14','15','16']:
             checkbox_vals['grid_' + g + '_selected'] =''
             if initial['grid'] == g:
                 checkbox_vals['grid_' + g + '_selected'] ='selected'

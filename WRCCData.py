@@ -1351,7 +1351,9 @@ SCENIC_DATA_PARAMS = {
         'start_day':'01',
         'end_month':'01',
         'end_day':'31',
-        'temporal_summary':'sum'
+        'temporal_summary':'sum',
+        'start_year':'1980',
+        'end_year':'2000'
     },
     'intraannual':{
         'area_type':'station_id',
@@ -1360,7 +1362,9 @@ SCENIC_DATA_PARAMS = {
         'calculation':'cumulative',
         'units':'english',
         'start_month':'01',
-        'start_day':'01'
+        'start_day':'01',
+        'start_year':'1980',
+        'end_year':'2000'
     }
 }
 

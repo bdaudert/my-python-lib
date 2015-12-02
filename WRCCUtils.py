@@ -2840,7 +2840,7 @@ def shapefile_to_ll(app_name, shp_file, feature_id):
     #2.LINES, MULTILINESTRINGS -- not allowed
     if input_geom_type in ['LINE','MULTILINESTRING']:
         return None
-    #2.POLYGONS
+    #3.POLYGONS
     if input_geom_type in ['POLYGON']:
         #Check that polygon has no hole
         if len(range(proj_geom.GetGeometryCount())) > 1:
@@ -2854,7 +2854,19 @@ def shapefile_to_ll(app_name, shp_file, feature_id):
                 poly_ll+=str(round(pt[0],4)) + ',' + str(round(pt[1],4))
                 if j < sub_geom.GetPointCount() - 1:
                     poly_ll+=','
-
+    #4.MULTIPOLYGONS
+    if input_geom_type in ['MULTIPOLYGON']:
+        #MULTIPOLYGONS are made of polygons
+        for i in range(0, proj_geom.GetGeometryCount()):
+            poly = proj_geom.GetGeometryRef(i)
+            ## POLYGONS are made up of LINEAR RINGS
+            for j in range(0, poly.GetGeometryCount()):
+                linear_ring = poly.GetGeometryRef(j)
+                for k in range(0, linear_ring.GetPointCount()):
+                    pt = linear_ring.GetPoint(k)
+                    poly_ll+=str(round(pt[0],4)) + ',' + str(round(pt[1],4))
+                    if k < linear_rinf.GetPointCount() - 1:
+                        poly_ll+=','
         ## Get the next feature
         #input_ftr = input_layer.GetNextFeature()
         ## Or break after the first one

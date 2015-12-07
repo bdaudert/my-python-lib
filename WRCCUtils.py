@@ -57,8 +57,8 @@ grid_reduction_areas = ['state','bounding_box']
 
 today = set_back_date(0)
 today_year = today[0:4]
-today_month = today[5:7]
-today_day = today[8:10]
+today_month = today[4:6]
+today_day = today[6:8]
 begin_10yr = set_back_date(3660)
 yesterday = set_back_date(1)
 fourtnight = set_back_date(14)

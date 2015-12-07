@@ -48,7 +48,6 @@ def DataCall(acis_call, params):
         try:
             req = make_request(url + acis_call,params)
             if req and not 'error' in req.keys():
-                print 'Server userd: ' + url
                 return req
                 break
             else:

@@ -2161,9 +2161,9 @@ def get_single_interannaul_data(form):
 ################################
 # HIGHCARTS DATA EXTRACTION
 ############################
-def extract_highcarts_data_monann(data,form):
+def extract_highcarts_data_monthly_summaries(data,form):
     '''
-    Format monann data for highcarts plotting
+    Format monthly_summaries data for highcarts plotting
     Args:
         data: data list containing data for all elements
         el_idx: index of element data in data

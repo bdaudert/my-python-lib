@@ -229,10 +229,11 @@ if __name__ == '__main__' :
         if not params:
             logger.error('Cannot read parameter file: %s! Exiting program.' %os.path.basename(params_file))
             params_files_failed.append(params_file)
-            sys.exit(1)
+            continue
         #Check if params file is older than
         #cron job time --> data request completed or in progress
         #Check if request in progress
+
         st=os.stat(params_file)
         mtime=datetime.datetime.fromtimestamp(st.st_mtime)
         if mtime <= x_mins_ago:
@@ -266,6 +267,17 @@ if __name__ == '__main__' :
             logger.error('ERROR notifying user %s Error: %s' %(user_email,error))
             params_files_failed.append(params_file)
             os.remove(params_file)
+            #email me
+            subject = 'data request email error'
+            new_message = '''
+            Could not email user at %s
+            Original message:
+            %s
+            '''%(user_email, message)
+            EMAIL = WRCCClasses.Mail(mail_server,fromaddr,'bdaudert@dri.edu',subject, message,logger)
+            error = EMAIL.write_email()
+            if error:
+                logger.error('ERROR emailing ME. Error: %s' %(error))
             continue
         #Remove parameter file
         os.remove(params_file)
@@ -277,4 +289,4 @@ if __name__ == '__main__' :
         EMAIL = WRCCClasses.Mail(mail_server,fromaddr,'bdaudert@dri.edu',subject, message,logger)
         error = EMAIL.write_email()
         if error:
-            logger.error('ERROR notifying ME %s Error: %s' %(user_email,error))
+            logger.error('ERROR emailing ME. Error: %s' %(error))

@@ -65,7 +65,7 @@ def set_initial(request,app_name):
             map_overlay,
             sf_download
             spatial_summary, temporal_summary
-            monann, climatology
+            monthly_summaries, climatology
             data_comparison, liklihood,
             data_download
     Returns:
@@ -80,7 +80,7 @@ def set_initial(request,app_name):
     Getlist = set_GET_list(request)
     #Set area type: station_id(s), location, basin,...
     area_type = None
-    if app_name in ['single_lister','climatology','monann', 'interannual','intraannual']:
+    if app_name in ['single_lister','climatology','monthly_summaries', 'interannual','intraannual']:
         initial['area_type'] = Get('area_type','station_id')
     elif app_name in ['data_comparison']:
         initial['area_type'] = 'location'
@@ -149,7 +149,7 @@ def set_initial(request,app_name):
     #Set element(s)--> always as list if multiple
     if app_name == 'map_overlay':
         initial['elements'] = Get('elements','maxt,mint,pcpn').split(',')
-    elif app_name in ['monann','data_comparison', 'interannual','intraannual']:
+    elif app_name in ['monthly_summaries','data_comparison', 'interannual','intraannual']:
             initial['element'] = Get('element',None)
             if initial['element'] is not None and len(initial['element'].split(',')) > 1:
                 initial['element'] =  str(initial['element'].split(',')[0])
@@ -176,7 +176,7 @@ def set_initial(request,app_name):
     initial['units'] = Get('units','english')
 
     #Set degree days
-    if app_name not in ['station_finder', 'monann', 'climatology', 'data_comparison']:
+    if app_name not in ['station_finder', 'monthly_summaries', 'climatology', 'data_comparison']:
         initial['add_degree_days'] = Get('add_degree_days', 'F')
         if initial['units'] == 'metric':
             initial['degree_days'] = Get('degree_days', 'gdd13,hdd21').replace(', ', ',')
@@ -184,7 +184,7 @@ def set_initial(request,app_name):
             initial['degree_days'] = Get('degree_days', 'gdd55,hdd70').replace(', ',',')
 
     #Set dates
-    if app_name in ['monann','climatology']:
+    if app_name in ['monthly_summaries','climatology']:
         initial['start_year'] = Get('start_year', None)
         if initial['start_year'] is None:
             #Link from station finder
@@ -302,12 +302,12 @@ def set_initial(request,app_name):
     #Set app specific params
     if app_name in ['multi_lister','spatial_summary','station_finder']:
         initial['feature_id'] = 0
-    if app_name in ['monann','climatology','sf_link']:
+    if app_name in ['monthly_summaries','climatology','sf_link']:
         initial['max_missing_days']  = Get('max_missing_days', '5')
     if app_name == 'station_finder':
         initial['elements_constraints'] = Get('elements_constraints', 'all')
         initial['dates_constraints']  = Get('dates_constraints', 'all')
-    if app_name in  ['monann','sf_link']:
+    if app_name in  ['monthly_summaries','sf_link']:
         initial['start_month'] = Get('start_month','01')
         if initial['element'] in ['pcpn','snow','evap','pet']:
             initial['statistic'] = Get('statistic','msum')
@@ -323,14 +323,14 @@ def set_initial(request,app_name):
         #Set initial plot options
         initial['chart_summary'] = Get('chart_summary','individual')
         #initial['plot_months'] = Get('plot_months','0,1')
-    if app_name == 'monann':
+    if app_name == 'monthly_summaries':
         initial['base_temperature'] = Get('base_temperature','65')
         initial['statistic_period'] = Get('statistic_period','monthly')
     if app_name in ['climatology','sf_link']:
         initial['summary_type'] = Get('summary_type', 'all')
     #Ploting options for all pages that have charts
-    if app_name in ['monann', 'spatial_summary','interannual', 'intraannual','data_comparison']:
-        if app_name in ['spatial_summary','monann','intraannual']:
+    if app_name in ['monthly_summaries', 'spatial_summary','interannual', 'intraannual','data_comparison']:
+        if app_name in ['spatial_summary','monthly_summaries','intraannual']:
             if app_name == 'spatial_summary':
                 shown_indices = ','.join([str(idx) for idx in range(len(initial['elements']))])
             elif app_name == 'intraannual':
@@ -344,12 +344,12 @@ def set_initial(request,app_name):
                 initial['chart_elements'] = [initial['elements'][int(idx)] for idx in index_list]
         initial['chart_type'] = Get('chart_type','spline')
         initial['show_running_mean'] = Get('show_running_mean','F')
-        if app_name in ['monann', 'interannual']:
+        if app_name in ['monthly_summaries', 'interannual']:
             initial['running_mean_years'] = Get('running_mean_years',5)
         else:
             initial['running_mean_days'] = Get('running_mean_days',9)
         initial['show_average'] = Get('show_average','F')
-        if app_name in ['monann']:
+        if app_name in ['monthly_summaries']:
             initial['show_range'] = Get('show_range','F')
     #Checkbox vals
     checkbox_vals['state_' + initial['overlay_state'] + '_selected'] = 'selected'
@@ -416,7 +416,7 @@ def set_initial(request,app_name):
         plot_months = initial['plot_months'].split(',')
         for m_idx in range(0,12):
             if str(m_idx) in plot_months:
-                checkbox_vals['monann_chart_indices_' +  str(m_idx) + '_selected'] ='selected'
+                checkbox_vals['monthly_summaries_chart_indices_' +  str(m_idx) + '_selected'] ='selected'
         checkbox_vals['chart_smry_' +  initial['plot_type'] + '_selected'] = 'selected'
         '''
     if 'statistic_period' in initial.keys():

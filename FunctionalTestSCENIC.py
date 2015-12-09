@@ -279,7 +279,7 @@ class setUp(object):
         except AssertionError as err:
             logger.error('AssertionError ' + str(err) + '\n')
 
-    def run_monann(self, params):
+    def run_monthly_summaries(self, params):
         results = [];err=''
         initial, checkbox_vals, err = self.setInitial(params)
         if err is not None:return results, err
@@ -685,17 +685,17 @@ class Test_intraannual(unittest.TestCase):
         results, err = self.setUp.run_intraannual(params)
         self.setUp.test_intraannual_results(self,results,err)
 
-class Test_monann(unittest.TestCase):
+class Test_monthly_summaries(unittest.TestCase):
     def setUp(self):
-        self.params = copy.deepcopy(WRCCData.SCENIC_DATA_PARAMS['monann'])
-        self.setUp = setUp('monann')
+        self.params = copy.deepcopy(WRCCData.SCENIC_DATA_PARAMS['monthly_summaries'])
+        self.setUp = setUp('monthly_summaries')
 
     def test_default(self):
         msg = 'Testing Monthly Summaries with default values'
         logger.info(msg + '\n')
         params = copy.deepcopy(self.params)
         logger.info(str(params) + '\n')
-        results = self.setUp.run_monann(params)
+        results = self.setUp.run_monthly_summaries(params)
         try:
             self.assertNotEqual(results[0], [])
         except AssertionError as err:
@@ -712,7 +712,7 @@ class Test_monann(unittest.TestCase):
         params['start_year'] = '1970'
         params['end_year'] = '1980'
         logger.info(str(params) + '\n')
-        results = self.setUp.run_monann(params)
+        results = self.setUp.run_monthly_summaries(params)
         try:
             self.assertNotEqual(results[0], [])
         except AssertionError as err:
@@ -729,7 +729,7 @@ class Test_monann(unittest.TestCase):
             params['start_date'] = '2010'
             params['end_date'] = '2005'
             logger.info(str(params) + '\n')
-            results = self.setUp.run_monann(params)
+            results = self.setUp.run_monthly_summaries(params)
             try:
                 self.assertNotEqual(results[0], [])
             except AssertionError as err:
@@ -747,7 +747,7 @@ class Test_monann(unittest.TestCase):
             params['start_year'] = '1945'
             params['end_year'] = '1950'
             logger.info(str(params) + '\n')
-            results = self.setUp.run_monann(params)
+            results = self.setUp.run_monthly_summaries(params)
             try:
                 self.assertNotEqual(results[0], [])
             except AssertionError as err:
@@ -759,7 +759,7 @@ class Test_monann(unittest.TestCase):
         params = copy.deepcopy(self.params)
         params['units'] = 'metric'
         logger.info(str(params) + '\n')
-        results = self.setUp.run_monann(params)
+        results = self.setUp.run_monthly_summaries(params)
         try:
             self.assertNotEqual(results[0], [])
         except AssertionError as err:
@@ -773,7 +773,7 @@ class Test_monann(unittest.TestCase):
         params['start_year'] = '1998'
         params['end_year'] = '2003'
         logger.info(str(params) + '\n')
-        results = self.setUp.run_monann(params)
+        results = self.setUp.run_monthly_summaries(params)
         try:
             self.assertNotEqual(results[0], [])
         except AssertionError as err:

@@ -381,11 +381,18 @@ class CsvWriter(object):
         for p_idx, p_data in enumerate(self.data):
             self.writer.writerow(['*'])
             if 'meta' in self.req.keys():
-                #Write meta
-                meta_display_params = WRCCUtils.metadict_to_display_list(self.req['meta'][p_idx], self.meta_keys, self.form)
-                for key_val in meta_display_params:
-                    row = ['*' + key_val[0].replace(' ',''),' '.join(key_val[1])]
-                    self.writer.writerow(row)
+                meta_display_params = []
+                if isinstance(self.req['meta'][p_idx],dict):
+                    #Write meta
+                    meta_display_params = WRCCUtils.metadict_to_display_list(self.req['meta'][p_idx], self.meta_keys, self.form)
+                    for key_val in meta_display_params:
+                        row = ['*' + key_val[0].replace(' ',''),' '.join(key_val[1])]
+                        self.writer.writerow(row)
+                elif isinstance(self.req['meta'][p_idx],list):
+                    meta_display_params = self.req['meta'][p_idx]
+                    for key_val in meta_display_params:
+                        row = ['*' + key_val[0].replace(' ',''),key_val[1]]
+                        self.writer.writerow(row)
             #Write data
             if 'app_name' in self.form.keys() and self.form['app_name'] in  ['intraannual']:
                 h = ['*' + 'Year: ', p_data[0][0][0:4]]
@@ -497,7 +504,11 @@ class ExcelWriter(object):
             self.write_header(ws)
             if 'meta' in self.req.keys():
                 #Write meta
-                meta_display_params = WRCCUtils.metadict_to_display_list(self.req['meta'][p_idx], self.meta_keys, self.form)
+                meta_display_params = []
+                if isinstance(self.req['meta'][p_idx],dict):
+                    meta_display_params = WRCCUtils.metadict_to_display_list(self.req['meta'][p_idx], self.meta_keys, self.form)
+                elif isinstance(self.req['meta'][p_idx],list):
+                    meta_display_params = self.req['meta'][p_idx]
                 #Write meta for point
                 for m_idx,key_val in enumerate(meta_display_params):
                     ws.write(3,m_idx,meta_display_params[m_idx][0])

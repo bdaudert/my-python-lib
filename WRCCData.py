@@ -1332,7 +1332,7 @@ SCENIC_DATA_PARAMS = {
         'data_summary':'spatial',
         'spatial_summary':'mean'
     },
-    'monann':{
+    'monthly_summaries':{
         'station_id':'RENO TAHOE INTL AP, 266779',
         'start_year':'POR',
         'end_year':'POR',

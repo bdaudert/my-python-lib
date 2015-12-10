@@ -248,6 +248,7 @@ if __name__ == '__main__' :
         error, out_files = LDR.process_request()
         if error is not None:
             logger.error('Data request error: %s! Parameter file: %s' %( error,os.path.basename(params_file)))
+            logger.error('Parameters: ' + str(params))
             params_files_failed.append(params_file)
             os.remove(params_file)
             for out_f in out_files:

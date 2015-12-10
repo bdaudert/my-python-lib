@@ -386,12 +386,15 @@ class CsvWriter(object):
                     #Write meta
                     meta_display_params = WRCCUtils.metadict_to_display_list(self.req['meta'][p_idx], self.meta_keys, self.form)
                     for key_val in meta_display_params:
-                        row = ['*' + key_val[0].replace(' ',''),' '.join(key_val[1])]
+                        #row = ['*' + key_val[0].replace(' ',''),' '.join(key_val[1])]
+                        row = ['*' + key_val[0].replace(' ',''),key_val[1]]
                         self.writer.writerow(row)
                 elif isinstance(self.req['meta'][p_idx],list):
                     meta_display_params = self.req['meta'][p_idx]
                     for key_val in meta_display_params:
-                        row = ['*' + key_val[0].replace(' ',''),key_val[1]]
+                        key = key_val[0].replace(' ','')
+                        val = key_val[1].replace(' ','')
+                        row = ['*' + key,val]
                         self.writer.writerow(row)
             #Write data
             if 'app_name' in self.form.keys() and self.form['app_name'] in  ['intraannual']:

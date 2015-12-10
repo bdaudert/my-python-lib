@@ -1,8 +1,8 @@
 #!/usr/bin/python
 '''
-Script to run soddyrec in background
+Script to run sodsumm in background
 Loops over all US COOP stations found in ACIS that have data,
-computes Soddyrec statistics and writes resulting
+computes sodsumm statistics and writes resulting
 text output to file.
 Output file format dddddd.rec
 where dddddd is the 6 digit coop id
@@ -14,7 +14,7 @@ import logging
 import os, glob, sys
 
 base_dir = '/tmp/'
-result_dir = '/tmp/soddyrec/'
+result_dir = '/tmp/sodsumm/'
 fips_codes ={'al':'01','az':'02','ar':'03','ca':'04',\
 'co':'05','ct':'06','de':'07','fl':'08','ga':'09','id':'10',\
 'il':'11','in':'12','ia':'13','ks':'14','ky':'15','la':'16',\
@@ -26,12 +26,14 @@ fips_codes ={'al':'01','az':'02','ar':'03','ca':'04',\
 'wi':'47','wy':'48','ak':'50','hi':'51','pr':'66','vi':'67','pi':'91'}
 
 def get_US_station_meta():
-    #params = {"bbox":"-119,38,-117,42","meta":"name,state,sids,valid_daterange","elems":"maxt,pcpn,mint,snow,snwd"}
+    params = {"bbox":"-119,38,-117,42","meta":"name,state,sids,valid_daterange","elems":"maxt,pcpn,mint,snow,snwd"}
+    '''
     params = {
         "bbox":"-177.1,13.71,-61.48,76.63",
         "meta":"name,state,sids,valid_daterange",
         "elems":"maxt,pcpn,mint,snow,snwd"
     }
+    '''
     req = {'meta':[]}
     try:
         req = AcisWS.StnMeta(params)
@@ -41,6 +43,7 @@ def get_US_station_meta():
     if not 'meta' in req.keys():
         logger.error('ACIS meta request did not return metadata.')
         return req
+    #logger.info(req['meta'])
     return req
 
 def has_data(stn_meta):
@@ -79,21 +82,17 @@ def get_coop_id(stn_meta):
             return stn_id
     return stn_id
 
-def set_wrapper_params(stn_id):
-    '''
-    yesterday = WRCCUtils.set_back_date(1)
-    w_params = [stn_id, 'all','18000101',yesterday]
-    '''
+def set_wrapper_params(stn_id, table_name):
     vd = WRCCUtils.find_valid_daterange(stn_id)
     if len(vd) == 2 and vd[0] and vd[1]:
-        return [stn_id, 'all',vd[0],vd[1]]
+        return [stn_id, table_name,vd[0][0:4],vd[1][0:4],5]
     return []
 
 if __name__ == "__main__":
     #Start logger
     time_stamp = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
-    logger = logging.getLogger('soddyrec_generator')
-    logger_file = time_stamp + '_' + 'soddyrec.log'
+    logger = logging.getLogger('sodsumm_generator')
+    logger_file = time_stamp + '_' + 'sodsumm.log'
     logger.setLevel(logging.DEBUG)
     fh = logging.FileHandler(base_dir + logger_file)
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(lineno)d in %(filename)s - %(message)s')
@@ -101,7 +100,7 @@ if __name__ == "__main__":
     logger.addHandler(fh)
 
     #Delete old log files
-    old_files = filter(os.path.isfile, glob.glob(base_dir + '*' + 'soddyrec.log'))
+    old_files = filter(os.path.isfile, glob.glob(base_dir + '*' + 'sodsumm.log'))
     for old in old_files:
         if os.path.isfile(base_dir + old):
             try:
@@ -129,31 +128,36 @@ if __name__ == "__main__":
             state = str(stn_meta['state']).lower()
         except:
             state = 'no_state'
-
+            logger.info('INFO: metadata state entry for station: ' + str(stn_id))
+            logger.info('Writing file to no_state directory')
         logger.info('Begin processing station: ' + str(stn_id))
-
-        #Set pateh and file_name
-        out_file_path = result_dir + state + '/'
-        out_file_name = str(stn_id) + '.rec'
-
         try:
-            os.stat(out_file_path)
+            os.stat(result_dir + state)
         except:
-            os.makedirs(out_file_path)
-            logger.info('Created directory ' + out_file_path)
+            os.makedirs(result_dir + state)
+            logger.info('Created directory ' + result_dir + state)
+        for table_name in ['temp','prsn','cdd','hdd','gdd']:
+            w_params = set_wrapper_params(stn_id, table_name)
+            logger.info('Setting application parameters')
+            if not w_params:
+                logger.info('ERROR: No valid daterange could be for station: ' + str(stn_id))
+                continue
 
-        #Set wrapper params
-        w_params = set_wrapper_params(stn_id)
-        logger.info('Setting application parameters')
+            #Set output dir and file
+            out_file_path = result_dir + state + '/' + table_name + '/'
+            out_file_name = str(stn_id) + '.summ'
+            try:
+                os.stat(out_file_path)
+            except:
+                os.makedirs(out_file_path)
+                logger.info('Created directory ' + result_dir + state)
 
-        if not w_params:
-            logger.error('ERROR: No valid daterange for station: ' + str(stn_id))
-            continue
-        #Execute wrapper
-        try:
-            logger.info('Starting soddyrec for station %s' %str(stn_id))
-            WRCCWrappers.run_soddyrec(w_params, output_file = out_file_path + out_file_name)
-            logger.info('Writing data to file: %s' %out_file_path + out_file_name)
-        except Exception, e:
-            logger.error('ERROR in run_soddyrec. Error: ' + str(e))
-            continue
+
+            #Execute wrapper
+            try:
+                logger.info('Starting sodsumm for station %s' %str(stn_id))
+                WRCCWrappers.run_sodsumm(w_params, output_file = out_file_path + out_file_name)
+                logger.info('Writing data to file: %s' %out_file_path + out_file_name)
+            except Exception, e:
+                logger.error('ERROR in run_sodsumm. Error: ' + str(e))
+                continue

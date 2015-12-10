@@ -197,10 +197,23 @@ def format_date(date):
     return d
 
 #For running soddyrec offline
+#If output_file is not None, we run offline
 def run_soddyrec(arg_list, output_file=None):
+    oL = False
     if output_file:
+        oL = True
         sys.stdout = open(output_file, 'w')
-    soddyrec_wrapper(arg_list)
+    soddyrec_wrapper(arg_list, offline = oL)
+
+#For running sodsumm offline
+#If output_file is not None, we run offline
+def run_sodsumm(arg_list, output_file=None):
+    oL = False
+    if output_file:
+        oL = True
+        sys.stdout = open(output_file, 'w')
+    sodsumm_wrapper(arg_list, offline = oL)
+
 
 ########################################
 # CLASSES
@@ -418,7 +431,7 @@ def sodsum_wrapper(argv):
         station_dates = ['99999901','99999999']
     format_sodsum_results_web(results, data, data_params,SS_wrapper, station_dates=station_dates)
 
-def sodsumm_wrapper(argv):
+def sodsumm_wrapper(argv,offline=False):
     '''
     argv -- sid table_name start_year end_year max_missing_days tabular_summary
 
@@ -438,7 +451,7 @@ def sodsumm_wrapper(argv):
                 start/end year fo analysis
             max_missing_days:
                 maximum number of missing days allowed
-
+            offline = True produces Kelly's text output for offline processing
     Examples
     http://cyclone1.dri.edu/cgi-bin/WRCCWrappers.py?sodsumm+266779+temp+por+por+5
     http://cyclone1.dri.edu/cgi-bin/WRCCWrappers.py?sodsumm+266779+ts_tps+por+por+5
@@ -446,6 +459,11 @@ def sodsumm_wrapper(argv):
     http://wrcc-test.dri.edu/cgi-bin/WRCCWrappers.py?sodsumm+266779+ts_tp+1971+2000+5
     '''
     app_name = 'sodsumm'
+    #Set formatting function
+    if offline:
+        format_results = getattr(thismodule, 'format_sodsumm_results_web')
+    else:
+        format_results = getattr(thismodule, 'format_sodsumm_results_txt')
     #Sanity Check on input parameter number
     if len(argv) != 5:
         format_sodsumm_results_web([],'',{'error':'Invalid Request'}, None)
@@ -518,7 +536,7 @@ def sodsumm_wrapper(argv):
             format_sodsumm_tabular_results_web(results,args['table_name'],data_params,SS_wrapper)
 
 
-def soddyrec_wrapper(argv):
+def soddyrec_wrapper(argv, offline=False):
     '''
     argv -- sid element_type start_date end_date
 
@@ -536,20 +554,25 @@ def soddyrec_wrapper(argv):
                 mint -- generates tables for Minimum Temperature,
                 hdd  -- generates tables for Heating Degree Days,
                 cdd  -- generates tables for Cooling Degree Days
-            output format choices:
-                html --> WRCC web output
-                txt --> output looks like Kelly's commandline output
+            offline == True will generate Kelly's commandline output instead of html output
     Examples (web):
-    http://cyclone1.dri.edu/cgi-bin/WRCCWrappers.py?soddyrec+266779+all+20000101+20101231+html
-    http://cyclone1.dri.edu/cgi-bin/WRCCWrappers.py?soddyrec+266779+all+por+por+html
-    http://wrcc-test.dri.edu/cgi-bin/WRCCWrappers.py?soddyrec+266779+all+por+por+html
+    http://cyclone1.dri.edu/cgi-bin/WRCCWrappers.py?soddyrec+266779+all+20000101+20101231
+    http://cyclone1.dri.edu/cgi-bin/WRCCWrappers.py?soddyrec+266779+all+por+por
+    http://wrcc-test.dri.edu/cgi-bin/WRCCWrappers.py?soddyrec+266779+all+por+por
     Example text output
-    python WRCCWrappers.py soddyrec 266779 all 20000101 20101231 txt
+    python WRCCWrappers.py soddyrec 266779 all 20000101 20101231
     '''
     app_name = 'soddyrec'
+
+    #Set formatting function
+    if offline:
+        format_results = getattr(thismodule, 'format_soddyrec_results_txt')
+    else:
+        format_results = getattr(thismodule, 'format_soddyrec_results_web')
+
     #Sanity Check
-    if len(argv) != 5:
-        format_soddyrec_results_web([],{},{'error':'Invalid Request'})
+    if len(argv) != 4:
+        format_results([],{},{'error':'Invalid Request'})
         sys.exit(1)
     #Assign input parameters:
     args = {
@@ -559,7 +582,6 @@ def soddyrec_wrapper(argv):
         'end_date':str(argv[3]),
         'start_user':str(argv[2]),
         'end_user':str(argv[3]),
-        'output_format':str(argv[4])
     }
     #Sanity check on input parameters
     err = None
@@ -570,7 +592,7 @@ def soddyrec_wrapper(argv):
         else:
             err = param_check(args[param])
         if err:
-            format_soddyrec_results_web([],{},{'error':err})
+            format_results([],{},{'error':err})
             raise InputParameterError(err)
             sys.exit(1)
     #Change POR start/end year to 8 digit start/end dates
@@ -598,15 +620,11 @@ def soddyrec_wrapper(argv):
     #Get data
     data = SR_wrapper.get_data()
     if not data:
-        format_soddyrec_results_web([],{},{'error':'No data found!'})
+        format_results([],{},{'error':'No data found!'})
         sys.exit(1)
     #run app
     results = SR_wrapper.run_app(data)
-    if args['output_format'] == 'txt':
-        #NOTE: header not generated with text output
-        format_soddyrec_results_txt(results,SR_wrapper,data_params)
-    else:
-        format_soddyrec_results_web(results,SR_wrapper,data_params)
+    format_results(results,SR_wrapper,data_params)
 
 def soddynorm_wrapper(argv):
     '''
@@ -753,117 +771,124 @@ def format_soddyrec_results_txt(results, wrapper,data_params):
     '''
     Generates soddyrec text output that matches Kelly's commandline output
     '''
-    print ' Daily Records for station %s  %s                  state: %s' %(data_params['sid'], wrapper.station_names[0], wrapper.station_states[0].lower())
-    print ''
-    if data_params['element'] in ['all', 'tmp','wtr', 'pcpn','maxt', 'mint']:
-        print ' For temperature and precipitation, multi-day accumulations'
-        print '   are not considered either for records or averages.'
-        print ' The year given is the year of latest occurrence.'
+    if 'redirect' in data_params.keys():
+        print 'Redirect'
+    elif 'error' in data_params.keys():
+        print data_params['error']
+    elif not wrapper or not results:
+        print 'No data found!'
+    else:
+        print ' Daily Records for station %s  %s                  state: %s' %(data_params['sid'], wrapper.station_names[0], wrapper.station_states[0].lower())
         print ''
-    s = data_params['start_date'][4:6] + '/' + data_params['start_date'][6:8] + '/' + data_params['start_date'][0:4]
-    e = data_params['end_date'][4:6] + '/' + data_params['end_date'][6:8] + '/' + data_params['end_date'][0:4]
-    if data_params['start_user'].upper() == 'POR':
-        s_user ='POR'
-    else:
-        s_user = data_params['start_user'][4:6] + '/' + data_params['start_user'][6:8] + '/' + data_params['start_user'][0:4]
-    if data_params['end_user'].upper() == 'POR':
-        e_user = 'POR'
-    else:
-        e_user = data_params['end_user'][4:6] + '/' + data_params['end_user'][6:8] + '/' + data_params['end_user'][0:4]
-    print ' Period requested -- Begin : %s -- End : %s' %(s_user, e_user)
-    print ' Period      used -- Begin : %s -- End : %s' %(s, e)
-    print ''
-    print '  Cooling degree threshold =   65.00  Heating degree threshold =   65.00'
-    print ''
-    print 'AVG   Multi-year unsmoothed average of the indicated quantity'
-    print 'HI    Highest value of indicated quantity for this day of year'
-    print 'LO    Lowest  value of indicated quantity for this day of year'
-    print 'YR    Latest year of occurrence of the extreme value'
-    print 'NO    Number of years with data for this day of year.'
-    print '      Units: English (inches and degrees F)'
-    print ''
-    header_row = '    '
-    if data_params['element'] == 'all':
-        el_list = ['maxt', 'mint', 'pcpn', 'snow', 'snwd', 'hdd', 'cdd']
-    elif data_params['element'] == 'tmp':
-        el_list = ['maxt', 'mint', 'pcpn']
-    elif data_params['element'] == 'wtr':
-        el_list = ['pcpn', 'snow', 'snwd']
-    else:
-        el_list =[data_params['element']]
-    table_header = '      '
-    table_header_2 = 'MO DY'
-    for el_idx, el in enumerate(el_list):
-        el_name = WRCCData.ACIS_ELEMENTS_DICT_SR[el]['name_long']
-        if el == 'hdd':
-            el_name = 'Heat'
-            start ='|--------';end='-------'
-        if el == 'cdd':
-            el_name = 'Cool'
-            start ='|--------';end='-------'
-        if el in ['maxt','mint']:
-            start ='|---';end='---'
-        if el == 'pcpn':
-            start ='|----';end='---'
-        if el in ['snow','snwd']:
-            start ='|-------';end='-----'
-        '''
-        if el in ['maxt', 'mint']:
-            max_l = 42
+        if data_params['element'] in ['all', 'tmp','wtr', 'pcpn','maxt', 'mint']:
+            print ' For temperature and precipitation, multi-day accumulations'
+            print '   are not considered either for records or averages.'
+            print ' The year given is the year of latest occurrence.'
+            print ''
+        s = data_params['start_date'][4:6] + '/' + data_params['start_date'][6:8] + '/' + data_params['start_date'][0:4]
+        e = data_params['end_date'][4:6] + '/' + data_params['end_date'][6:8] + '/' + data_params['end_date'][0:4]
+        if data_params['start_user'].upper() == 'POR':
+            s_user ='POR'
         else:
-            max_l = 27
-        if len(el_name)<=max_l:
-            left = max_l - len(el_name)
-            if left%2 == 0:
-                for k in range(left/2):
-                    start+='-';end+='-'
-
-            else:
-                for k in range((left-1)/2):
-                    start+='-';end+='-'
-                end+='-'
-        '''
-        table_header+=start
-        table_header+=el_name
-        table_header+=end
-        if el in ['pcpn','snow','snwd','hdd','cdd']:
-            table_header_2+='   AVG  NO  HI   YR'
+            s_user = data_params['start_user'][4:6] + '/' + data_params['start_user'][6:8] + '/' + data_params['start_user'][0:4]
+        if data_params['end_user'].upper() == 'POR':
+            e_user = 'POR'
         else:
-            table_header_2+=' AVG  NO  HI   YR'
-        if el in ['maxt', 'mint']:
-            table_header_2+='  LO   YR'
-    print table_header
-    print table_header_2
-    #Data
-    for doy in range(366):
-        row =''
-        mon,day = WRCCUtils.compute_mon_day(doy+1)
-        row+='%2s%3s' %(mon, day)
+            e_user = data_params['end_user'][4:6] + '/' + data_params['end_user'][6:8] + '/' + data_params['end_user'][0:4]
+        print ' Period requested -- Begin : %s -- End : %s' %(s_user, e_user)
+        print ' Period      used -- Begin : %s -- End : %s' %(s, e)
+        print ''
+        print '  Cooling degree threshold =   65.00  Heating degree threshold =   65.00'
+        print ''
+        print 'AVG   Multi-year unsmoothed average of the indicated quantity'
+        print 'HI    Highest value of indicated quantity for this day of year'
+        print 'LO    Lowest  value of indicated quantity for this day of year'
+        print 'YR    Latest year of occurrence of the extreme value'
+        print 'NO    Number of years with data for this day of year.'
+        print '      Units: English (inches and degrees F)'
+        print ''
+        header_row = '    '
+        if data_params['element'] == 'all':
+            el_list = ['maxt', 'mint', 'pcpn', 'snow', 'snwd', 'hdd', 'cdd']
+        elif data_params['element'] == 'tmp':
+            el_list = ['maxt', 'mint', 'pcpn']
+        elif data_params['element'] == 'wtr':
+            el_list = ['pcpn', 'snow', 'snwd']
+        else:
+            el_list =[data_params['element']]
+        table_header = '      '
+        table_header_2 = 'MO DY'
         for el_idx, el in enumerate(el_list):
-            for k in range(2,5):
-                if el in ['pcpn','snow','snwd']:
-                    if k == 3:
-                        row+=' %3s' %results[0][el_idx][doy][k]
-                    else:
-                        if k == 2 and el == 'pcpn':
-                            #extra space between mint year and pcpn avgt
-                            row+='%6s' %results[0][el_idx][doy][k]
-                        else:
-                            #row+='%6s' %results[0][el_idx][doy][k]
-                            row+='%5s' %results[0][el_idx][doy][k]
-                elif el in ['hdd','cdd'] and (k == 2 or k == 3):
-                    row+='%6s' %results[0][el_idx][doy][k]
-                else:
-                    row+='%4s' %results[0][el_idx][doy][k]
-            for k in range(5,6):
-                '''
-                if el not in ['hdd','cdd']:
-                    row+='%5s' %results[0][el_idx][doy][k]
-                '''
-                row+='%5s' %results[0][el_idx][doy][k]
+            el_name = WRCCData.ACIS_ELEMENTS_DICT_SR[el]['name_long']
+            if el == 'hdd':
+                el_name = 'Heat'
+                start ='|--------';end='-------'
+            if el == 'cdd':
+                el_name = 'Cool'
+                start ='|--------';end='-------'
+            if el in ['maxt','mint']:
+                start ='|---';end='---'
+            if el == 'pcpn':
+                start ='|----';end='---'
+            if el in ['snow','snwd']:
+                start ='|-------';end='-----'
+            '''
             if el in ['maxt', 'mint']:
-                row+='%4s%5s' %(results[0][el_idx][doy][6],results[0][el_idx][doy][7])
-        print row
+                max_l = 42
+            else:
+                max_l = 27
+            if len(el_name)<=max_l:
+                left = max_l - len(el_name)
+                if left%2 == 0:
+                    for k in range(left/2):
+                        start+='-';end+='-'
+
+                else:
+                    for k in range((left-1)/2):
+                        start+='-';end+='-'
+                    end+='-'
+            '''
+            table_header+=start
+            table_header+=el_name
+            table_header+=end
+            if el in ['pcpn','snow','snwd','hdd','cdd']:
+                table_header_2+='   AVG  NO  HI   YR'
+            else:
+                table_header_2+=' AVG  NO  HI   YR'
+            if el in ['maxt', 'mint']:
+                table_header_2+='  LO   YR'
+        print table_header
+        print table_header_2
+        #Data
+        for doy in range(366):
+            row =''
+            mon,day = WRCCUtils.compute_mon_day(doy+1)
+            row+='%2s%3s' %(mon, day)
+            for el_idx, el in enumerate(el_list):
+                for k in range(2,5):
+                    if el in ['pcpn','snow','snwd']:
+                        if k == 3:
+                            row+=' %3s' %results[0][el_idx][doy][k]
+                        else:
+                            if k == 2 and el == 'pcpn':
+                                #extra space between mint year and pcpn avgt
+                                row+='%6s' %results[0][el_idx][doy][k]
+                            else:
+                                #row+='%6s' %results[0][el_idx][doy][k]
+                                row+='%5s' %results[0][el_idx][doy][k]
+                    elif el in ['hdd','cdd'] and (k == 2 or k == 3):
+                        row+='%6s' %results[0][el_idx][doy][k]
+                    else:
+                        row+='%4s' %results[0][el_idx][doy][k]
+                for k in range(5,6):
+                    '''
+                    if el not in ['hdd','cdd']:
+                        row+='%5s' %results[0][el_idx][doy][k]
+                    '''
+                    row+='%5s' %results[0][el_idx][doy][k]
+                if el in ['maxt', 'mint']:
+                    row+='%4s%5s' %(results[0][el_idx][doy][6],results[0][el_idx][doy][7])
+            print row
 
 def format_sodumm_results_txt(table_name, results, start_year, end_year, station_id, station_name, station_state):
     '''

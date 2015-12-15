@@ -267,7 +267,7 @@ class Wrapper:
 ################################################
 #Wrapper functions for Kelly's SOD applications
 ################################################
-def sodxtrmts_wrapper(argv):
+def sodxtrmts_wrapper(argv, offline = False):
     '''
     NOTES: Runs without frequency analysis,
            ndays analysis not implemented here
@@ -368,7 +368,7 @@ def sodxtrmts_wrapper(argv):
     user_start_year = str(argv[1]);user_end_year = str(argv[2])
     format_sodxtrmts_results_web(results, data, data_params, app_params, SX_wrapper, user_start_year, user_end_year)
 
-def sodsum_wrapper(argv):
+def sodsum_wrapper(argv, offline = False):
     '''
     argv -- sid start_date end_date element
 
@@ -457,16 +457,20 @@ def sodsumm_wrapper(argv,offline=False):
     http://cyclone1.dri.edu/cgi-bin/WRCCWrappers.py?sodsumm+266779+ts_tps+por+por+5
     http://cyclone1.dri.edu/cgi-bin/WRCCWrappers.py?sodsumm+266779+ts_tp+1971+2000+5
     http://wrcc-test.dri.edu/cgi-bin/WRCCWrappers.py?sodsumm+266779+ts_tp+1971+2000+5
+    Offline ecxample
+    python WRCCWrappers.py sodsumm 266779 temp POR POR 5
     '''
     app_name = 'sodsumm'
     #Set formatting function
     if offline:
-        format_results = getattr(thismodule, 'format_sodsumm_results_web')
-    else:
         format_results = getattr(thismodule, 'format_sodsumm_results_txt')
+        format_tabular_results = getattr(thismodule, 'format_sodsumm_tabular_results_txt')
+    else:
+        format_results = getattr(thismodule, 'format_sodsumm_results_web')
+        format_tabular_results = getattr(thismodule, 'format_sodsumm_tabular_results_web')
     #Sanity Check on input parameter number
     if len(argv) != 5:
-        format_sodsumm_results_web([],'',{'error':'Invalid Request'}, None)
+        format_results([],'',{'error':'Invalid Request'}, None)
         sys.exit(1)
     #Assign input parameters:
     args = {
@@ -485,7 +489,7 @@ def sodsumm_wrapper(argv,offline=False):
         else:
             err = param_check(args[param])
         if err:
-            format_sodsumm_results_web([],'',{'error':err}, None)
+            format_results([],'',{'error':err}, None)
             raise InputParameterError(err)
             sys.exit(1)
     #Format table names
@@ -518,22 +522,24 @@ def sodsumm_wrapper(argv,offline=False):
     #Get data
     data = SS_wrapper.get_data()
     if not data:
-        format_sodsumm_results_web([],'',{'error':'No data found!'}, ss_wrapper)
+        format_results([],'',{'error':'No data found!'}, ss_wrapper)
         sys.exit(1)
     #Run app
     results = SS_wrapper.run_app(data)
     #Format results
     if not data or ('error' in data.keys() and data['error']) or not results:
-        format_sodsumm_results_web([],table_name, {'error': 'No Data found!'}, SS_wrapper)
+        format_results([],table_name, {'error': 'No Data found!'}, SS_wrapper)
         #results = []
-        print_sodsumm_footer_web(app_params)
+        if not offline:
+            print_sodsumm_footer_web(app_params)
         sys.exit(1)
     else:
         if args['table_name'] not in ['ts_tps','ts_tp']:
-            format_sodsumm_results_web(results,args['table_name'],data_params,SS_wrapper)
-            print_sodsumm_footer_web(app_params)
+            format_results(results,args['table_name'],data_params,SS_wrapper)
+            if not offline:
+                print_sodsumm_footer_web(app_params)
         else:
-            format_sodsumm_tabular_results_web(results,args['table_name'],data_params,SS_wrapper)
+            format_tabular_results(results,args['table_name'],data_params,SS_wrapper)
 
 
 def soddyrec_wrapper(argv, offline=False):
@@ -560,7 +566,7 @@ def soddyrec_wrapper(argv, offline=False):
     http://cyclone1.dri.edu/cgi-bin/WRCCWrappers.py?soddyrec+266779+all+por+por
     http://wrcc-test.dri.edu/cgi-bin/WRCCWrappers.py?soddyrec+266779+all+por+por
     Example text output
-    python WRCCWrappers.py soddyrec 266779 all 20000101 20101231
+    python WRCCWrappers.py soddyrec 266779 all 20000101 20101231 offline
     '''
     app_name = 'soddyrec'
 
@@ -626,7 +632,7 @@ def soddyrec_wrapper(argv, offline=False):
     results = SR_wrapper.run_app(data)
     format_results(results,SR_wrapper,data_params)
 
-def soddynorm_wrapper(argv):
+def soddynorm_wrapper(argv, offline = False):
     '''
     argv -- sid start_year end_year filter_type filter_days
 
@@ -1030,6 +1036,129 @@ def format_sodsumm_tabular_results_web(results,table_name,data_params,wrapper):
             print '<U>Unofficial values </U>based on averages/sums of smoothed daily data.  Information is computed from available daily data during the ' + start_year + '-' + end_year + ' period.  Smoothing, missing data and observation-time changes may cause these ' + start_year + '-' + end_year + ' values to differ from official NCDC values.  This table is presented for use at locations that do not have official NCDC data.  No adjustments are made for missing data or time of observation.  Check <A HREF="http://wrcc.dri.edu/cgi-bin/cliNORMNCDC2000.pl?nv6779">NCDC normals</A> table for official data.'
         print '</BODY>'
         print '</HTML>'
+
+def format_sodsumm_tabular_results_txt(results,table_name,data_params,wrapper):
+    '''
+    table_name options
+        ts_tps -- tabular summary for temp/precip/snow
+        ts_tp  -- tabular_summary for temp/precip only
+    '''
+    station_name = wrapper.station_names[0]
+    station_id = wrapper.station_ids[0]
+    station_state = wrapper.station_states[0]
+    start_year = data_params['start_date']
+    end_year = data_params['end_date']
+    print_html_header()
+    if 'redirect' in data_params.keys():
+        print_redirect()
+    elif 'error' in data_params.keys():
+        print_error(data_params['error'])
+    else:
+        title = station_name + ', ' + station_state
+        if table_name == 'ts_tps':
+            title += ' Period of Record Monthly '
+        else:
+            title+= ' ' + start_year + '-' + end_year
+        title += ' Climate Summary '
+        print title
+        print ''
+        print station_name + ', ' + station_state + ' (' + station_id + ')'
+        if table_name == 'ts_tps':
+            print 'Period of Record Monthly Climate Summary '
+            print 'Period of Record : '+ start_year + ' to ' + end_year
+        else:
+            print start_year + '-' + end_year + ' Climate Summary '
+
+        print '                               Jan    Feb    Mar    Apr    May    Jun    Jul    Aug    Sep    Oct    Nov    Dec    Annual'
+        if results and results[0]:
+            #Maxt row
+            row = ' Average Max. Temperature (F)'
+            for mon_idx, mon_vals in enumerate(results[0]['temp'][1:14]):
+                    row+= ' ' + mon_vals[1]
+            print row
+            #Mint row
+            row = ' Average Min. Temperature (F)'
+            for mon_idx, mon_vals in enumerate(results[0]['temp'][1:14]):
+                row+= ' ' + mon_vals[2]
+            print row
+            #Precip Row
+            row = ' Average Total Precipitation (in.)'
+            for mon_idx, mon_vals in enumerate(results[0]['prsn'][1:14]):
+                row+= ' ' + mon_vals[1]
+            print row
+            if table_name == 'ts_tps':
+                #Snowfall Row
+                row = ' Average Total Snowfall (in.)'
+                for mon_idx, mon_vals in enumerate(results[0]['prsn'][1:14]):
+                    row+= ' ' + mon_vals[-3]
+                print row
+                #Missing snowdepth!!
+        if table_name == 'ts_tp':
+            print ' '
+            print 'Unofficial values </U>based on averages/sums of smoothed daily data.  Information is computed from available daily data during the ' + start_year + '-' + end_year + ' period.  Smoothing, missing data and observation-time changes may cause these ' + start_year + '-' + end_year + ' values to differ from official NCDC values.  This table is presented for use at locations that do not have official NCDC data.  No adjustments are made for missing data or time of observation.'
+
+def format_sodsumm_results_txt(results,table_name,data_params,wrapper):
+    if 'redirect' in data_params.keys():
+        print_redirect()
+    elif 'error' in data_params.keys():
+        print_error(data_params['error'])
+    else:
+        station_name = wrapper.station_names[0]
+        station_id = wrapper.station_ids[0]
+        station_state = wrapper.station_states[0]
+        start_year = data_params['start_date']
+        end_year = data_params['end_date']
+        print station_name + ', ' + station_id + ' Period of Record General Climate Summary - ' + WRCCData.SODSUMM_TABLE_NAMES[table_name]
+        print station_name + ', ' + station_state
+        print 'Period of Record General Climate Summary - ' + WRCCData.SODSUMM_TABLE_NAMES[table_name]
+        stn_row = 'Station:(' + station_id + ') ' + station_name
+        yr_row = 'From Year=' + start_year + ' To Year=' + end_year
+        if table_name == 'temp':
+            print stn_row
+            yr_row+='                                   #Day-Max #Day-Min'
+            print yr_row
+            print '       Averages         Daily Extremes         Mean Extremes   >=   =<   =<  =<'
+            print '    Max  Min Mean  High---Date  Low---Date   High-Yr  Low-Yr   90   32   32   0'
+            print '-------------------------------------------------------------------------------'
+        elif table_name == 'prsn':
+            stn_row+='         ' + yr_row
+            print stn_row
+            print 'Missing data not yet determined'
+            print '       Total Precipitation       Precipitation  Total Snowfall  #Days Precip >='
+            print '    Mean   High--Yr    Low--Yr     1-Day Max    Mean   High-Yr .01 .10 .50 1.00"'
+            print '-------------------------------------------------------------------------------'
+        elif table_name in  ['hdd','cdd','gdd']:
+            print ' For degree day calculations:'
+            print ' Output is rounded, unlike NCDC values, which round input.'
+            print ''
+            print stn_row + '         Missing data not yet determined'
+            print ''
+            if table_name == 'hdd':
+                print '                Degree Days to Selected Base Temperatures (F)'
+                print 'Base                      Heating Degree Days'
+                print 'Below  Jan  Feb  Mar  Apr  May  Jun  Jul  Aug  Sep  Oct  Nov  Dec   Ann'
+            elif table_name == 'cdd':
+                print '                Degree Days to Selected Base Temperatures (F)'
+                print 'Base                      Cooling Degree Days'
+                print 'Above  Jan  Feb  Mar  Apr  May  Jun  Jul  Aug  Sep  Oct  Nov  Dec   Ann'
+            elif table_name == 'gdd':
+                print '                Degree Days to Selected Base Temperatures (F)'
+                print 'Base                      Growing Degree Days'
+                print '       Jan  Feb  Mar  Apr  May  Jun  Jul  Aug  Sep  Oct  Nov  Dec   Ann'
+        else:
+            pass
+        if results and results[0]:
+            for mon_idx, mon_vals in enumerate(results[0][table_name][1:]):
+                if mon_vals[0] == 'Ann':
+                    print ''
+                row = ''
+                for v_idx, val in enumerate(mon_vals):
+                    if v_idx == 0:
+                        row+=str(val)[0:2]
+                    else:
+                        row+= ' ' + str(val)
+                print row
+
 
 def format_sodsumm_results_web(results,table_name,data_params,wrapper):
     print_html_header()
@@ -1510,4 +1639,7 @@ if __name__ == "__main__":
         print 'First argument to WRCCWrappers should be valid progam name.'
         print 'Programs: ' + str(programs)
     #execute wrapper
-    globals()[program + '_wrapper'](sys.argv[2:])
+    if sys.argv[-1] == 'offline':
+        globals()[program + '_wrapper'](sys.argv[2:-1], offline=True)
+    else:
+        globals()[program + '_wrapper'](sys.argv[2:])

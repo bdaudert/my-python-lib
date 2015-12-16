@@ -450,7 +450,7 @@ def compute_statistic(vals,statistic):
         statistic
     '''
     if vals == []:
-        return None
+        return -9999
     np_array = np.array(vals, dtype = np.float)
     #remove nan
     np_array = np_array[np.logical_not(np.isnan(np_array))]
@@ -633,6 +633,24 @@ def set_lister_headers(form):
                 header_data+=['hr']
     return header_data,header_smry
 
+def check_grid_request_for_data(req,meta_keys,data_key):
+    '''
+    Checks that that req has meta_keys
+    and that req[data_key] exists and is not empty
+    '''
+    error = None
+    #Metadata check
+    for key in meta_keys:
+        try:
+            metadata = req['meta'][key]
+        except:
+            return 'No metadata (%s) found for these parameters.' %key
+    #Data check
+    try:
+        data = req[data_key]
+    except:
+        return 'No data found for these parameters.'
+    return error
 
 ###############################
 #Data formatters
@@ -898,28 +916,26 @@ def grid_data_trim_and_summary(req,form):
         meta -- [{'lat':lat1,lon:'lon1','elev':elev1}, {'lat':lat2,lon:'lon2','elev':elev2},...]
         form -- user form input dictionary
     '''
-    try:
-        lats = req['meta']['lat']
-        lons = req['meta']['lon']
-        #LOCAFIX ME LOCA NO ELEVS
-        try:
-            elevs = req['meta']['elev']
-        except:
-            elevs = copy.deepcopy(lats)
-        data = req['data']
-        els = form['elements']
-    except:
-        error = 'No data found for these parameters.'
-        return {'data':[],'smry':[],meta:[],'form':form,'errors':error}
+    resultsdict = {}
+    #Check that metadata and data are there
+    data_key = 'data'
+    #LOCAFIX ME LOCA NO ELEVS
+    #meta_keys = ['lat','lon','elev']
+    meta_keys = ['lat','lon']
+    results_dict = {}
+    error = check_grid_request_for_data(req,meta_keys,data_key)
+    if error is not None:
+        return {'data':[],'smry':[],'meta':[],'form':form,'error':error}
+
     header_data, header_smry = set_lister_headers(form)
     #Set date converter
     format_date = getattr(thismodule,'format_date_string')
     sep = 'dash'
     if form['data_summary'] == 'spatial':
-        new_smry = [[format_date(str(data[date_idx][0]),sep)] for date_idx in range(len(data))]
-        smry_data = [[[] for el in els] for date_idx in range(len(data))]
+        new_smry = [[format_date(str(req[data_key][date_idx][0]),sep)] for date_idx in range(len(req[data_key]))]
+        smry_data = [[[] for el in form['elements']] for date_idx in range(len(req[data_key]))]
     elif form['data_summary'] == 'temporal':
-        smry_data = [[] for el in els]
+        smry_data = [[] for el in form['elements']]
         new_smry = []
     else:
         new_smry = []
@@ -932,14 +948,14 @@ def grid_data_trim_and_summary(req,form):
     if 'units' in form.keys() and form['units'] == 'metric':
         unit_convert = getattr(thismodule,'convert_to_metric')
     #lat,lon loop over data
-    generator_lat =  ((grid_idx, lat_grid) for grid_idx, lat_grid in enumerate(lats))
+    generator_lat =  ((grid_idx, lat_grid) for grid_idx, lat_grid in enumerate(req['meta']['lat']))
     for (grid_idx, lat_grid) in generator_lat:
-        generator_lon = ((lon_idx, lon) for lon_idx, lon in enumerate(lons[grid_idx]))
+        generator_lon = ((lon_idx, lon) for lon_idx, lon in enumerate(req['meta']['lon'][grid_idx]))
         lat = lat_grid[0]
         new_lons = []
         new_elevs = []
         for (lon_idx, lon) in generator_lon:
-            #lon_data = [[[] for el in els] for d in range(len(data))]
+            #lon_data = [[[] for el in form['elements']] for d in range(len(req[data_key]))]
             point_in = PointIn(lon, lat, poly)
             if not point_in:
                 continue
@@ -957,12 +973,12 @@ def grid_data_trim_and_summary(req,form):
             new_meta.append(meta_display_list)
             new_lons.append(lon)
             #LOCAFIX ME LOCA NO ELEVS
-            #new_elevs.append(elevs[grid_idx][lon_idx])
+            #new_elevs.append(req['meta']['elev'][grid_idx][lon_idx])
             new_elevs.append(-9999)
             new_data.append([])
-            for date_idx, date_data in enumerate(data):
+            for date_idx, date_data in enumerate(req[data_key]):
                 d_data = [format_date(date_data[0],sep)]
-                for el_idx,el in enumerate(els):
+                for el_idx,el in enumerate(form['elements']):
                     try:
                         d = unit_convert(el, float(date_data[el_idx+1][grid_idx][lon_idx]))
                         d_data.append(round(d,4))
@@ -986,18 +1002,19 @@ def grid_data_trim_and_summary(req,form):
             if form['data_summary'] == 'temporal':
                 row = [str(round(lon,4)) + ',' + str(round(lat,4))]
                 if point_in:
-                    for el_idx, el in enumerate(els):
+                    for el_idx, el in enumerate(form['elements']):
                         row.append(compute_statistic(smry_data[el_idx],form['temporal_summary']))
                 new_smry.append(row)
 
     #Compute spatial summary
     if form['data_summary'] == 'spatial':
-        for date_idx in range(len(data)):
+        for date_idx in range(len(req[data_key])):
             for el_idx in range(len(form['elements'])):
                 new_smry[date_idx].append(compute_statistic(smry_data[date_idx][el_idx],form['spatial_summary']))
     #Insert summary header
     if new_smry:
         new_smry.insert(0,header_smry)
+
     resultsdict = {
         'data':new_data,
         'smry':new_smry,
@@ -1018,35 +1035,32 @@ def format_grid_spatial_summary(req,form):
         new_meta -- [{'lat':lat1,lon:'lon1','elev':elev1}, {'lat':lat2,lon:'lon2','elev':elev2},...]
 
     '''
-    try:
-        lats = req['meta']['lat']
-        lons = req['meta']['lon']
-        #LOCAFIX ME LOCA NO ELEVS
-        #elevs = req['meta']['elev']
-        try:
-            elevs = req['meta']['elev']
-        except:
-            elevs = copy.deepcopy(lats)
-        data = req['data']
-        els = form['elements']
-    except:
-        error = 'No data found for these parameters.'
-        return {'data':[],'smry':[],meta:[],'form':form,'errors':error}
+    resultsdict = {}
+    #Check that metadata and data are there
+    data_key = 'data'
+    #LOCAFIX ME LOCA NO ELEVS
+    #meta_keys = ['lat','lon','elev']
+    meta_keys = ['lat','lon']
+    results_dict = {}
+    error = check_grid_request_for_data(req,meta_keys,data_key)
+    if error is not None:
+        return {'data':[],'smry':[],'meta':[],'form':form,'error':error}
+
     header_data, header_smry = set_lister_headers(form)
     #Set date converter
     format_date = getattr(thismodule,'format_date_string')
     sep = 'dash'
-    new_smry = [[format_date(str(data[date_idx][0]),sep)] for date_idx in range(len(data))]
-    smry_data = [[[] for el in form['elements']] for date_idx in range(len(data))]
+    new_smry = [[format_date(str(req[data_key][date_idx][0]),sep)] for date_idx in range(len(req[data_key]))]
+    smry_data = [[[] for el in form['elements']] for date_idx in range(len(req[data_key]))]
     new_data = [];new_meta = []
     #Set unit converter
     unit_convert = getattr(thismodule,'convert_nothing')
     if 'units' in form.keys() and form['units'] == 'metric':
         unit_convert = getattr(thismodule,'convert_to_metric')
     #lat,lon loop over data
-    generator_lat =  ((grid_idx, lat_grid) for grid_idx, lat_grid in enumerate(lats))
+    generator_lat =  ((grid_idx, lat_grid) for grid_idx, lat_grid in enumerate(req['meta']['lat']))
     for (grid_idx, lat_grid) in generator_lat:
-        generator_lon = ((lon_idx, lon) for lon_idx, lon in enumerate(lons[grid_idx]))
+        generator_lon = ((lon_idx, lon) for lon_idx, lon in enumerate(req['meta']['lon'][grid_idx]))
         lat = lat_grid[0]
         for (lon_idx, lon) in generator_lon:
             #meta_dict = {'lon':lon,'lat':lat,'elev':unit_convert('elev',req['meta']['elev'][grid_idx][lon_idx])}
@@ -1060,15 +1074,15 @@ def format_grid_spatial_summary(req,form):
             key_order_list = ['ll', 'elev']
             meta_display_list = metadict_to_display_list(meta_dict, key_order_list,form)
             new_meta.append(meta_display_list)
-            for date_idx,date_data in enumerate(data):
-                for el_idx,el in enumerate(els):
+            for date_idx,date_data in enumerate(req[data_key]):
+                for el_idx,el in enumerate(form['elements']):
                     try:
                         val = unit_convert(el,float(date_data[el_idx+1][grid_idx][lon_idx]))
                         smry_data[date_idx][el_idx].append(float(val))
                     except:
                         pass
                     #Compute spatial summary at last gridpoint iteration
-                    if grid_idx == len(lats) -1 and lon_idx == len(lons[grid_idx]) -1:
+                    if grid_idx == len(req['meta']['lat']) -1 and lon_idx == len(req['meta']['lon'][grid_idx]) -1:
                         s = smry_data[date_idx][el_idx]
                         new_smry[date_idx].append(compute_statistic(s,form['spatial_summary']))
     #Insert summary header
@@ -1094,21 +1108,17 @@ def format_grid_no_summary(req,form):
         meta -- [{'lon':lon1,'lat':lat1,'elev':elev1},{'lon':lon1,'lat':lat1,'elev':elev1}...]
         form -- user form input dictionary
     '''
-    #Sanity check
-    try:
-        lats = req['meta']['lat']
-        lons = req['meta']['lon']
-        #LOCAFIX ME LOCA NO ELEVS
-        #elevs = req['meta']['elev']
-        try:
-            elevs = req['meta']['elev']
-        except:
-            elevs = copy.deepcopy(lats)
-        data = req['data']
-        els = form['elements']
-    except:
-        error = 'No data found for these parameters.'
-        return {'data':[],'smry':[],meta:[],'form':form,'errors':error}
+    resultsdict = {}
+    #Check that metadata and data are there
+    data_key = 'data'
+    #LOCAFIX ME LOCA NO ELEVS
+    #meta_keys = ['lat','lon','elev']
+    meta_keys = ['lat','lon']
+    results_dict = {}
+    error = check_grid_request_for_data(req,meta_keys,data_key)
+    if error is not None:
+        return {'data':[],'smry':[],'meta':[],'form':form,'error':error}
+
     #Set headers
     header_data, header_smry = set_lister_headers(form)
     #Set date converter
@@ -1120,9 +1130,9 @@ def format_grid_no_summary(req,form):
     if 'units' in form.keys() and form['units'] == 'metric':
         unit_convert = getattr(thismodule,'convert_to_metric')
     #Lat/lon loop
-    generator_lat =  ((grid_idx, lat_grid) for grid_idx, lat_grid in enumerate(lats))
+    generator_lat =  ((grid_idx, lat_grid) for grid_idx, lat_grid in enumerate(req['meta']['lat']))
     for (grid_idx, lat_grid) in generator_lat:
-        generator_lon = ((lon_idx, lon) for lon_idx, lon in enumerate(lons[grid_idx]))
+        generator_lon = ((lon_idx, lon) for lon_idx, lon in enumerate(req['meta']['lon'][grid_idx]))
         lat = lat_grid[0]
         for (lon_idx, lon) in generator_lon:
             #meta_dict = {'lon':lon,'lat':lat,'elev':unit_convert('elev',req['meta']['elev'][grid_idx][lon_idx])}
@@ -1137,9 +1147,9 @@ def format_grid_no_summary(req,form):
             meta_display_list = metadict_to_display_list(meta_dict, key_order_list,form)
             new_meta.append(meta_display_list)
             new_data.append([header_data])
-            for date_data in data:
+            for date_data in req[data_key]:
                 d_data = [format_date(str(date_data[0]),sep)]
-                for el_idx,el in enumerate(els):
+                for el_idx,el in enumerate(form['elements']):
                     try:
                         val = unit_convert(el, float(date_data[el_idx+1][grid_idx][lon_idx]))
                         d_data.append(round(val,4))
@@ -1167,21 +1177,17 @@ def format_grid_windowed_data(req,form):
         meta -- [{'lon':lon1,'lat':lat1,'elev':elev1},{'lon':lon1,'lat':lat1,'elev':elev1}...]
         form -- user form input dictionary
     '''
-    #Sanity check
-    try:
-        lats = req['meta']['lat']
-        lons = req['meta']['lon']
-        #LOCAFIX ME LOCA NO ELEVS
-        #elevs = req['meta']['elev']
-        try:
-            elevs = req['meta']['elev']
-        except:
-            elevs = copy.deepcopy(lats)
-        data = req['data']
-        els = form['elements']
-    except:
-        error = 'No data found for these parameters.'
-        return {'data':[],'smry':[],meta:[],'form':form,'errors':error}
+    resultsdict = {}
+    #Check that metadata and data are there
+    data_key = 'data'
+    #LOCAFIX ME LOCA NO ELEVS
+    #meta_keys = ['lat','lon','elev']
+    meta_keys = ['lat','lon']
+    results_dict = {}
+    error = check_grid_request_for_data(req,meta_keys,data_key)
+    if error is not None:
+        return {'data':[],'smry':[],'meta':[],'form':form,'error':error}
+
     #Set headers
     header_data, header_smry = set_lister_headers(form)
     #Set date converter
@@ -1193,9 +1199,9 @@ def format_grid_windowed_data(req,form):
     if 'units' in form.keys() and form['units'] == 'metric':
         unit_convert = getattr(thismodule,'convert_to_metric')
     #Lon/Lat Loop
-    generator_lat =  ((grid_idx, lat_grid) for grid_idx, lat_grid in enumerate(lats))
+    generator_lat =  ((grid_idx, lat_grid) for grid_idx, lat_grid in enumerate(req['meta']['lat']))
     for (grid_idx, lat_grid) in generator_lat:
-        generator_lon = ((lon_idx, lon) for lon_idx, lon in enumerate(lons[grid_idx]))
+        generator_lon = ((lon_idx, lon) for lon_idx, lon in enumerate(req['meta']['lon'][grid_idx]))
         lat = lat_grid[0]
         for (lon_idx, lon) in generator_lon:
             #meta_dict = {'lon':lon,'lat':lat,'elev':unit_convert('elev',req['meta']['elev'][grid_idx][lon_idx])}
@@ -1210,9 +1216,9 @@ def format_grid_windowed_data(req,form):
             meta_display_list = metadict_to_display_list(meta_dict, key_order_list,form)
             new_meta.append(meta_display_list)
             new_data.append([])
-            for date_data in data:
+            for date_data in req[data_key]:
                 d_data = [format_date(str(date_data[0]),sep)]
-                for el_idx,el in enumerate(els):
+                for el_idx,el in enumerate(form['elements']):
                     try:
                         val = unit_convert(el,float(date_data[el_idx+1][grid_idx][lon_idx]))
                         d_data.append(round(val,4))
@@ -1248,20 +1254,18 @@ def format_grid_temporal_summary(req,form):
         meta -- [{'lat':lat1,lon:'lon1','elev':elev1}, {'lat':lat2,lon:'lon2','elev':elev2},...]
         form -- user form input dictionary
     '''
-    try:
-        lats = req['meta']['lat']
-        lons = req['meta']['lon']
-        #LOCAFIX ME LOCA NO ELEVS
-        #elevs = req['meta']['elev']
-        try:
-            elevs = req['meta']['elev']
-        except:
-            elevs = copy.deepcopy(lats)
-        data = req['smry']
-        els = form['elements']
-    except:
-        error = 'No data found for these parameters.'
-        return {'data':[],'smry':[],meta:[],'form':form,'errors':error}
+    resultsdict = {}
+    #Check that metadata and data are there
+    data_key = 'smry'
+    #LOCAFIX ME LOCA NO ELEVS
+    #meta_keys = ['lat','lon','elev']
+    meta_keys = ['lat','lon']
+    results_dict = {}
+    error = check_grid_request_for_data(req,meta_keys,data_key)
+    if error is not None:
+        return {'data':[],'smry':[],'meta':[],'form':form,'error':error}
+
+    #Set date converter
     header_data, header_smry = set_lister_headers(form)
     new_smry = []
     new_data=[];new_meta = []
@@ -1271,9 +1275,9 @@ def format_grid_temporal_summary(req,form):
     if 'units' in form.keys() and form['units'] == 'metric':
         unit_convert = getattr(thismodule,'convert_to_metric')
     #lat,lon loop over data
-    generator_lat =  ((grid_idx, lat_grid) for grid_idx, lat_grid in enumerate(lats))
+    generator_lat =  ((grid_idx, lat_grid) for grid_idx, lat_grid in enumerate(req['meta']['lat']))
     for (grid_idx, lat_grid) in generator_lat:
-        generator_lon = ((lon_idx, lon) for lon_idx, lon in enumerate(lons[grid_idx]))
+        generator_lon = ((lon_idx, lon) for lon_idx, lon in enumerate(req['meta']['lon'][grid_idx]))
         lat = lat_grid[0]
         for (lon_idx, lon) in generator_lon:
             #meta_dict = {'lon':lon,'lat':lat,'elev':unit_convert('elev',req['meta']['elev'][grid_idx][lon_idx])}
@@ -1287,17 +1291,17 @@ def format_grid_temporal_summary(req,form):
             key_order_list = ['ll', 'elev']
             meta_display_list = metadict_to_display_list(meta_dict, key_order_list,form)
             new_meta.append(meta_display_list)
-            for date_data in data:
-                for el_idx,el in enumerate(els):
+            for data in req[data_key]:
+                for el_idx,el in enumerate(form['elements']):
                     try:
-                        val = unit_convert(el,float(date_data[el_idx+1][grid_idx][lon_idx]))
+                        val = unit_convert(el,float(req[data_key][el_idx][grid_idx][lon_idx]))
                         smry_data[el_idx].append(float(val))
+                        d_data.append(val)
                     except:
                         pass
-                new_data[-1].append(d_data)
             #Temporal summary
             row = [str(lon) + ',' + str(lat)]
-            for el_idx, el in enumerate(els):
+            for el_idx, el in enumerate(form['elements']):
                 row.append(compute_statistic(smry_data[el_idx],form['temporal_summary']))
             new_smry.append(row)
     if new_smry:

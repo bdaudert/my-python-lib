@@ -129,7 +129,6 @@ def set_initial(request,app_name):
         kml_file_path = create_kml_file(at, initial['overlay_state'])
         if initial['area_type'] == at:
             initial['kml_file_path'] = kml_file_path
-
     #If station_finder download, we need to set the station_ids
     #and override the original area type fields
     if app_name == 'sf_download':

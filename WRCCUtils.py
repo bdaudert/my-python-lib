@@ -633,7 +633,7 @@ def set_lister_headers(form):
                 header_data+=['hr']
     return header_data,header_smry
 
-def check_grid_request_for_data(req,meta_keys,data_key):
+def check_request_for_data(req,meta_keys,data_key):
     '''
     Checks that that req has meta_keys
     and that req[data_key] exists and is not empty
@@ -784,7 +784,7 @@ def station_data_trim_and_summary(req,form):
         els = form['elements']
     except:
         error = 'No data found for these parameters.'
-        return {'data':[],'smry':[],meta:[],'form':form,'errors':error}
+        return {'data':[],'smry':[],'meta':[],'form':form,'errors':error}
     header_data, header_smry = set_lister_headers(form)
     #MultiStnData calls return no dates
     dates = get_dates(form['start_date'],form['end_date'])
@@ -923,7 +923,7 @@ def grid_data_trim_and_summary(req,form):
     #meta_keys = ['lat','lon','elev']
     meta_keys = ['lat','lon']
     results_dict = {}
-    error = check_grid_request_for_data(req,meta_keys,data_key)
+    error = check_request_for_data(req,meta_keys,data_key)
     if error is not None:
         return {'data':[],'smry':[],'meta':[],'form':form,'error':error}
 
@@ -1042,7 +1042,7 @@ def format_grid_spatial_summary(req,form):
     #meta_keys = ['lat','lon','elev']
     meta_keys = ['lat','lon']
     results_dict = {}
-    error = check_grid_request_for_data(req,meta_keys,data_key)
+    error = check_request_for_data(req,meta_keys,data_key)
     if error is not None:
         return {'data':[],'smry':[],'meta':[],'form':form,'error':error}
 
@@ -1115,7 +1115,7 @@ def format_grid_no_summary(req,form):
     #meta_keys = ['lat','lon','elev']
     meta_keys = ['lat','lon']
     results_dict = {}
-    error = check_grid_request_for_data(req,meta_keys,data_key)
+    error = check_request_for_data(req,meta_keys,data_key)
     if error is not None:
         return {'data':[],'smry':[],'meta':[],'form':form,'error':error}
 
@@ -1184,7 +1184,7 @@ def format_grid_windowed_data(req,form):
     #meta_keys = ['lat','lon','elev']
     meta_keys = ['lat','lon']
     results_dict = {}
-    error = check_grid_request_for_data(req,meta_keys,data_key)
+    error = check_request_for_data(req,meta_keys,data_key)
     if error is not None:
         return {'data':[],'smry':[],'meta':[],'form':form,'error':error}
 
@@ -1261,7 +1261,7 @@ def format_grid_temporal_summary(req,form):
     #meta_keys = ['lat','lon','elev']
     meta_keys = ['lat','lon']
     results_dict = {}
-    error = check_grid_request_for_data(req,meta_keys,data_key)
+    error = check_request_for_data(req,meta_keys,data_key)
     if error is not None:
         return {'data':[],'smry':[],'meta':[],'form':form,'error':error}
 
@@ -1325,6 +1325,19 @@ def format_station_spatial_summary(req,form):
         smry -- [[date1,el1smry,el2smry,...], [date2...]]
         meta -- [{stn1_meta},{stn2_meta}, ...]
         form -- user form input dictionary
+    '''
+    '''
+    resultsdict = {}
+    #Check that metadata and data are there
+    data_key = 'data'
+    #LOCAFIX ME LOCA NO ELEVS
+    #meta_keys = ['lat','lon','elev']
+    meta_keys = []
+    results_dict = {}
+    error = check_request_for_data(req,meta_keys,data_key)
+    if error is not None:
+        return {'data':[],'smry':[],'meta':[],'form':form,'error':error}
+
     '''
     try:
         data = req['data']
@@ -1404,7 +1417,7 @@ def format_station_no_summary(req,form):
         els = form['elements']
     except:
         error = 'No data found for these parameters.'
-        return {'data':[],'smry':[],meta:[],'form':form,'errors':error}
+        return {'data':[],'smry':[],'meta':[],'form':form,'errors':error}
     #Headers
     header_data, header_smry = set_lister_headers(form)
     #Set date converter
@@ -1488,7 +1501,7 @@ def format_station_windowed_data(req,form):
         els = form['elements']
     except:
         error = 'No data found for these parameters.'
-        return {'data':[],'smry':[],meta:[],'form':form,'errors':error}
+        return {'data':[],'smry':[],'meta':[],'form':form,'errors':error}
     header_data, header_smry = set_lister_headers(form)
     #Set date converter
     format_date = getattr(thismodule,'format_date_string')

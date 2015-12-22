@@ -26,14 +26,12 @@ fips_codes ={'al':'01','az':'02','ar':'03','ca':'04',\
 'wi':'47','wy':'48','ak':'50','hi':'51','pr':'66','vi':'67','pi':'91'}
 
 def get_US_station_meta():
-    params = {"bbox":"-119,38,-117,42","meta":"name,state,sids,valid_daterange","elems":"maxt,pcpn,mint,snow,snwd"}
-    '''
+    #params = {"bbox":"-119,38,-117,42","meta":"name,state,sids,valid_daterange","elems":"maxt,pcpn,mint,snow,snwd"}
     params = {
         "bbox":"-177.1,13.71,-61.48,76.63",
         "meta":"name,state,sids,valid_daterange",
         "elems":"maxt,pcpn,mint,snow,snwd"
     }
-    '''
     req = {'meta':[]}
     try:
         req = AcisWS.StnMeta(params)

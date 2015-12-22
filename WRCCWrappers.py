@@ -1158,6 +1158,20 @@ def format_sodsumm_results_txt(results,table_name,data_params,wrapper):
                     else:
                         row+= ' ' + str(val)
                 print row
+        if table_name in  ['hdd','cdd','gdd']:
+            print ''
+            print 'M = Monthly Data'
+            print 'S - Running sum of monthly data.'
+            print 'Growing Degree Day units are computed as the difference between the daily average temperature and '
+            print 'the base temperature. (Daily Ave. Temp. - Base Temp.) One unit is accumulated for each degree '
+            print 'Fahrenheit the average temperature is above the base temperature. Negative numbers are discarded.'
+            print 'Example: If the days high temperature was 95 and the low temperature was 51, the base 60 heating'
+            print 'degree day units is ((95 + 51) / 2) - 60 = 13. This is done for each day of the month and summed.'
+            print 'Corn Growing Degree Day units have the limitations that the maximum daily temperatures greater'
+            print 'than 86 F are set to 86 F and minimums less than 50 F are set to 50 F.'
+            print 'Table updated on ' + today
+            print 'Months with 5 or more missing days are not considered'
+            print 'Years with 1 or more missing months are not considered'
 
 
 def format_sodsumm_results_web(results,table_name,data_params,wrapper):

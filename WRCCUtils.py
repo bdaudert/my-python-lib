@@ -652,6 +652,18 @@ def check_request_for_data(req,meta_keys,data_key):
         return 'No data found for these parameters.'
     return error
 
+def check_data_and_dates(data_key,req, dates):
+    error = None
+    #Sanity check on data
+    if not req[data_key] or len(req[data_key]) <1:
+        error = 'No data found for these parameters.'
+    if 'data' not in req[data_key][0].keys():
+        error = 'No data found for these parameters.'
+    #Sanity check on dates
+    if len(dates) != len(req[data_key][0]['data']):
+        error = 'Dates mismatch.'
+    return error
+
 ###############################
 #Data formatters
 ##################################
@@ -673,7 +685,6 @@ def format_data_single_lister(req,form):
         form -- user form input dictionary
     '''
     new_data = [];new_smry = [];new_meta = req['meta']
-    els = form['elements']
     if not req['data'] and not req['smry']:
         error = 'No data found for these parameters.'
         return {'data':[],'smry':[],meta:[],'form':form,'errors':error}
@@ -711,7 +722,7 @@ def format_data_single_lister(req,form):
             #Format Summary
             if 'smry' in req.keys() and req['smry']:
                 try:
-                    val = round(unit_convert(els[el_idx],float(req['smry'][el_idx])),4)
+                    val = round(unit_convert(form['elements'][el_idx],float(req['smry'][el_idx])),4)
                 except:
                     val = str(req['smry'][el_idx])
                 smry_data.append(val)
@@ -726,7 +737,7 @@ def format_data_single_lister(req,form):
             #strip flag from data
             strp_val, flag = strip_data(val)
             try:
-                val = round(unit_convert(els[el_idx],float(strp_val)),4)
+                val = round(unit_convert(form['elements'][el_idx],float(strp_val)),4)
             except:
                 val = strp_val
             if 'show_flags' in form.keys() and form['show_flags'] == 'T':
@@ -779,15 +790,18 @@ def station_data_trim_and_summary(req,form):
         meta -- [{stn1_meta},{stm2_meta}]
         form -- user form input dictionary
     '''
-    try:
-        data = req['data']
-        els = form['elements']
-    except:
-        error = 'No data found for these parameters.'
-        return {'data':[],'smry':[],'meta':[],'form':form,'errors':error}
+    data_key = 'data'
+
+    #Check for data
+    error = check_request_for_data(req,[],data_key)
+    if error is not None:
+        return {'data':[],'smry':[],'meta':[],'form':form,'error':error}
+
     header_data, header_smry = set_lister_headers(form)
+
     #MultiStnData calls return no dates
     dates = get_dates(form['start_date'],form['end_date'])
+
     #Set date converter
     format_date = getattr(thismodule,'format_date_string')
     sep = 'dash'
@@ -796,10 +810,11 @@ def station_data_trim_and_summary(req,form):
         smry_data = [[[] for el in form['elements']] for date_idx in range(len(dates))]
     elif form['data_summary'] == 'temporal':
         new_smry =[]
-        smry_data = [[] for el in els]
+        smry_data = [[] for el in form['elements']]
     else:
         new_smry = []
-    #find the polygon of the special shape
+
+    #Find the polygon of the special shape
     #and the function to test if a point lies within the shape
     poly, PointIn = set_poly_and_PointIn(form)
     new_data = [];new_meta = []
@@ -808,7 +823,7 @@ def station_data_trim_and_summary(req,form):
     if 'units' in form.keys() and form['units'] == 'metric':
         unit_convert = getattr(thismodule,'convert_to_metric')
     #Station loop over data
-    for stn_idx, stn_data in enumerate(req['data']):
+    for stn_idx, stn_data in enumerate(req[data_key]):
         try:
             lon = stn_data['meta']['ll'][0]
             lat = stn_data['meta']['ll'][1]
@@ -839,7 +854,7 @@ def station_data_trim_and_summary(req,form):
                 #Strip flag from data
                 strp_val, flag = strip_data(val)
                 try:
-                    val = round(unit_convert(els[el_idx],float(strp_val)),4)
+                    val = round(unit_convert(form['elements'][el_idx],float(strp_val)),4)
                     #Don't include -9999 (Missing) values
                     if str(strp_val) != '-9999':
                         if form['data_summary'] == 'spatial':
@@ -875,13 +890,13 @@ def station_data_trim_and_summary(req,form):
                 stn_ids = ' ()'
             row = [stn_name + stn_ids]
             if point_in:
-                for el_idx, el in enumerate(els):
+                for el_idx, el in enumerate(form['elements']):
                     row.append(compute_statistic(smry_data[el_idx],form['temporal_summary']))
                 new_smry.append(row)
     #Compute spatial summary
     if form['data_summary'] == 'spatial':
         for date_idx in range(len(dates)):
-            for el_idx in range(len(els)):
+            for el_idx in range(len(form['elements'])):
                 new_smry[date_idx].append(compute_statistic(smry_data[date_idx][el_idx],form['spatial_summary']))
     #Insert summary header
     if new_smry:
@@ -1326,42 +1341,24 @@ def format_station_spatial_summary(req,form):
         meta -- [{stn1_meta},{stn2_meta}, ...]
         form -- user form input dictionary
     '''
-    '''
-    resultsdict = {}
-    #Check that metadata and data are there
+
     data_key = 'data'
-    #LOCAFIX ME LOCA NO ELEVS
-    #meta_keys = ['lat','lon','elev']
-    meta_keys = []
-    results_dict = {}
-    error = check_request_for_data(req,meta_keys,data_key)
+    error = check_request_for_data(req,[],data_key)
     if error is not None:
         return {'data':[],'smry':[],'meta':[],'form':form,'error':error}
 
-    '''
-    try:
-        data = req['data']
-        els = form['elements']
-    except:
-        error = 'No data found for these parameters.'
-        return {'data':[],'smry':[],'meta':[],'form':form,'errors':error}
     #Headers
     header_data, header_smry = set_lister_headers(form)
     #Set date converter
     format_date = getattr(thismodule,'format_date_string')
     sep = 'dash'
     dates = get_dates(form['start_date'],form['end_date'])
-    #Sanity check on data
-    if not data or len(data) <1:
-        error = 'No data found for these parameters.'
-        return {'data':[],'smry':[],'meta':[],'form':form,'errors':error}
-    if 'data' not in data[0].keys():
-        error = 'No data found for these parameters.'
-        return {'data':[],'smry':[],'meta':[],'form':form,'errors':error}
-    #Sanity check on dates
-    if len(dates) != len(data[0]['data']):
-        error = 'Dates mismatch.'
-        return {'data':[],'smry':[],'meta':[],'form':form,'errors':error}
+
+    #Sanity check on dates and data
+    check_data_and_dates(data_key,req, dates)
+    if error is not None:
+        return {'data':[],'smry':[],'meta':[],'form':form,'error':error}
+
     new_data = [];new_meta = []
     smry_data = [[[] for el in form['elements']] for date_idx in range(len(dates))]
     new_smry = [[format_date(str(dates[date_idx]),sep)] for date_idx in range(len(dates))]
@@ -1381,8 +1378,8 @@ def format_station_spatial_summary(req,form):
                 #Don't include -9999 (Missing) values
                 if str(strp_val) == '-9999':strp_val = ''
                 try:
-                    val = unit_convert(els[el_idx],float(strp_val))
-                    #val = unit_convert(els[el_idx],float(el_data))
+                    val = unit_convert(form['elements'][el_idx],float(strp_val))
+                    #val = unit_convert(form['elements'][el_idx],float(el_data))
                     smry_data[date_idx][el_idx].append(val)
                 except:
                     pass
@@ -1412,12 +1409,10 @@ def format_station_no_summary(req,form):
         meta -- [{stn1_meta},{stn2_meta}, ...]
         form -- user form input dictionary
     '''
-    try:
-        data = req['data']
-        els = form['elements']
-    except:
-        error = 'No data found for these parameters.'
-        return {'data':[],'smry':[],'meta':[],'form':form,'errors':error}
+    data_key = 'data'
+    error = check_request_for_data(req,[],data_key)
+    if error is not None:
+        return {'data':[],'smry':[],'meta':[],'form':form,'error':error}
     #Headers
     header_data, header_smry = set_lister_headers(form)
     #Set date converter
@@ -1426,17 +1421,11 @@ def format_station_no_summary(req,form):
     new_data = [];new_smry = [];new_meta = []
     #MultiStnData calls return no dates
     dates = get_dates(form['start_date'],form['end_date'])
-    #Sanity check on data
-    if not data or len(data) <1:
-        error = 'No data found for these parameters.'
-        return new_data,new_smry,new_meta
-    if 'data' not in data[0].keys():
-        error = 'No data found for these parameters.'
-        return {'data':[],'smry':[],meta:[],'form':form,'errors':error}
-    #Sanity check on dates
-    if len(dates) != len(data[0]['data']):
-        error = 'Dates mismatch!'
-        return {'data':[],'smry':[],meta:[],'form':form,'errors':error}
+    #Sanity check on data and dates
+    check_data_and_dates(data_key,req, dates)
+    if error is not None:
+        return {'data':[],'smry':[],'meta':[],'form':form,'error':error}
+
     #Set unit converter
     unit_convert = getattr(thismodule,'convert_nothing')
     if 'units' in form.keys() and form['units'] == 'metric':
@@ -1465,7 +1454,7 @@ def format_station_no_summary(req,form):
                 #Strip flag from data
                 strp_val, flag = strip_data(val)
                 try:
-                    val = round(unit_convert(els[el_idx],float(strp_val)),4)
+                    val = round(unit_convert(form['elements'][el_idx],float(strp_val)),4)
                 except:
                     val = strp_val
                 if 'show_flags' in form.keys() and form['show_flags'] == 'T':
@@ -1496,12 +1485,11 @@ def format_station_windowed_data(req,form):
         meta -- [{stn1_meta},{stn2_meta}, ...]
         form -- user form input dictionary
     '''
-    try:
-        data = req['data']
-        els = form['elements']
-    except:
-        error = 'No data found for these parameters.'
-        return {'data':[],'smry':[],'meta':[],'form':form,'errors':error}
+    data_key = 'data'
+    error = check_request_for_data(req,[],data_key)
+    if error is not None:
+        return {'data':[],'smry':[],'meta':[],'form':form,'error':error}
+
     header_data, header_smry = set_lister_headers(form)
     #Set date converter
     format_date = getattr(thismodule,'format_date_string')
@@ -1509,16 +1497,11 @@ def format_station_windowed_data(req,form):
     new_data = [];new_smry = [];new_meta = []
     #MultiStnData calls return no dates
     dates = get_dates(form['start_date'],form['end_date'])
-    #Sanity check on data
-    if not data or len(data) <1:
-        error = 'No data found for these parameters.'
-        return new_data,new_smry,new_meta
-    if 'data' not in data[0].keys():
-        error = 'No data found for these parameters.'
-        return {'data':[],'smry':[],meta:[],'form':form,'errors':error}
-    #Sanity check on dates
-    if len(dates) != len(data[0]['data']):
-        return {'data':[],'smry':[],meta:[],'form':form}
+    #Sanity check on data and dates
+    check_data_and_dates(data_key,req, dates)
+    if error is not None:
+        return {'data':[],'smry':[],'meta':[],'form':form,'error':error}
+
     #Set unit converter
     unit_convert = getattr(thismodule,'convert_nothing')
     if 'units' in form.keys() and form['units'] == 'metric':
@@ -1549,7 +1532,7 @@ def format_station_windowed_data(req,form):
                 #Strip flag from data
                 strp_val, flag = strip_data(val)
                 try:
-                    val = round(unit_convert(els[el_idx],float(strp_val)),4)
+                    val = round(unit_convert(form['elements'][el_idx],float(strp_val)),4)
                     if form['data_summary'] == 'spatial':
                         smry_data[date_idx][el_idx].append(val)
                     if form['data_summary'] == 'temporal':
@@ -1588,11 +1571,10 @@ def format_station_temporal_summary(req,form):
         meta -- [{stn1_meta},{stn2_meta}, ...]
         form -- user form input dictionary
     '''
-    try:
-        data = req['data']
-        els = form['elements']
-    except:
-        return [],[],[]
+    data_key = 'data'
+    error = check_request_for_data(req,[],data_key)
+    if error is not None:
+        return {'data':[],'smry':[],'meta':[],'form':form,'error':error}
     header_data, header_smry = set_lister_headers(form)
     new_smry = []
     #MultiStnData calls return no dates
@@ -1615,7 +1597,7 @@ def format_station_temporal_summary(req,form):
         except:
             stn_ids = ' ()'
         #Tempral summary
-        ss = [unit_convert(els[el_idx],stn_data['smry'][el_idx]) for el_idx in range(len(els))]
+        ss = [unit_convert(form['elements'][el_idx],stn_data['smry'][el_idx]) for el_idx in range(len(form['elements']))]
         row = [stn_name + stn_ids] + ss
         new_smry.append(row)
     if new_smry:
@@ -2541,7 +2523,10 @@ def metadict_to_display_list(metadata, key_order_list,form):
             el_list_long = elements_to_display(els, units, valid_daterange=vd)
             meta[idx].append(', '.join(el_list_long))
         else:
-            meta[idx].append(str(val))
+            try:
+                meta[idx].append(str(val))
+            except:
+                meta[idx].append(val)
     if 'units' in form.keys():
         meta.append(['Units', form['units']])
     return meta

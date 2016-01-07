@@ -444,9 +444,122 @@ CLIM_SUM_MAPS_DAILY_THRESHES = {
 
 ###################################
 ###################################
-#LARGE DATA REQUEST
+#DATA DICTS
 ###################################
 ###################################
+STATION_DATA_FORMATTER = {
+    'station_id':{
+        'none':'format_data_single_lister',
+        'temporal':'format_data_single_lister',
+        'spatial':'format_data_single_lister',
+        'windowed_data':'format_data_single_lister'
+    },
+    'station_ids':{
+        'none':'format_station_no_summary',
+        'temporal':'format_station_temporal_summary',
+        'spatial':'format_station_spatial_summary',
+        'windowed_data':'format_station_windowed_data'
+    },
+    'county':{
+        'none':'format_station_no_summary',
+        'temporal':'format_station_temporal_summary',
+        'spatial':'format_station_spatial_summary',
+        'windowed_data':'format_station_windowed_data'
+    },
+    'climate_division':{
+        'none':'format_station_no_summary',
+        'temporal':'format_station_temporal_summary',
+        'spatial':'format_station_spatial_summary',
+        'windowed_data':'format_station_windowed_data'
+    },
+    'county_warning_area':{
+        'none':'format_station_no_summary',
+        'temporal':'format_station_temporal_summary',
+        'spatial':'format_station_spatial_summary',
+        'windowed_data':'format_station_windowed_data'
+    },
+    'basin':{
+        'none':'format_station_no_summary',
+        'temporal':'format_station_temporal_summary',
+        'spatial':'format_station_spatial_summary',
+        'windowed_data':'format_station_windowed_data'
+    },
+    'bounding_box':{
+        'none':'format_station_no_summary',
+        'temporal':'format_station_temporal_summary',
+        'spatial':'format_station_spatial_summary',
+        'windowed_data':'format_station_windowed_data'
+    },
+    'state':{
+        'none':'format_station_no_summary',
+        'temporal':'format_station_temporal_summary',
+        'spatial':'format_station_spatial_summary',
+        'windowed_data':'format_station_windowed_data'
+    },
+    'shape':{
+        'none':'station_data_trim_and_summary',
+        'temporal':'station_data_trim_and_summary',
+        'spatial':'station_data_trim_and_summary',
+        'windowed_data':'station_data_trim_and_summary'
+    }
+}
+
+GRID_DATA_FORMATTER = {
+    'location':{
+        'none':'format_data_single_lister',
+        'temporal':'format_data_single_lister',
+        'spatial':'format_data_single_lister',
+        'windowed_data':'format_data_single_lister'
+    },
+    'locations':{
+        'none':'format_grid_no_summary',
+        'temporal':'format_grid_temporal_summary',
+        'spatial':'format_grid_spatial_summary',
+        'windowed_data':'format_grid_windowed_data'
+    },
+    'county':{
+        'none':'grid_data_trim_and_summary',
+        'temporal':'grid_data_trim_and_summary',
+        'spatial':'grid_data_trim_and_summary',
+        'windowed_data':'grid_data_trim_and_summary'
+    },
+    'climate_division':{
+        'none':'grid_data_trim_and_summary',
+        'temporal':'grid_data_trim_and_summary',
+        'spatial':'grid_data_trim_and_summary',
+        'windowed_data':'grid_data_trim_and_summary'
+    },
+    'county_warning_area':{
+        'none':'grid_data_trim_and_summary',
+        'temporal':'grid_data_trim_and_summary',
+        'spatial':'grid_data_trim_and_summary',
+        'windowed_data':'grid_data_trim_and_summary'
+    },
+    'basin':{
+        'none':'grid_data_trim_and_summary',
+        'temporal':'grid_data_trim_and_summary',
+        'spatial':'grid_data_trim_and_summary',
+        'windowed_data':'grid_data_trim_and_summary'
+    },
+    'bounding_box':{
+        'none':'format_grid_no_summary',
+        'temporal':'format_grid_temporal_summary',
+        'spatial':'format_grid_spatial_summary',
+        'windowed_data':'format_grid_windowed_data'
+    },
+    'state':{
+        'none':'format_grid_no_summary',
+        'temporal':'format_grid_temporal_summary',
+        'spatial':'format_grid_spatial_summary',
+        'windowed_data':'format_grid_windowed_data'
+    },
+    'shape':{
+        'none':'grid_data_trim_and_summary',
+        'temporal':'grid_data_trim_and_summary',
+        'spatial':'grid_data_trim_and_summary',
+        'windowed_data':'grid_data_trim_and_summary'
+    }
+}
 
 ###################################
 ###################################

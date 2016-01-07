@@ -488,7 +488,7 @@ def request_and_format_data(form):
             form
     '''
     resultsdict = {
-        'errors':[],
+        'error':[],
         'meta':[],
         'data':[],
         'smry':[],
@@ -498,14 +498,12 @@ def request_and_format_data(form):
     #Find correct data call functions
     if not data_type:
         error = 'Not a valid request. Could not find request type.'
-        resultsdict['errors'].append( error)
+        resultsdict['error'].append( error)
         return resultsdict
 
     if data_type == 'station':
-        if 'station_id' in form.keys():
-            request_data = getattr(AcisWS,'StnData')
-        else:
-            request_data = getattr(AcisWS,'MultiStnData')
+        if 'station_id' in form.keys(): request_data = getattr(AcisWS,'StnData')
+        else: request_data = getattr(AcisWS,'MultiStnData')
     if data_type == 'grid':
         request_data = getattr(AcisWS,'GridData')
 
@@ -518,52 +516,25 @@ def request_and_format_data(form):
         req = request_data(params)
     except Exception, e:
         error = 'Data request failed with error: %s.' %str(e)
-        resultsdict['errors'].append( error)
+        resultsdict['error'].append( error)
         return resultsdict
     #Sanity checks
     if req is None:
         error = 'No data found for these parameters.'
-        resultsdict['errors'].append( error)
+        resultsdict['error'].append( error)
         return resultsdict
     if not 'data' in req.keys() and not 'smry' in req.keys():
         error = 'No data found for these parameters.'
-        resultsdict['errors'].append( error)
+        resultsdict['error'].append( error)
         return resultsdict
     #Format results
-    #Grid data
+    if data_type == 'station':
+        FORMATTER = copy.deepcopy(WRCCData.STATION_DATA_FORMATTER)
     if data_type == 'grid':
-        if form['area_type'] == 'location':
-            #Single point request
-            resultsdict = format_data_single_lister(req,form)
-        elif form['area_type'] in special_grid_areas:
-            #Irregular shape, data needs trimming
-            resultsdict = grid_data_trim_and_summary(req,form)
-        else:
-            if form['data_summary'] == 'none':
-                resultsdict = format_grid_no_summary(req,form)
-            if form['data_summary'] == 'temporal':
-                resultsdict = format_grid_temporal_summary(req,form)
-            if form['data_summary'] == 'spatial':
-                resultsdict = format_grid_spatial_summary(req,form)
-            if form['data_summary'] == 'windowed_data':
-                resultsdict = format_grid_windowed_data(req,form)
-    #Station data
-    elif data_type == 'station':
-        #Single point request
-        if form['area_type'] == 'station_id':
-            resultsdict = format_data_single_lister(req,form)
-        elif form['area_type'] in special_station_areas:
-            #Irregular shape, data needs trimming
-            resultsdict = station_data_trim_and_summary(req,form)
-        else:
-            if form['data_summary'] == 'none':
-                resultsdict = format_station_no_summary(req,form)
-            if form['data_summary'] == 'temporal':
-                resultsdict = format_station_temporal_summary(req,form)
-            if form['data_summary'] == 'spatial':
-                resultsdict  = format_station_spatial_summary(req,form)
-            if form['data_summary'] == 'windowed_data':
-                resultsdict = format_station_windowed_data(req,form)
+        FORMATTER = copy.deepcopy(WRCCData.GRID_DATA_FORMATTER)
+    formatter = FORMATTER[form['area_type']][form['data_summary']]
+    format_data = getattr(thismodule,formatter)
+    resultsdict = format_data(req, form)
     return resultsdict
 
 
@@ -663,6 +634,13 @@ def check_data_and_dates(data_key,req, dates):
     if len(dates) != len(req[data_key][0]['data']):
         error = 'Dates mismatch.'
     return error
+
+def write_grid_metadict(lat,lon,elev):
+    meta_dict = {
+        'll':[str(lon)+','+str(lat)],
+        'elev':elev
+    }
+    return meta_dict
 
 ###############################
 #Data formatters
@@ -975,21 +953,14 @@ def grid_data_trim_and_summary(req,form):
             if not point_in:
                 continue
             #points is in shape, add tp data and compute summary
-            #meta_dict = {'lon':lon,'lat':lat,'elev':unit_convert('elev',req['meta']['elev'][grid_idx][lon_idx])}
-            #new_meta.append(meta_dict)
-            meta_dict = {
-                'll':str(lon)+','+str(lat),
-                #LOCAFIX ME LOCA NO ELEVS
-                #'elev':str(unit_convert('elev',req['meta']['elev'][grid_idx][lon_idx]))
-                'elev':'-9999'
-            }
-            key_order_list = ['ll', 'elev']
-            meta_display_list = metadict_to_display_list(meta_dict, key_order_list,form)
+            #LOCAFIX ME LOCA NO ELEVS
+            #elev = unit_convert('elev',req['meta']['elev'][grid_idx][lon_idx])
+            elev = '-9999'
+            meta_dict = write_grid_metadict(lat,lon,elev)
+            meta_display_list = metadict_to_display_list(meta_dict, meta_dict.keys(),form)
             new_meta.append(meta_display_list)
             new_lons.append(lon)
-            #LOCAFIX ME LOCA NO ELEVS
-            #new_elevs.append(req['meta']['elev'][grid_idx][lon_idx])
-            new_elevs.append(-9999)
+            new_elevs.append(elev)
             new_data.append([])
             for date_idx, date_data in enumerate(req[data_key]):
                 d_data = [format_date(date_data[0],sep)]
@@ -1078,16 +1049,10 @@ def format_grid_spatial_summary(req,form):
         generator_lon = ((lon_idx, lon) for lon_idx, lon in enumerate(req['meta']['lon'][grid_idx]))
         lat = lat_grid[0]
         for (lon_idx, lon) in generator_lon:
-            #meta_dict = {'lon':lon,'lat':lat,'elev':unit_convert('elev',req['meta']['elev'][grid_idx][lon_idx])}
-            #new_meta.append(meta_dict)
-            meta_dict = {
-                'll':[str(lon)+','+str(lat)],
-                #LOCAFIX ME LOCA NO ELEVS
-                'elev':'-9999'
-                #'elev':str(unit_convert('elev',req['meta']['elev'][grid_idx][lon_idx]))
-            }
-            key_order_list = ['ll', 'elev']
-            meta_display_list = metadict_to_display_list(meta_dict, key_order_list,form)
+            #elev = unit_convert('elev',req['meta']['elev'][grid_idx][lon_idx])
+            elev = '-9999'
+            meta_dict = write_grid_metadict(lat,lon,elev)
+            meta_display_list = metadict_to_display_list(meta_dict, meta_dict.keys(),form)
             new_meta.append(meta_display_list)
             for date_idx,date_data in enumerate(req[data_key]):
                 for el_idx,el in enumerate(form['elements']):
@@ -1150,16 +1115,11 @@ def format_grid_no_summary(req,form):
         generator_lon = ((lon_idx, lon) for lon_idx, lon in enumerate(req['meta']['lon'][grid_idx]))
         lat = lat_grid[0]
         for (lon_idx, lon) in generator_lon:
-            #meta_dict = {'lon':lon,'lat':lat,'elev':unit_convert('elev',req['meta']['elev'][grid_idx][lon_idx])}
-            #new_meta.append(meta_dict)
-            meta_dict = {
-                'll':[str(lon)+','+str(lat)],
-                #LOCAFIX ME LOCA NO ELEVS
-                'elev':'-9999'
-                #'elev':str(unit_convert('elev',req['meta']['elev'][grid_idx][lon_idx]))
-            }
-            key_order_list = ['ll', 'elev']
-            meta_display_list = metadict_to_display_list(meta_dict, key_order_list,form)
+            #LOCAFIX ME LOCA NO ELEVS
+            #elev = unit_convert('elev',req['meta']['elev'][grid_idx][lon_idx])
+            elev = '-9999'
+            meta_dict = write_grid_metadict(lat,lon,elev)
+            meta_display_list = metadict_to_display_list(meta_dict, meta_dict.keys(),form)
             new_meta.append(meta_display_list)
             new_data.append([header_data])
             for date_data in req[data_key]:
@@ -1219,16 +1179,11 @@ def format_grid_windowed_data(req,form):
         generator_lon = ((lon_idx, lon) for lon_idx, lon in enumerate(req['meta']['lon'][grid_idx]))
         lat = lat_grid[0]
         for (lon_idx, lon) in generator_lon:
-            #meta_dict = {'lon':lon,'lat':lat,'elev':unit_convert('elev',req['meta']['elev'][grid_idx][lon_idx])}
-            #new_meta.append(meta_dict)
-            meta_dict = {
-                'll':[str(lon)+','+str(lat)],
-                #LOCAFIX ME LOCA NO ELEVS
-                'elev':'-9999'
-                #'elev':str(unit_convert('elev',req['meta']['elev'][grid_idx][lon_idx]))
-            }
-            key_order_list = ['ll', 'elev']
-            meta_display_list = metadict_to_display_list(meta_dict, key_order_list,form)
+            #LOCAFIX ME LOCA NO ELEVS
+            #elev = unit_convert('elev',req['meta']['elev'][grid_idx][lon_idx])
+            elev = '-9999'
+            meta_dict = write_grid_metadict(lat,lon,elev)
+            meta_display_list = metadict_to_display_list(meta_dict, meta_dict.keys(),form)
             new_meta.append(meta_display_list)
             new_data.append([])
             for date_data in req[data_key]:
@@ -1295,16 +1250,11 @@ def format_grid_temporal_summary(req,form):
         generator_lon = ((lon_idx, lon) for lon_idx, lon in enumerate(req['meta']['lon'][grid_idx]))
         lat = lat_grid[0]
         for (lon_idx, lon) in generator_lon:
-            #meta_dict = {'lon':lon,'lat':lat,'elev':unit_convert('elev',req['meta']['elev'][grid_idx][lon_idx])}
-            #new_meta.append(meta_dict)
-            meta_dict = {
-                'll':[str(lon)+','+str(lat)],
-                #LOCAFIX ME LOCA NO ELEVS
-                'elev':'-9999'
-                #'elev':str(unit_convert('elev',req['meta']['elev'][grid_idx][lon_idx]))
-            }
-            key_order_list = ['ll', 'elev']
-            meta_display_list = metadict_to_display_list(meta_dict, key_order_list,form)
+            #LOCAFIX ME LOCA NO ELEVS
+            #elev = unit_convert('elev',req['meta']['elev'][grid_idx][lon_idx])
+            elev = '-9999'
+            meta_dict = write_grid_metadict(lat,lon,elev)
+            meta_display_list = metadict_to_display_list(meta_dict, meta_dict.keys(),form)
             new_meta.append(meta_display_list)
             for data in req[data_key]:
                 for el_idx,el in enumerate(form['elements']):
@@ -2814,7 +2764,7 @@ def shapefile_to_ll(app_name, shp_file, feature_id):
     ## Get the spatial reference
     input_ds = ogr.Open(shp_file)
     if not input_ds:
-        return None
+        return ''
     input_layer = input_ds.GetLayer()
     ## Get the projection
     input_osr = input_layer.GetSpatialRef()
@@ -2838,15 +2788,15 @@ def shapefile_to_ll(app_name, shp_file, feature_id):
             if i < proj_geom.GetPointCount() - 1:
                 poly_ll+=','
         '''
-        return None
+        return poly_ll
     #2.LINES, MULTILINESTRINGS -- not allowed
     if input_geom_type in ['LINE','MULTILINESTRING']:
-        return None
+        return poly_ll
     #3.POLYGONS
     if input_geom_type in ['POLYGON']:
         #Check that polygon has no hole
         if len(range(proj_geom.GetGeometryCount())) > 1:
-            return None
+            return poly_ll
         ## POLYGONS are made up of LINEAR RINGS
         for i in range(0, proj_geom.GetGeometryCount()):
             sub_geom = proj_geom.GetGeometryRef(i)
@@ -2867,12 +2817,12 @@ def shapefile_to_ll(app_name, shp_file, feature_id):
                 for k in range(0, linear_ring.GetPointCount()):
                     pt = linear_ring.GetPoint(k)
                     poly_ll+=str(round(pt[0],4)) + ',' + str(round(pt[1],4))
-                    if k < linear_rinf.GetPointCount() - 1:
+                    if k < linear_ring.GetPointCount() - 1:
                         poly_ll+=','
-        ## Get the next feature
-        #input_ftr = input_layer.GetNextFeature()
-        ## Or break after the first one
-        #break
+    ## Get the next feature
+    #input_ftr = input_layer.GetNextFeature()
+    ## Or break after the first one
+    #break
     return poly_ll
 
 def geoll2ddmmss(lat,lon):

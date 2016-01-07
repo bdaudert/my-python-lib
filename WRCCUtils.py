@@ -941,6 +941,7 @@ def grid_data_trim_and_summary(req,form):
     if 'units' in form.keys() and form['units'] == 'metric':
         unit_convert = getattr(thismodule,'convert_to_metric')
     #lat,lon loop over data
+    '''
     generator_lat =  ((grid_idx, lat_grid) for grid_idx, lat_grid in enumerate(req['meta']['lat']))
     for (grid_idx, lat_grid) in generator_lat:
         generator_lon = ((lon_idx, lon) for lon_idx, lon in enumerate(req['meta']['lon'][grid_idx]))
@@ -948,6 +949,12 @@ def grid_data_trim_and_summary(req,form):
         new_lons = []
         new_elevs = []
         for (lon_idx, lon) in generator_lon:
+    '''
+    for grid_idx in xrange(len(req['meta']['lat'])):
+        lat = req['meta']['lat'][grid_idx][0]
+        new_lons = [];new_lats = [];new_elevs = []
+        for lon_idx in xrange(len(req['meta']['lon'][grid_idx])):
+            lon = req['meta']['lon'][grid_idx][lon_idx]
             #lon_data = [[[] for el in form['elements']] for d in range(len(req[data_key]))]
             point_in = PointIn(lon, lat, poly)
             if not point_in:
@@ -1044,11 +1051,17 @@ def format_grid_spatial_summary(req,form):
     if 'units' in form.keys() and form['units'] == 'metric':
         unit_convert = getattr(thismodule,'convert_to_metric')
     #lat,lon loop over data
+    '''
     generator_lat =  ((grid_idx, lat_grid) for grid_idx, lat_grid in enumerate(req['meta']['lat']))
     for (grid_idx, lat_grid) in generator_lat:
         generator_lon = ((lon_idx, lon) for lon_idx, lon in enumerate(req['meta']['lon'][grid_idx]))
         lat = lat_grid[0]
         for (lon_idx, lon) in generator_lon:
+    '''
+    for grid_idx in xrange(len(req['meta']['lat'])):
+        lat = req['meta']['lat'][grid_idx][0]
+        for lon_idx in xrange(len(req['meta']['lon'][grid_idx])):
+            lon = req['meta']['lon'][grid_idx][lon_idx]
             #elev = unit_convert('elev',req['meta']['elev'][grid_idx][lon_idx])
             elev = '-9999'
             meta_dict = write_grid_metadict(lat,lon,elev)
@@ -1110,11 +1123,17 @@ def format_grid_no_summary(req,form):
     if 'units' in form.keys() and form['units'] == 'metric':
         unit_convert = getattr(thismodule,'convert_to_metric')
     #Lat/lon loop
+    '''
     generator_lat =  ((grid_idx, lat_grid) for grid_idx, lat_grid in enumerate(req['meta']['lat']))
     for (grid_idx, lat_grid) in generator_lat:
         generator_lon = ((lon_idx, lon) for lon_idx, lon in enumerate(req['meta']['lon'][grid_idx]))
         lat = lat_grid[0]
         for (lon_idx, lon) in generator_lon:
+    '''
+    for grid_idx in xrange(len(req['meta']['lat'])):
+        lat = req['meta']['lat'][grid_idx][0]
+        for lon_idx in xrange(len(req['meta']['lon'][grid_idx])):
+            lon = req['meta']['lon'][grid_idx][lon_idx]
             #LOCAFIX ME LOCA NO ELEVS
             #elev = unit_convert('elev',req['meta']['elev'][grid_idx][lon_idx])
             elev = '-9999'
@@ -1174,11 +1193,17 @@ def format_grid_windowed_data(req,form):
     if 'units' in form.keys() and form['units'] == 'metric':
         unit_convert = getattr(thismodule,'convert_to_metric')
     #Lon/Lat Loop
+    '''
     generator_lat =  ((grid_idx, lat_grid) for grid_idx, lat_grid in enumerate(req['meta']['lat']))
     for (grid_idx, lat_grid) in generator_lat:
         generator_lon = ((lon_idx, lon) for lon_idx, lon in enumerate(req['meta']['lon'][grid_idx]))
         lat = lat_grid[0]
         for (lon_idx, lon) in generator_lon:
+    '''
+    for grid_idx in xrange(len(req['meta']['lat'])):
+        lat = req['meta']['lat'][grid_idx][0]
+        for lon_idx in xrange(len(req['meta']['lon'][grid_idx])):
+            lon = req['meta']['lon'][grid_idx][lon_idx]
             #LOCAFIX ME LOCA NO ELEVS
             #elev = unit_convert('elev',req['meta']['elev'][grid_idx][lon_idx])
             elev = '-9999'
@@ -1245,11 +1270,17 @@ def format_grid_temporal_summary(req,form):
     if 'units' in form.keys() and form['units'] == 'metric':
         unit_convert = getattr(thismodule,'convert_to_metric')
     #lat,lon loop over data
+    '''
     generator_lat =  ((grid_idx, lat_grid) for grid_idx, lat_grid in enumerate(req['meta']['lat']))
     for (grid_idx, lat_grid) in generator_lat:
         generator_lon = ((lon_idx, lon) for lon_idx, lon in enumerate(req['meta']['lon'][grid_idx]))
         lat = lat_grid[0]
         for (lon_idx, lon) in generator_lon:
+    '''
+    for grid_idx in xrange(len(req['meta']['lat'])):
+        lat = req['meta']['lat'][grid_idx][0]
+        for lon_idx in xrange(len(req['meta']['lon'][grid_idx])):
+            lon = req['meta']['lon'][grid_idx][lon_idx]
             #LOCAFIX ME LOCA NO ELEVS
             #elev = unit_convert('elev',req['meta']['elev'][grid_idx][lon_idx])
             elev = '-9999'

@@ -223,15 +223,15 @@ def get_meta_keys(form):
             meta_keys = ['name', 'state', 'sids', 'elev', 'll', 'valid_daterange']
         else:
             #LOCAFIX ME LOCA NO ELEVS
-            #meta_keys = ['ll','elev']
-            meta_keys = ['ll']
+            meta_keys = ['ll','elev']
+            #meta_keys = ['ll']
     else:
         if 'station_id' in form.keys() or 'station_ids' in form.keys():
             meta_keys = ['name', 'state', 'sids', 'elev', 'll', 'valid_daterange']
         else:
             #LOCAFIX ME LOCA NO ELEVS
-            #meta_keys = ['ll','elev']
-            meta_keys = ['ll']
+            meta_keys = ['ll','elev']
+            #meta_keys = ['ll']
     return meta_keys
 
 def convert_elements_to_list(elements):
@@ -471,6 +471,114 @@ def compute_statistic(vals,statistic):
     if statistic == 'skew':
         return round(scipy.stats.skew(np_array),4)
 
+###################################
+#GENERAL FORMATTING MODULES
+###################################
+def write_grid_metadict(lat,lon,elev):
+    meta_dict = {
+        'll':[str(lon)+','+str(lat)],
+        'elev':elev
+    }
+    return meta_dict
+
+def set_temporal_summary_header(form):
+    header = [WRCCData.DISPLAY_PARAMS[form['area_type']],str(form[form['area_type']])]
+    dates = get_dates(form['start_date'],form['end_date'])
+    header+= ['Date Range',dates[0],dates[-1]]
+    return header
+
+def set_spatial_summary_header(form):
+    header = [WRCCData.DISPLAY_PARAMS[form['area_type']],str(form[form['area_type']])]
+    return header
+
+
+def set_lister_headers(form):
+    '''
+    Sets data headers for html display and writing to file.
+    Args:
+        form -- user form input dictionary
+    Returns:
+        header_data -- header for the raw data
+        header_summary -- header for the data summary
+    '''
+    data_type = get_data_type(form)
+    el_list = form['elements']
+    if isinstance(form['elements'], basestring):
+        el_list = form['elements'].replace(' ','').split(',')
+    header_data = ['Date']
+    header_summary =[]
+    if form['data_summary'] == 'temporal':
+        if data_type == 'grid':
+            header_smry=['Location(Lon,Lat)']
+        if data_type == 'station':
+            header_smry=['Station (IDs)']
+    else:
+        header_smry = ['Date']
+    for el in el_list:
+        el_strip,base_temp = get_el_and_base_temp(el)
+        if base_temp:
+            base_temp = str(base_temp)
+        unit = WRCCData.UNITS_ENGLISH[el_strip]
+        if form['units'] == 'metric':
+            if el_strip not in ['gdd','hdd','cdd']:
+                unit = WRCCData.UNITS_METRIC[el_strip]
+            '''
+            if base_temp:
+                base_temp = str(convert_to_metric('base_temp',base_temp))
+            '''
+        el_name = WRCCData.MICHELES_ELEMENT_NAMES[el_strip]
+        h = el_name
+        #Add base temp and units
+        if base_temp:h+=str(base_temp)
+        if unit !='':
+            h+=' (' + unit + ')'
+        header_data+=[h]
+        header_smry+=[h]
+        '''
+        if data_type == 'station' and 'show_flags' in form.keys():
+            if form['show_flags'] == 'T':
+                header_data+=['F']
+        '''
+        if data_type == 'station' and 'show_observation_time' in form.keys():
+            if form['show_observation_time'] == 'T':
+                header_data+=['hr']
+    return header_data,header_smry
+
+###################################
+#SANITY CHECKS
+###################################
+def check_request_for_data(req,meta_keys,data_key):
+    '''
+    Checks that that req has meta_keys
+    and that req[data_key] exists and is not empty
+    '''
+    error = None
+    #Metadata check
+    for key in meta_keys:
+        try:
+            metadata = req['meta'][key]
+        except:
+            return 'No metadata (%s) found for these parameters.' %key
+    #Data check
+    try:
+        data = req[data_key]
+    except:
+        return 'No data found for these parameters.'
+    return error
+
+def check_data_and_dates(data_key,req, dates):
+    error = None
+    #Sanity check on data
+    if not req[data_key] or len(req[data_key]) <1:
+        error = 'No data found for these parameters.'
+    if 'data' not in req[data_key][0].keys():
+        error = 'No data found for these parameters.'
+    #Sanity check on dates
+    if len(dates) != len(req[data_key][0]['data']):
+        error = 'Dates mismatch.'
+    return error
+
+
 def request_and_format_data(form):
     '''
     ACIS data request and data formatting.
@@ -538,112 +646,8 @@ def request_and_format_data(form):
     return resultsdict
 
 
-###################################
-#DATA FORMATTING MODULES
-###################################
-def set_temporal_summary_header(form):
-    header = [WRCCData.DISPLAY_PARAMS[form['area_type']],str(form[form['area_type']])]
-    dates = get_dates(form['start_date'],form['end_date'])
-    header+= ['Date Range',dates[0],dates[-1]]
-    return header
-
-def set_spatial_summary_header(form):
-    header = [WRCCData.DISPLAY_PARAMS[form['area_type']],str(form[form['area_type']])]
-    return header
-
-
-def set_lister_headers(form):
-    '''
-    Sets data headers for html display and writing to file.
-    Args:
-        form -- user form input dictionary
-    Returns:
-        header_data -- header for the raw data
-        header_summary -- header for the data summary
-    '''
-    data_type = get_data_type(form)
-    el_list = form['elements']
-    if isinstance(form['elements'], basestring):
-        el_list = form['elements'].replace(' ','').split(',')
-    header_data = ['Date']
-    header_summary =[]
-    if form['data_summary'] == 'temporal':
-        if data_type == 'grid':
-            header_smry=['Location(Lon,Lat)']
-        if data_type == 'station':
-            header_smry=['Station (IDs)']
-    else:
-        header_smry = ['Date']
-    for el in el_list:
-        el_strip,base_temp = get_el_and_base_temp(el)
-        if base_temp:
-            base_temp = str(base_temp)
-        unit = WRCCData.UNITS_ENGLISH[el_strip]
-        if form['units'] == 'metric':
-            if el_strip not in ['gdd','hdd','cdd']:
-                unit = WRCCData.UNITS_METRIC[el_strip]
-            '''
-            if base_temp:
-                base_temp = str(convert_to_metric('base_temp',base_temp))
-            '''
-        el_name = WRCCData.MICHELES_ELEMENT_NAMES[el_strip]
-        h = el_name
-        #Add base temp and units
-        if base_temp:h+=str(base_temp)
-        if unit !='':
-            h+=' (' + unit + ')'
-        header_data+=[h]
-        header_smry+=[h]
-        '''
-        if data_type == 'station' and 'show_flags' in form.keys():
-            if form['show_flags'] == 'T':
-                header_data+=['F']
-        '''
-        if data_type == 'station' and 'show_observation_time' in form.keys():
-            if form['show_observation_time'] == 'T':
-                header_data+=['hr']
-    return header_data,header_smry
-
-def check_request_for_data(req,meta_keys,data_key):
-    '''
-    Checks that that req has meta_keys
-    and that req[data_key] exists and is not empty
-    '''
-    error = None
-    #Metadata check
-    for key in meta_keys:
-        try:
-            metadata = req['meta'][key]
-        except:
-            return 'No metadata (%s) found for these parameters.' %key
-    #Data check
-    try:
-        data = req[data_key]
-    except:
-        return 'No data found for these parameters.'
-    return error
-
-def check_data_and_dates(data_key,req, dates):
-    error = None
-    #Sanity check on data
-    if not req[data_key] or len(req[data_key]) <1:
-        error = 'No data found for these parameters.'
-    if 'data' not in req[data_key][0].keys():
-        error = 'No data found for these parameters.'
-    #Sanity check on dates
-    if len(dates) != len(req[data_key][0]['data']):
-        error = 'Dates mismatch.'
-    return error
-
-def write_grid_metadict(lat,lon,elev):
-    meta_dict = {
-        'll':[str(lon)+','+str(lat)],
-        'elev':elev
-    }
-    return meta_dict
-
 ###############################
-#Data formatters
+#DATA FORMATTERS
 ##################################
 def format_data_single_lister(req,form):
     '''
@@ -913,7 +917,7 @@ def grid_data_trim_and_summary(req,form):
     #Check that metadata and data are there
     data_key = 'data'
     #LOCAFIX ME LOCA NO ELEVS
-    #meta_keys = ['lat','lon','elev']
+    meta_keys = ['lat','lon','elev']
     meta_keys = ['lat','lon']
     results_dict = {}
     error = check_request_for_data(req,meta_keys,data_key)

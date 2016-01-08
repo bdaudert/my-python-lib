@@ -8,7 +8,7 @@ CAPS names imply use in django forms
 '''
 from collections import defaultdict
 from collections import OrderedDict
-import datetime
+import datetime, copy
 
 '''
 FIX ME: get web server error when
@@ -765,6 +765,7 @@ DISPLAY_PARAMS = {
     'station_ids': 'Station IDs',
     'station_IDs':'Station IDs',
     'location': 'Location (lon,lat)',
+    'locations':'Locations (lon, lat)',
     'loc': 'Location(lon,lat)',
     'point': 'Location (lon,lat)',
     'lat': 'Latitude',
@@ -932,8 +933,7 @@ DISPLAY_PARAMS = {
 #yesterday = WRCCUtils.set_back_date(1)
 GRID_CHOICES = {
     '1': ['NRCC Interpolated (US)','',5,[['19500101',today]]],
-    '2': ['NRCC Hi-Res (East of Rockies)','',5,[['20070101',today]]],
-    '3': ['NARCCAP (US)','',50,[['19700101','19991231'],['20400101','20691231']]],
+    '3': ['NRCC Hi-Res (East of Rockies)','',5,[['20070101',today]]],
     '4': ['CRCM + NCEP (Historical only)','',50,[['19700101','19991231']]],
     '5': ['CRCM + CCSM','',50,[['19700101','19991231'],['20400101','20691231']]],
     '6': ['CRCM + CCSM3','',50,[['19700101','19991231'],['20400101','20691231']]],
@@ -951,8 +951,35 @@ GRID_CHOICES = {
     '22': ['GFDL-CM3','',6,[['19500101','20051231'],['20060101','20991231']]], #rcp4.5
     '23': ['GFDL-CM3','',6,[['19500101','20051231'],['20060101','20991231']]], #rcp8.5
     '24': ['HadGEM2-CC','',6,[['19500101','20051231'],['20060101','20991231']]],#rcp4.5
-    '25': ['HadGEM2-CC','',6,[['19500101','20051231'],['20060101','20991231']]] #rcp8.5
+    '25': ['HadGEM2-CC','',6,[['19500101','20051231'],['20060101','20991231']]], #rcp8.5
+    '26': ['HadGEM2-ES','',6,[['19500101','20051231'],['20060101','20991231']]],#rcp4.5
+    '27': ['HadGEM2-ES','',6,[['19500101','20051231'],['20060101','20991231']]], #rcp8.5
+    '28': ['CCSM4','',6,[['19500101','20051231'],['20060101','20991231']]], #rcp4.5
+    '29': ['CCSM4','',6,[['19500101','20051231'],['20060101','20991231']]], #rcp8.5
+    '30': ['CanESM2','',6,[['19500101','20051231'],['20060101','20991231']]],#rcp4.5
+    '31': ['CanESM2','',6,[['19500101','20051231'],['20060101','20991231']]], #rcp8.5
+    '32': ['CESM1-BGC','',6,[['19500101','20051231'],['20060101','20991231']]],#rcp4.5
+    '33': ['CESM1-BGC','',6,[['19500101','20051231'],['20060101','20991231']]], #rcp8.5
+    '34': ['CMCC-CMS','',6,[['19500101','20051231'],['20060101','20991231']]],#rcp4.5
+    '35': ['CMCC-CMS','',6,[['19500101','20051231'],['20060101','20991231']]], #rcp8.5
+    '36': ['CNRM-CM5','',6,[['19500101','20051231'],['20060101','20991231']]],#rcp4.5
+    '37': ['CNRM-CM5','',6,[['19500101','20051231'],['20060101','20991231']]], #rcp8.5
+    '38': ['MICRO5','',6,[['19500101','20051231'],['20060101','20991231']]],#rcp4.5
+    '39': ['MICRO5','',6,[['19500101','20051231'],['20060101','20991231']]], #rcp8.5
+    '40': ['ACCESS1-0','',6,[['19500101','20051231'],['20060101','20991231']]],#rcp4.5
+    '41': ['ACCESS1-0','',6,[['19500101','20051231'],['20060101','20991231']]] #rcp8.5
 }
+
+GRID_CHOICES_TUPLE =()
+key_order = [1,3,21] + range(22,42) + range(4,17)
+for key in key_order:
+    k = str(key)
+    name_range = GRID_CHOICES[k][0]
+    name_range+= '(' + GRID_CHOICES[k][3][0][0][0:4] + '-' + GRID_CHOICES[k][3][0][1][0:4]
+    if len(GRID_CHOICES[k][3]) == 2:
+        name_range+= ',' + GRID_CHOICES[k][3][1][0][0:4] + '-' + GRID_CHOICES[k][3][1][1][0:4]
+    name_range+=')'
+    GRID_CHOICES_TUPLE += ((k, name_range),)
 
 
 MONTH_CHOICES = (
@@ -1043,6 +1070,7 @@ SHAPE_NAMES = {
     'basin':'Drainage Basin ',
     'location':'Point Location '
 }
+
 
 ###################################
 ###################################
@@ -1392,6 +1420,185 @@ TABLE_LIST_NO_GRAPHICS = {
 
 ###################################
 ###################################
+#SCENIC FORM OPTIONS
+#Avoids use of checkboxvals
+###################################
+###################################
+SCENIC_FORM_OPTIONS = {
+    'station_finder': {
+        'area_type':(
+            ('station_id',DISPLAY_PARAMS['station_id']),
+            ('station_ids',DISPLAY_PARAMS['station_ids']),
+            ('county',DISPLAY_PARAMS['county']),
+            ('county_warning_area',DISPLAY_PARAMS['county_warning_area']),
+            ('climate_division',DISPLAY_PARAMS['climate_division']),
+            ('basin',DISPLAY_PARAMS['basin']),
+            ('state',DISPLAY_PARAMS['state']),
+            ('shape',DISPLAY_PARAMS['shape'])
+        ),
+        'elements':(
+            ('maxt',DISPLAY_PARAMS['maxt']),
+            ('mint',DISPLAY_PARAMS['mint']),
+            ('avgt',DISPLAY_PARAMS['avgt']),
+            ('obst',DISPLAY_PARAMS['obst']),
+            ('pcpn',DISPLAY_PARAMS['pcpn']),
+            ('snow',DISPLAY_PARAMS['snow']),
+            ('snwd',DISPLAY_PARAMS['snwd']),
+            ('hdd',DISPLAY_PARAMS['hdd']),
+            ('cdd',DISPLAY_PARAMS['cdd']),
+            ('gdd',DISPLAY_PARAMS['gdd']),
+            ('evap',DISPLAY_PARAMS['evap']),
+        ),
+        'elements_constraints':(
+            ('all','All of the elements'),
+            ('any','Any of the elements')
+        ),
+        'dates_constraints':(
+            ('all','All of the dates'),
+            ('any','Any of the dates')
+        )
+    },
+    'single_lister':{
+        'area_type':(
+            ('station_id',DISPLAY_PARAMS['station_id']),
+            ('location',DISPLAY_PARAMS['location'])
+        ),
+        'grid':copy.deepcopy(GRID_CHOICES_TUPLE),
+        'elements':(
+            ('maxt',DISPLAY_PARAMS['maxt']),
+            ('mint',DISPLAY_PARAMS['mint']),
+            ('avgt',DISPLAY_PARAMS['avgt']),
+            ('obst',DISPLAY_PARAMS['obst']),
+            ('pcpn',DISPLAY_PARAMS['pcpn']),
+            ('snow',DISPLAY_PARAMS['snow']),
+            ('snwd',DISPLAY_PARAMS['snwd']),
+            ('hdd',DISPLAY_PARAMS['hdd']),
+            ('cdd',DISPLAY_PARAMS['cdd']),
+            ('gdd',DISPLAY_PARAMS['gdd']),
+            ('evap',DISPLAY_PARAMS['evap']),
+        ),
+        'add_special_degree_days':(
+            ('F','Yes'),
+            ('T','No')
+        ),
+        'units':(
+            ('english',DISPLAY_PARAMS['english']),
+            ('metric',DISPLAY_PARAMS['metric'])
+        ),
+        'data_summary':(
+            ('none', DISPLAY_PARAMS['none']),
+            ('temporal', DISPLAY_PARAMS['temporal']),
+            ('windowed_data', DISPLAY_PARAMS['windowed_data'])
+        ),
+        'show_flags':(
+            ('F','Yes'),
+            ('T','No')
+        ),
+        'show_observation_time':(
+            ('F','Yes'),
+            ('T','No')
+        )
+    },
+    'multi_lister':{
+        'area_type':(
+            ('station_ids',DISPLAY_PARAMS['station_ids']),
+            ('locations',DISPLAY_PARAMS['locations']),
+            ('county',DISPLAY_PARAMS['county']),
+            ('county_warning_area',DISPLAY_PARAMS['county_warning_area']),
+            ('climate_division',DISPLAY_PARAMS['climate_division']),
+            ('basin',DISPLAY_PARAMS['basin']),
+            ('state',DISPLAY_PARAMS['state']),
+            ('shape',DISPLAY_PARAMS['shape'])
+        ),
+        'data_type':(
+            ('station',DISPLAY_PARAMS['station']),
+            ('grid',DISPLAY_PARAMS['grid'])
+        ),
+        'grid':copy.deepcopy(GRID_CHOICES_TUPLE),
+        'elements':(
+            ('maxt',DISPLAY_PARAMS['maxt']),
+            ('mint',DISPLAY_PARAMS['mint']),
+            ('avgt',DISPLAY_PARAMS['avgt']),
+            ('obst',DISPLAY_PARAMS['obst']),
+            ('pcpn',DISPLAY_PARAMS['pcpn']),
+            ('snow',DISPLAY_PARAMS['snow']),
+            ('snwd',DISPLAY_PARAMS['snwd']),
+            ('hdd',DISPLAY_PARAMS['hdd']),
+            ('cdd',DISPLAY_PARAMS['cdd']),
+            ('gdd',DISPLAY_PARAMS['gdd']),
+            ('evap',DISPLAY_PARAMS['evap']),
+        ),
+        'add_special_degree_days':(
+            ('F','Yes'),
+            ('T','No')
+        ),
+        'units':(
+            ('english',DISPLAY_PARAMS['english']),
+            ('metric',DISPLAY_PARAMS['metric'])
+        ),
+        'data_summary':(
+            ('none', DISPLAY_PARAMS['none']),
+            ('spatial', DISPLAY_PARAMS['spatial']),
+            ('temporal', DISPLAY_PARAMS['temporal']),
+            ('windowed_data', DISPLAY_PARAMS['windowed_data'])
+        ),
+    },
+    'monthly_summaries':{
+        'area_type':'station_id',
+        'station_id':'RENO TAHOE INTL AP, 266779',
+        'grid':copy.deepcopy(GRID_CHOICES_TUPLE),
+        'start_year':'POR',
+        'end_year':'POR',
+        'element':'pcpn',
+        'statistic':'msum',
+        'units':'english',
+        'max_missing_days':'5',
+        'departures_from_averages':'F'
+    },
+    'interannual':{
+        'area_type':'station_id',
+        'station_id':'RENO TAHOE INTL AP, 266779',
+        'grid':copy.deepcopy(GRID_CHOICES_TUPLE),
+        'element':'pcpn',
+        'units':'english',
+        'start_month':'01',
+        'start_day':'01',
+        'end_month':'01',
+        'end_day':'31',
+        'temporal_summary':'sum',
+        'start_year':'1980',
+        'end_year':'2000'
+    },
+    'intraannual':{
+        'area_type':'station_id',
+        'station_id':'RENO TAHOE INTL AP, 266779',
+        'grid':copy.deepcopy(GRID_CHOICES_TUPLE),
+        'element':'pcpn',
+        'calculation':'cumulative',
+        'units':'english',
+        'start_month':'01',
+        'start_day':'01',
+        'start_year':'1980',
+        'end_year':'2000'
+    },
+    'data_comparison':{
+        'grid':copy.deepcopy(GRID_CHOICES_TUPLE)
+    },
+    'climatology':{
+        'grid':copy.deepcopy(GRID_CHOICES_TUPLE)
+    },
+    'spatial_summary':{
+        'grid':copy.deepcopy(GRID_CHOICES_TUPLE)
+    },
+    'temporal_summary':{
+        'grid':copy.deepcopy(GRID_CHOICES_TUPLE)
+    },
+    'climate_engine':{
+    }
+}
+
+###################################
+###################################
 #Unit/Functional Testing
 ###################################
 ###################################
@@ -1478,7 +1685,12 @@ SCENIC_DATA_PARAMS = {
         'start_day':'01',
         'start_year':'1980',
         'end_year':'2000'
-    }
+    },
+    'data_comparison':{},
+    'climatology':{},
+    'spatial_ummary':{},
+    'temporal_summary':{},
+    'climate_engine':{}
 }
 
 WRAPPERS = {

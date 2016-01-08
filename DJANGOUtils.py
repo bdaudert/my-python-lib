@@ -470,15 +470,17 @@ def set_initial(request,app_name):
             if initial['departures_from_averages'] == bl:
                 checkbox_vals['departures_from_averages_' + bl + '_selected'] = 'selected'
     if 'grid' in initial.keys():
-        for g in ['1','21','3','22','23','24','25','4','5','6','7','8','9','10','11','12','13','14','15','16']:
-            checkbox_vals['grid_' + g + '_selected'] =''
-            if initial['grid'] == g:
-                checkbox_vals['grid_' + g + '_selected'] ='selected'
+        for g in range(1,16) + range(22,44):
+            checkbox_vals['grid_' + str(g) + '_selected'] =''
+            if initial['grid'] == str(g):
+                checkbox_vals['grid_' + str(g) + '_selected'] ='selected'
     if app_name == 'climatology':
         for st in ['all','temp','prsn','both','hc','g']:
             checkbox_vals[st + '_selected'] =''
             if st == initial['summary_type']:
                 checkbox_vals[st + '_selected'] ='selected'
+
+    initial['form_options'] = WRCCData.SCENIC_FORM_OPTIONS[app_name]
     return initial,checkbox_vals
 
 def set_form(request, clean=True):

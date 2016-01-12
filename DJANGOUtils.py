@@ -118,6 +118,8 @@ def set_initial(request,app_name):
     elif initial['area_type'] in ['basin','county_warning_area','county','climate_division','state','shape']:
         initial['autofill_list'] = 'US_' + initial['area_type']
         initial['data_type'] = Get('data_type','station')
+    if app_name == 'temporal_summary':
+        initial['data_type'] = 'grid'
     #Grid
     if app_name not in ['station_finder', 'sf_download']:
         initial['grid'] = Get('grid','1')
@@ -271,20 +273,20 @@ def set_initial(request,app_name):
         initial['end_window'] = Get('end_window',ew)
     #data summaries
     if app_name in  ['temporal_summary', 'interannual']:
-        initial['data_summary'] = Get('data_summary', 'temporal')
+        initial['data_summary'] = Get('data_summary', 'temporal_summary')
     elif app_name in ['spatial_summary','multi_lister']:
-        initial['data_summary'] = Get('data_summary', 'spatial')
+        initial['data_summary'] = Get('data_summary', 'spatial_summary')
     else:
         initial['data_summary'] = Get('data_summary', 'none')
-    if initial['data_summary'] == 'temporal':
+    if initial['data_summary'] == 'temporal_summary':
         if app_name in ['temporal_summary', 'interannual', 'sf_download']:
-            if initial['element'] in ['pcpn','snow','evap','pet']:
+            if 'element' in initial.keys() and initial['element'] in ['pcpn','snow','evap','pet']:
                 initial['temporal_summary'] = Get('temporal_summary', 'sum')
             else:
                 initial['temporal_summary'] = Get('temporal_summary', 'mean')
         else:
             initial['temporal_summary'] = Get('temporal_summary', 'mean')
-    if initial['data_summary'] == 'spatial':
+    if initial['data_summary'] == 'spatial_summary':
         if app_name in ['single_lister', 'multi_lister','spatial_summary','sf_download']:
             initial['spatial_summary'] = Get('spatial_summary', 'mean')
 
@@ -327,6 +329,8 @@ def set_initial(request,app_name):
         initial['statistic_period'] = Get('statistic_period','monthly')
     if app_name in ['climatology','sf_link']:
         initial['summary_type'] = Get('summary_type', 'all')
+    if app_name == 'temporal_summary':
+        initial['show_plot_opts'] = Get('show_plot_opts','T')
     #Ploting options for all pages that have charts
     if app_name in ['monthly_summaries', 'spatial_summary','interannual', 'intraannual','data_comparison']:
         if app_name in ['spatial_summary','monthly_summaries','intraannual']:
@@ -391,7 +395,7 @@ def set_initial(request,app_name):
             if u == initial['units']:
                 checkbox_vals['units_' +u + '_selected'] ='selected'
     if 'data_summary' in initial.keys():
-        for ds in ['none','windowed_data','temporal', 'spatial']:
+        for ds in ['none','windowed_data','temporal_summary', 'spatial_summary']:
             checkbox_vals['data_summary_' + ds + '_selected'] =''
             if ds == initial['data_summary']:
                 checkbox_vals['data_summary_' + ds + '_selected'] ='selected'
@@ -469,17 +473,11 @@ def set_initial(request,app_name):
             checkbox_vals['departures_from_averages_' + bl + '_selected'] = ''
             if initial['departures_from_averages'] == bl:
                 checkbox_vals['departures_from_averages_' + bl + '_selected'] = 'selected'
-    if 'grid' in initial.keys():
-        for g in range(1,16) + range(22,44):
-            checkbox_vals['grid_' + str(g) + '_selected'] =''
-            if initial['grid'] == str(g):
-                checkbox_vals['grid_' + str(g) + '_selected'] ='selected'
     if app_name == 'climatology':
         for st in ['all','temp','prsn','both','hc','g']:
             checkbox_vals[st + '_selected'] =''
             if st == initial['summary_type']:
                 checkbox_vals[st + '_selected'] ='selected'
-
     initial['form_options'] = WRCCData.SCENIC_FORM_OPTIONS[app_name]
     return initial,checkbox_vals
 
@@ -540,6 +538,15 @@ def set_form(request, clean=True):
             '''
     else:
         form = {}
+
+    #set data type for single apps
+    if 'data_type' not in form.keys():
+        if 'station_id' in form.keys():
+            form['data_type'] = 'station'
+        if 'location' in form.keys():
+            form['data_type'] = 'grid'
+        if 'app_name' in form.keys() and form['app_name'] == 'temporal_summary':
+            form['data_type'] = 'grid'
     #Convert unicode to string
     if 'elements' in form.keys():
         form['elements'] = [str(el) for el in form['elements']]
@@ -619,9 +626,9 @@ def set_form(request, clean=True):
     #set data summary if needed
     if 'data_summary' not in form.keys():
         if 'temporal_summary' in form.keys():
-            form['data_summary'] = 'temporal'
+            form['data_summary'] = 'temporal_summary'
         if 'spatial_summary' in form.keys():
-            form['data_summary'] = 'spatial'
+            form['data_summary'] = 'spatial_summary'
     #Combine elements
     if 'add_degree_days' in form.keys() and form['add_degree_days'] == 'T':
         for dd in form['degree_days'].replace(' ','').split(','):

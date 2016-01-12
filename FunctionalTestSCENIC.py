@@ -517,7 +517,7 @@ class Test_single_lister(unittest.TestCase):
     def test_data_summary(self):
         msg = 'Testing single lister data summaries'
         logger.info(msg + '\n')
-        data_summary = ['windowed_data','temporal']
+        data_summary = ['windowed_data','temporal_summary']
         for ds in data_summary:
             params = copy.deepcopy(self.params)
             msg = 'Data Summary: ' + ds
@@ -609,7 +609,7 @@ class Test_multi_lister(unittest.TestCase):
         logger.info(msg + '\n')
         params = copy.deepcopy(self.params)
         try:
-            del params[params['data_summary'] + '_summary']
+            del params[params['data_summary']]
         except:
             try:
                 del params['windowed_data']
@@ -625,7 +625,7 @@ class Test_multi_lister(unittest.TestCase):
     def test_data_summary(self):
         msg = 'Testing multi lister data summaries'
         logger.info(msg + '\n')
-        data_summary = ['windowed_data','temporal','spatial']
+        data_summary = ['windowed_data','temporal_summary','spatial_summary']
         for ds in data_summary:
             params = copy.deepcopy(self.params)
             msg = 'Data Summary: ' + ds

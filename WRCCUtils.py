@@ -188,26 +188,18 @@ def check_request_size(form):
             return num_points, num_days
     return num_points, num_days
 
-def check_if_large_request(form,num_points,num_days):
+def check_if_large_request(num_points,num_days):
     '''
     Args:
 
     Returns
         large_request: boolean
             True if request is deemed large, False otherwise
-        data_summary:
-            temporal
-            spatial
-            none
-            windowed_data
     '''
     large_request = False
-    data_summary = 'none'
-    if 'data_summary' in form.keys():
-        request_type = form['data_summary']
     if int(num_points) * int(num_days) > 100000:
         large_request = True
-    return large_request, data_summary
+    return large_request
 
 def get_meta_keys(form):
     '''
@@ -308,7 +300,7 @@ def set_acis_els(form):
                 'vX':WRCCData.ACIS_ELEMENTS_DICT[el_strip]['vX']
             }
         #Get smry if data_summary is temporal
-        if 'data_summary' in form.keys() and form['data_summary'] == 'temporal':
+        if 'data_summary' in form.keys() and form['data_summary'] == 'temporal_summary':
             #For performance: Summary only requests for multi area requests
             #Of station data
             #For single requests always get data, too
@@ -507,7 +499,7 @@ def set_lister_headers(form):
         el_list = form['elements'].replace(' ','').split(',')
     header_data = ['Date']
     header_summary =[]
-    if form['data_summary'] == 'temporal':
+    if form['data_summary'] == 'temporal_summary':
         if data_type == 'grid':
             header_smry=['Location(Lon,Lat)']
         if data_type == 'station':
@@ -787,10 +779,10 @@ def station_data_trim_and_summary(req,form):
     #Set date converter
     format_date = getattr(thismodule,'format_date_string')
     sep = 'dash'
-    if form['data_summary'] == 'spatial':
+    if form['data_summary'] == 'spatial_summary':
         new_smry = [[format_date(dates[d_idx],sep)] for d_idx in range(len(dates))]
         smry_data = [[[] for el in form['elements']] for date_idx in range(len(dates))]
-    elif form['data_summary'] == 'temporal':
+    elif form['data_summary'] == 'temporal_summary':
         new_smry =[]
         smry_data = [[] for el in form['elements']]
     else:
@@ -839,9 +831,9 @@ def station_data_trim_and_summary(req,form):
                     val = round(unit_convert(form['elements'][el_idx],float(strp_val)),4)
                     #Don't include -9999 (Missing) values
                     if str(strp_val) != '-9999':
-                        if form['data_summary'] == 'spatial':
+                        if form['data_summary'] == 'spatial_summary':
                             smry_data[date_idx][el_idx].append(val)
-                        if form['data_summary'] == 'temporal':
+                        if form['data_summary'] == 'temporal_summary':
                             smry_data[el_idx].append(val)
                 except:
                     val = strp_val
@@ -864,7 +856,7 @@ def station_data_trim_and_summary(req,form):
             new_data[-1] = get_windowed_data(new_data[-1], sd, ed, sw, ew)
         new_data[-1].insert(0,header_data)
         #Temporal summary
-        if form['data_summary'] == 'temporal':
+        if form['data_summary'] == 'temporal_summary':
             try:
                 stn_ids = ','.join([sid.split(' ')[0] for sid in stn_data['meta']['sids']])
                 stn_ids = ' (' + stn_ids + ')'
@@ -928,10 +920,10 @@ def grid_data_trim_and_summary(req,form):
     #Set date converter
     format_date = getattr(thismodule,'format_date_string')
     sep = 'dash'
-    if form['data_summary'] == 'spatial':
+    if form['data_summary'] == 'spatial_summary':
         new_smry = [[format_date(str(req[data_key][date_idx][0]),sep)] for date_idx in range(len(req[data_key]))]
         smry_data = [[[] for el in form['elements']] for date_idx in range(len(req[data_key]))]
-    elif form['data_summary'] == 'temporal':
+    elif form['data_summary'] == 'temporal_summary':
         smry_data = [[] for el in form['elements']]
         new_smry = []
     else:
@@ -979,9 +971,9 @@ def grid_data_trim_and_summary(req,form):
                     try:
                         d = unit_convert(el, float(date_data[el_idx+1][grid_idx][lon_idx]))
                         d_data.append(round(d,4))
-                        if form['data_summary'] == 'spatial':
+                        if form['data_summary'] == 'spatial_summary':
                             smry_data[date_idx][el_idx].append(d)
-                        if form['data_summary'] == 'temporal':
+                        if form['data_summary'] == 'temporal_summary':
                             smry_data[el_idx].append(d)
                     except:
                         d_data.append(date_data[el_idx+1][grid_idx][lon_idx])
@@ -996,7 +988,7 @@ def grid_data_trim_and_summary(req,form):
             new_data[-1].insert(0,header_data)
 
             #Temporal summary
-            if form['data_summary'] == 'temporal':
+            if form['data_summary'] == 'temporal_summary':
                 row = [str(round(lon,4)) + ',' + str(round(lat,4))]
                 if point_in:
                     for el_idx, el in enumerate(form['elements']):
@@ -1004,7 +996,7 @@ def grid_data_trim_and_summary(req,form):
                 new_smry.append(row)
 
     #Compute spatial summary
-    if form['data_summary'] == 'spatial':
+    if form['data_summary'] == 'spatial_summary':
         for date_idx in range(len(req[data_key])):
             for el_idx in range(len(form['elements'])):
                 new_smry[date_idx].append(compute_statistic(smry_data[date_idx][el_idx],form['spatial_summary']))
@@ -1518,9 +1510,9 @@ def format_station_windowed_data(req,form):
                 strp_val, flag = strip_data(val)
                 try:
                     val = round(unit_convert(form['elements'][el_idx],float(strp_val)),4)
-                    if form['data_summary'] == 'spatial':
+                    if form['data_summary'] == 'spatial_summary':
                         smry_data[date_idx][el_idx].append(val)
-                    if form['data_summary'] == 'temporal':
+                    if form['data_summary'] == 'temporal_summary':
                         smry_data[el_idx].append(val)
                 except:
                     val = strp_val
@@ -2372,6 +2364,33 @@ def sids_to_display(sids):
     sid_str = sid_str.rstrip(', ')
     return sid_str
 
+def set_display_keys(app_name, form):
+    if app_name == 'single_lister':
+        header_keys = [form['area_type'],'start_date', 'end_date']
+        if form['data_summary'] != 'none':
+            header_keys.insert(1,form['data_summary'])
+    if app_name == 'multi_lister':
+        header_keys = [form['area_type'],'data_summary','start_date', 'end_date']
+    if app_name == 'temporal_summary':
+        header_keys = [form['area_type'],'temporal_summary',\
+            'elements','units','start_date', 'end_date']
+    if app_name == 'intraannual':
+        header_keys = [form['area_type'],'element','start_year',\
+            'end_year','start_month', 'start_day']
+    if app_name == 'interannual':
+         header_keys = [form['area_type'],'temporal_summary', 'element',\
+        'start_year', 'end_year','window']
+    if app_name == 'spatial_summary':
+        header_keys = [form['area_type'],\
+            'spatial_summary','elements','units','start_date', 'end_date']
+    #Add data type
+    if 'data_type' in form.keys():
+        header_keys.insert(0,'data_type')
+    #Add grid
+    if 'data_type' in form.keys() and form['data_type'] == 'grid':
+        header_keys.insert(1,'grid')
+    return header_keys
+
 def form_to_display_list(key_order_list, form):
     '''
     Converts form parameters
@@ -2432,7 +2451,7 @@ def form_to_display_list(key_order_list, form):
                 if form['data_summary'] == 'windowed_data':
                     display_list[idx]= ['Window',form['start_window'] + ' - ' + form['end_window']]
                 else:
-                    s = WRCCData.DISPLAY_PARAMS[form[form['data_summary']+'_summary']]
+                    s = WRCCData.DISPLAY_PARAMS[form[form['data_summary']]]
                     display_list[idx]= [s_type, s]
             if 'data_summary' in form.keys() and form['data_summary'] =='none':
                 display_list[idx].append('none')

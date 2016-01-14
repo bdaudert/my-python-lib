@@ -55,6 +55,33 @@ def set_GET_list(request):
         Getlist = getattr(request.POST, 'getlist')
     return Getlist
 
+def set_min_max_dates(initial):
+    sd = '9999-99-99';ed = '9999-99-99'
+    if 'station_id' in initial.keys():
+        stn_json = settings.MEDIA_DIR + '/json/US_station_id.json'
+        stn_id, stn_name = WRCCUtils.find_id_and_name(initial['station_id'],stn_json)
+        els = []
+        if 'element' in initial.keys():
+            els = [initial['element']]
+            if initial['element'] == 'dtr':els = ['maxt','mint']
+        if 'elements' in initial.keys():
+            els = initial['elements']
+            if 'dtr' in els and 'maxt' not in els:
+                els.append('maxt')
+            if 'dtr' in els and 'mint' not in els:
+                els.append('mint')
+        vd = WRCCUtils.find_valid_daterange(stn_id,el_list=els,max_or_min='min')
+        if vd and len(vd) >=1:sd = vd[0]
+        if vd and len(vd) >1:ed = vd[1]
+    if 'location' in initial.keys():
+        sd = WRCCData.GRID_CHOICES[str(initial['grid'])][3][0][0]
+        ed = WRCCData.GRID_CHOICES[str(initial['grid'])][3][0][1]
+    sd_fut =  sd;ed_fut = ed
+    if len(WRCCData.GRID_CHOICES[initial['grid']][3]) == 2:
+        sd_fut = WRCCData.GRID_CHOICES[initial['grid']][3][1][0]
+        ed_fut = WRCCData.GRID_CHOICES[initial['grid']][3][1][0]
+    return sd, ed, sd_fut, ed_fut
+
 def set_initial(request,app_name):
     '''
     Set html form
@@ -185,56 +212,36 @@ def set_initial(request,app_name):
             initial['degree_days'] = Get('degree_days', 'gdd55,hdd70').replace(', ',',')
 
     #Set dates
+    sd, ed, sd_fut, ed_fut = set_min_max_dates(initial)
     if app_name in ['monthly_summaries','climatology']:
         initial['start_year'] = Get('start_year', None)
         if initial['start_year'] is None:
             #Link from station finder
             initial['start_year'] = Get('start_date', '9999')[0:4]
             if initial['start_year'] == '9999':
-                initial['start_year'] = 'POR'
+                if 'location' in initial.keys():initial['start_year'] =  sd[0:4]
+                else:initial['start_year'] = 'POR'
         initial['end_year']  = Get('end_year', None)
         if initial['end_year'] is None:
             #Link from station finder
             initial['end_year'] = Get('end_date', '9999')[0:4]
             if initial['end_year'] == '9999':
-                initial['end_year'] = 'POR'
+                if 'location' in initial.keys():initial['end_year'] =  ed[0:4]
+                else:initial['end_year'] = 'POR'
+        initial['min_year'] = Get('min_year',sd[0:4])
+        initial['max_year'] = Get('max_year', ed[0:4])
+        initial['min_year_fut'] = sd_fut[0:4]
+        initial['max_year_fut'] = ed_fut[0:4]
     elif app_name in ['interannual', 'intraannual']:
-        sd = None;ed = None
-        if 'station_id' in initial.keys():
-            stn_id, stn_name = WRCCUtils.find_id_and_name(initial['station_id'],settings.MEDIA_DIR + '/json/US_station_id.json')
-            els = [initial['element']]
-            if initial['element'] == 'dtr':els = ['maxt','mint']
-            vd = WRCCUtils.find_valid_daterange(stn_id,el_list=els,max_or_min='min')
-            if vd and len(vd) >=1:
-                sd = vd[0]
-            if vd and len(vd) >1:
-                ed = vd[1]
-            if sd is None or ed is None:
-                sd = '9999-99-99'
-                ed = '9999-99-99'
-        if 'location' in initial.keys():
-            if str(initial['grid']) != '21':
-                sd = WRCCData.GRID_CHOICES[str(initial['grid'])][3][0][0]
-                ed = WRCCData.GRID_CHOICES[str(initial['grid'])][3][0][1]
-            else:
-                sd = WRCCData.GRID_CHOICES[str(initial['grid'])][3][1][0]
-                ed = WRCCData.GRID_CHOICES[str(initial['grid'])][3][1][1]
+        #sd, ed, sd_fut, ed_fut = set_min_max_dates(initial)
         initial['start_year'] = Get('start_year',sd[0:4])
         initial['end_year'] = Get('end_year',ed[0:4])
-        #initial['start_date'] = initial['start_year'] + '-01-01'
-        #initial['end_date'] = initial['end_year'] + '-12-31'
         initial['start_month']  = Get('start_month', '1')
         initial['start_day']  = Get('start_day', '1')
         initial['min_year'] = Get('min_year',sd[0:4])
         initial['max_year'] = Get('max_year', ed[0:4])
-        #Narcapp
-        if initial['grid'] in ['5','6','8','10','12','13','15','16']:
-            initial['min_year_fut'] = '2040'
-            initial['max_year_fut'] = '2070'
-        #CMIP5
-        if initial['grid'] in range(22,43):
-            initial['min_year_fut'] = '2006'
-            initial['max_year_fut'] = '2100'
+        initial['min_year_fut'] = sd_fut[0:4]
+        initial['max_year_fut'] = ed_fut[0:4]
         if app_name == 'interannual':
             initial['end_month']  = Get('end_month', '1')
             initial['end_day']  = Get('end_day', '31')

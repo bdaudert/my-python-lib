@@ -36,14 +36,19 @@ def check_start_year(form):
         pass
 
     #Check station data dates
-    if 'select_stations_by' in form.keys() or 'station_id' in form.keys():
+    if 'station_id' in form.keys():
         if int(yr) < int(stn_earliest[0:4]):
             return 'Start year should be later than earliest record found: %s.' %stn_earliest
 
     #Check grid data dates
-    if 'select_grid_by' in form.keys():
+    if 'location' in form.keys():
         flag = False
+        #Set grid date range
         grid_dr = WRCCData.GRID_CHOICES[str(form['grid'])][3]
+        #For Prism we need to check if monthy/yearly resolution
+        #and pick proper daterange
+        if 'temporal_resolution' in form.keys() and form['temporal_resolution'] in ['mly','yly'] and str(form['grid']) == '21':
+            grid_dr = WRCCData.PRISM_MLY_YLY[str(form['grid'])][3]
         for dr in grid_dr:
             if int(grid_dr[0][0:4]) <= int(yr) and int(e_yr) <= int(grid_dr[1][0:4]):
                 flag = False
@@ -76,14 +81,19 @@ def check_end_year(form):
         pass
 
     #Check station data dates
-    if 'select_stations_by' in form.keys() or 'station_id' in form.keys():
+    if 'station_id' in form.keys():
         if int(yr) > int(today.year):
             return 'End Year should be current year or earlier.'
 
     #Check grid data dates
-    if 'select_grid_by' in form.keys():
+    if 'location' in form.keys():
         flag = False
+        #Set grid date range
         grid_dr = WRCCData.GRID_CHOICES[str(form['grid'])][3]
+        #For Prism we need to check if monthy/yearly resolution
+        #and pick proper daterange
+        if 'temporal_resolution' in form.keys() and form['temporal_resolution'] in ['mly','yly'] and str(form['grid']) == '21':
+            grid_dr = WRCCData.PRISM_MLY_YLY[str(form['grid'])][3]
         for dr in grid_dr:
             if int(grid_dr[0][0:4]) <= int(s_yr) and int(yr) <= int(grid_dr[1][0:4]):
                 flag = False
@@ -198,13 +208,12 @@ def check_start_date(form):
     #Check grid data dates
     if 'location' in form.keys() or ('data_type' in form.keys() and form['data_type'] == 'grid'):
         flag = False
+        #Set grid date range
         grid_dr = WRCCData.GRID_CHOICES[str(form['grid'])][3]
         #For Prism we need to check if monthy/yearly resolution
         #and pick proper daterange
-        if str(form['grid']) == '21' and form['temporal_resolution'] == 'dly':
-            grid_dr = [grid_dr[1]]
-        elif str(form['grid']) == '21' and form['temporal_resolution'] != 'dly':
-            grid_dr = [grid_dr[0]]
+        if 'temporal_resolution' in form.keys() and form['temporal_resolution'] in ['mly','yly'] and str(form['grid']) == '21':
+            grid_dr = WRCCData.PRISM_MLY_YLY[str(form['grid'])][3]
         for dr in grid_dr:
             grid_s = WRCCUtils.date_to_datetime(dr[0])
             grid_e = WRCCUtils.date_to_datetime(dr[1])
@@ -339,7 +348,12 @@ def check_end_date(form):
     #Check grid data dates
     if 'location' in form.keys() or ('data_type' in form.keys() and form['data_type'] == 'grid'):
         flag = False
+        #Set grid date range
         grid_dr = WRCCData.GRID_CHOICES[str(form['grid'])][3]
+        #For Prism we need to check if monthy/yearly resolution
+        #and pick proper daterange
+        if 'temporal_resolution' in form.keys() and form['temporal_resolution'] in ['mly','yly'] and str(form['grid']) == '21':
+            grid_dr = WRCCData.PRISM_MLY_YLY[str(form['grid'])][3]
         for dr in grid_dr:
             grid_s = WRCCUtils.date_to_datetime(dr[0])
             grid_e = WRCCUtils.date_to_datetime(dr[1])

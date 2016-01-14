@@ -253,6 +253,7 @@ STATE_CHOICES = ['AK', 'AL', 'AR', 'AS','AZ', 'CA', 'CO', 'CT', 'DC', 'DE', 'FL'
                 'NY', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC', 'SD', 'TN', 'TX', 'UT', \
                 'VA', 'VT', 'WA', 'WI', 'WV', 'WY','AS']
 
+
 NETWORK_CODES = {
                 '1': 'WBAN',
                 '2':'COOP',
@@ -390,10 +391,6 @@ ACIS_ELEMENTS_LIST = [['maxt','Maximum Daily Temperature (F)'], ['mint','Minimum
                       ['hdd','Heating Degree Days'], ['gdd', 'Growing Degree Days'], \
                       ['evap', 'Pan Evaporation (in)'], ['gdd', 'Wind Movement (Mi)'],\
                       ['pet', 'Potential Evapotranspiration'], ['dtr', 'Daily Temperature Range (F)']]
-ACIS_ELEMENTS_TUPLE = ()
-for el in ACIS_ELEMENTS_LIST:
-    el_name = el[0]
-    ACIS_ELEMENTS_TUPLE+= ((el_name, DISPLAY_PARAMS[el_name]),)
 
 ELEMENT_THRESHOLDS = {
     'english':{
@@ -935,6 +932,10 @@ AREA_DEFAULTS = {
 
 
 #yesterday = WRCCUtils.set_back_date(1)
+PRISM_MLY_YLY = {
+    '21':['PRISM','',50,[['18950101',today]]]
+}
+
 GRID_CHOICES = {
     '1': ['NRCC Interpolated (US)','',5,[['19500101',today]]],
     '3': ['NRCC Hi-Res (East of Rockies)','',5,[['20070101',today]]],
@@ -951,7 +952,7 @@ GRID_CHOICES = {
     '14': ['WRFG + NCEP (Historical only)','',50,[['19700101','19991231']]],
     '15': ['WRFG + CCSM','',50,[['19700101','19991231'],['20400101','20691231']]],
     '16': ['WRFG + CGCM3','',50,[['19700101','19991231'],['20400101','20691231']]],
-    '21': ['PRISM','',50,[['18950101',today],['19810101',today]]],
+    '21': ['PRISM','',50,[['19810101',today]]],#Daily
     '22': ['GFDL-CM3','',6,[['19500101','20051231'],['20060101','20991231']]], #rcp4.5
     '23': ['GFDL-CM3','',6,[['19500101','20051231'],['20060101','20991231']]], #rcp8.5
     '24': ['HadGEM2-CC','',6,[['19500101','20051231'],['20060101','20991231']]],#rcp4.5
@@ -973,17 +974,6 @@ GRID_CHOICES = {
     '40': ['ACCESS1-0','',6,[['19500101','20051231'],['20060101','20991231']]],#rcp4.5
     '41': ['ACCESS1-0','',6,[['19500101','20051231'],['20060101','20991231']]] #rcp8.5
 }
-
-GRID_CHOICES_TUPLE =()
-key_order = [1,3,21] + range(22,42) + range(4,17)
-for key in key_order:
-    k = str(key)
-    name_range = GRID_CHOICES[k][0]
-    name_range+= '(' + GRID_CHOICES[k][3][0][0][0:4] + '-' + GRID_CHOICES[k][3][0][1][0:4]
-    if len(GRID_CHOICES[k][3]) == 2:
-        name_range+= ',' + GRID_CHOICES[k][3][1][0][0:4] + '-' + GRID_CHOICES[k][3][1][1][0:4]
-    name_range+=')'
-    GRID_CHOICES_TUPLE += ((k, name_range),)
 
 
 MONTH_CHOICES = (
@@ -1424,22 +1414,122 @@ TABLE_LIST_NO_GRAPHICS = {
 
 ###################################
 ###################################
+#FORM OPTION TUPLES
+###################################
+###################################
+GRID_CHOICES_TUPLE =()
+key_order = [1,3,21] + range(22,42) + range(4,17)
+for key in key_order:
+    k = str(key)
+    name_range = GRID_CHOICES[k][0]
+    name_range+= '(' + GRID_CHOICES[k][3][0][0][0:4] + '-' + GRID_CHOICES[k][3][0][1][0:4]
+    if len(GRID_CHOICES[k][3]) == 2:
+        name_range+= ',' + GRID_CHOICES[k][3][1][0][0:4] + '-' + GRID_CHOICES[k][3][1][1][0:4]
+    name_range+=')'
+    GRID_CHOICES_TUPLE += ((k, name_range),)
+
+
+ACIS_ELEMENTS_TUPLE = ()
+for el in ACIS_ELEMENTS_LIST:
+    el_name = el[0]
+    ACIS_ELEMENTS_TUPLE+= ((el_name, DISPLAY_PARAMS[el_name]),)
+
+
+MULTI_AREA_TUPLE = ()
+SINGLE_AREA_TUPLE = ()
+TEMPORAL_SUMMARY_AREA_TUPLE = ()
+STATION_FINDER_AREA_TUPLE = ()
+area_options = ['station_id','station_ids','location','locations',\
+    'county','county_warning_area','climate_division','basin','state',\
+    'bounding_box','shape','shape_file']
+for area in area_options:
+    if area in ['bounding_box','state']:
+        TEMPORAL_SUMMARY_AREA_TUPLE+=((area, DISPLAY_PARAMS[area]),)
+    if area not in ['station_id','location','bounding_box']:
+        MULTI_AREA_TUPLE+=((area, DISPLAY_PARAMS[area]),)
+    if area not in ['location','locations','bounding_box']:
+        STATION_FINDER_AREA_TUPLE+=((area, DISPLAY_PARAMS[area]),)
+    if area in ['station_id','location']:
+        SINGLE_AREA_TUPLE+=((area, DISPLAY_PARAMS[area]),)
+
+
+BOOLEAN_TUPLE = (
+    ('T','Yes'),
+    ('F', 'No')
+)
+
+STATE_TUPLE = (
+    ('al','Alabama'),
+    ('ak','Alaska'),
+    ('as','American Samoa'),
+    ('az','Arizona'),
+    ('ar','Arkansa'),
+    ('ca','California'),
+    ('co','Colorado'),
+    ('ct','Connecticut'),
+    ('de','Delaware'),
+    ('dc','District of Columbia'),
+    ('fl','Florida'),
+    ('ga','Gorgia'),
+    ('gu','Guam'),
+    ('hi','Hawaii'),
+    ('id','Idaho'),
+    ('il','Illinois'),
+    ('in','Indiana'),
+    ('ia','Iowa'),
+    ('ks','Kansas'),
+    ('ky','Kentucky'),
+    ('la','Louisiana'),
+    ('me','Maine'),
+    ('md','Maryland'),
+    ('ma','Massachusetts'),
+    ('mi','Michigan'),
+    ('mn','Minnesota'),
+    ('ms','Mississippi'),
+    ('mo','Missouri'),
+    ('mt','Montana'),
+    ('ne','Nebraska'),
+    ('nv','Nevada'),
+    ('nh','New Hamshire'),
+    ('nj','New Jersey'),
+    ('nm','New Mexico'),
+    ('ny','New York'),
+    ('nc','North Carolina'),
+    ('nd','North Dakota'),
+    ('oh','Ohio'),
+    ('ok','Oklahoma'),
+    ('or','Oregon'),
+    ('pa','Pennsylvania'),
+    ('ri','Rhode Islan'),
+    ('sc','South Carolina'),
+    ('sd','South Dakota'),
+    ('tn','Tennessee'),
+    ('tx','Texas'),
+    ('ut','Utah'),
+    ('vt','Vermont'),
+    ('va','Virginia'),
+    ('wa','Washington'),
+    ('wv','West Virginia'),
+    ('wi','Wisconsin'),
+    ('wy','Wyoming')
+)
+
+
+
+###################################
+###################################
 #SCENIC FORM OPTIONS
 #Avoids use of checkboxvals
 ###################################
 ###################################
 SCENIC_FORM_OPTIONS = {
+    'map_overlay':{
+        'state':copy.deepcopy(STATE_TUPLE),
+        'elements':copy.deepcopy(ACIS_ELEMENTS_TUPLE)
+    },
     'station_finder': {
-        'area_type':(
-            ('station_id',DISPLAY_PARAMS['station_id']),
-            ('station_ids',DISPLAY_PARAMS['station_ids']),
-            ('county',DISPLAY_PARAMS['county']),
-            ('county_warning_area',DISPLAY_PARAMS['county_warning_area']),
-            ('climate_division',DISPLAY_PARAMS['climate_division']),
-            ('basin',DISPLAY_PARAMS['basin']),
-            ('state',DISPLAY_PARAMS['state']),
-            ('shape',DISPLAY_PARAMS['shape'])
-        ),
+        'state':copy.deepcopy(STATE_TUPLE),
+        'area_type':copy.deepcopy(STATION_FINDER_AREA_TUPLE),
         'elements':copy.deepcopy(ACIS_ELEMENTS_TUPLE),
         'elements_constraints':(
             ('all','All of the elements'),
@@ -1451,16 +1541,10 @@ SCENIC_FORM_OPTIONS = {
         )
     },
     'single_lister':{
-        'area_type':(
-            ('station_id',DISPLAY_PARAMS['station_id']),
-            ('location',DISPLAY_PARAMS['location'])
-        ),
+        'area_type':copy.deepcopy(SINGLE_AREA_TUPLE),
         'grid':copy.deepcopy(GRID_CHOICES_TUPLE),
         'elements':copy.deepcopy(ACIS_ELEMENTS_TUPLE),
-        'add_special_degree_days':(
-            ('F','Yes'),
-            ('T','No')
-        ),
+        'add_special_degree_days':copy.deepcopy(BOOLEAN_TUPLE),
         'units':(
             ('english',DISPLAY_PARAMS['english']),
             ('metric',DISPLAY_PARAMS['metric'])
@@ -1470,36 +1554,19 @@ SCENIC_FORM_OPTIONS = {
             ('temporal_summary', DISPLAY_PARAMS['temporal_summary']),
             ('windowed_data', DISPLAY_PARAMS['windowed_data'])
         ),
-        'show_flags':(
-            ('F','Yes'),
-            ('T','No')
-        ),
-        'show_observation_time':(
-            ('F','Yes'),
-            ('T','No')
-        )
+        'show_flags':copy.deepcopy(BOOLEAN_TUPLE),
+        'show_observation_time':copy.deepcopy(BOOLEAN_TUPLE),
     },
     'multi_lister':{
-        'area_type':(
-            ('station_ids',DISPLAY_PARAMS['station_ids']),
-            ('locations',DISPLAY_PARAMS['locations']),
-            ('county',DISPLAY_PARAMS['county']),
-            ('county_warning_area',DISPLAY_PARAMS['county_warning_area']),
-            ('climate_division',DISPLAY_PARAMS['climate_division']),
-            ('basin',DISPLAY_PARAMS['basin']),
-            ('state',DISPLAY_PARAMS['state']),
-            ('shape',DISPLAY_PARAMS['shape'])
-        ),
+        'state':copy.deepcopy(STATE_TUPLE),
+        'area_type':copy.deepcopy(MULTI_AREA_TUPLE),
         'data_type':(
             ('station',DISPLAY_PARAMS['station']),
             ('grid',DISPLAY_PARAMS['grid'])
         ),
         'grid':copy.deepcopy(GRID_CHOICES_TUPLE),
         'elements':copy.deepcopy(ACIS_ELEMENTS_TUPLE),
-        'add_special_degree_days':(
-            ('F','Yes'),
-            ('T','No')
-        ),
+        'add_special_degree_days':copy.deepcopy(BOOLEAN_TUPLE),
         'units':(
             ('english',DISPLAY_PARAMS['english']),
             ('metric',DISPLAY_PARAMS['metric'])
@@ -1512,7 +1579,7 @@ SCENIC_FORM_OPTIONS = {
         ),
     },
     'monthly_summaries':{
-        'area_type':'',
+        'area_type':copy.deepcopy(SINGLE_AREA_TUPLE),
         'grid':copy.deepcopy(GRID_CHOICES_TUPLE),
         'element':copy.deepcopy(ACIS_ELEMENTS_TUPLE),
         'statistic':'msum',
@@ -1520,7 +1587,7 @@ SCENIC_FORM_OPTIONS = {
         'departures_from_averages':'F'
     },
     'interannual':{
-        'area_type':'',
+        'area_type':copy.deepcopy(SINGLE_AREA_TUPLE),
         'grid':copy.deepcopy(GRID_CHOICES_TUPLE),
         'element':copy.deepcopy(ACIS_ELEMENTS_TUPLE),
         'units':'english',
@@ -1533,7 +1600,7 @@ SCENIC_FORM_OPTIONS = {
         'end_year':'2000'
     },
     'intraannual':{
-        'area_type':'',
+        'area_type':copy.deepcopy(SINGLE_AREA_TUPLE),
         'grid':copy.deepcopy(GRID_CHOICES_TUPLE),
         'element':copy.deepcopy(ACIS_ELEMENTS_TUPLE),
         'calculation':'cumulative',
@@ -1544,14 +1611,11 @@ SCENIC_FORM_OPTIONS = {
         'end_year':'2000'
     },
     'data_comparison':{
-        'location':'',
         'grid':copy.deepcopy(GRID_CHOICES_TUPLE),
         'element':copy.deepcopy(ACIS_ELEMENTS_TUPLE),
-        'start_date':'',
-        'end_date':''
     },
     'climatology':{
-        'area_type':'',
+        'area_type':copy.deepcopy(SINGLE_AREA_TUPLE),
         'grid':copy.deepcopy(GRID_CHOICES_TUPLE),
         'start_year':'',
         'end_year':'',
@@ -1561,7 +1625,8 @@ SCENIC_FORM_OPTIONS = {
 
     },
     'spatial_summary':{
-        'area_type':'',
+        'state':copy.deepcopy(STATE_TUPLE),
+        'area_type':copy.deepcopy(MULTI_AREA_TUPLE),
         'state':'',
         'data_type':'',
         'grid':copy.deepcopy(GRID_CHOICES_TUPLE),
@@ -1574,14 +1639,12 @@ SCENIC_FORM_OPTIONS = {
         'spatial_summary':''
     },
     'temporal_summary':{
-        'area_type':'',
-        'state':'',
+        'state':copy.deepcopy(STATE_TUPLE),
+        'area_type':copy.deepcopy(TEMPORAL_SUMMARY_AREA_TUPLE),
         'elements':copy.deepcopy(ACIS_ELEMENTS_TUPLE),
         'add_degree_days':'',
         'degree_days':'',
         'units':'',
-        'start_date':'',
-        'end_date':'',
         'temporal_summary':'',
         'grid':copy.deepcopy(GRID_CHOICES_TUPLE)
     },

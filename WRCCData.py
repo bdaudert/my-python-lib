@@ -117,7 +117,7 @@ DISPLAY_PARAMS = {
     'elements':'Elements',
     'elems_long':'Elements',
     'elements_string': 'Elements String',
-    'add_special_degree_days':'Add special degree days',
+    'add_degree_days':'Add special degree days',
     'degree_days':'Degree Days',
     'element_selection': 'Element Selection',
     'el_type':'Climate Element Type',
@@ -1046,12 +1046,6 @@ IMAGE_SIZES_MAP = {
 #GRIDDED APPS
 ###################################
 ###################################
-CLIM_RISK_SUMMARY_CHOICES = (
-    ('max', 'Maximum over polygon'),
-    ('min', 'Minimium over polygon'),
-    ('sum', 'Sum over polygon'),
-    ('mean', 'Avererage over polygon'),
-)
 
 SHAPE_NAMES = {
     'bounding_box': 'Bounding Box ',
@@ -1443,20 +1437,44 @@ area_options = ['station_id','station_ids','location','locations',\
     'county','county_warning_area','climate_division','basin','state',\
     'bounding_box','shape','shape_file']
 for area in area_options:
+    dp = DISPLAY_PARAMS[area]
+    #Custom titles
+    if area == 'shape_file':dp ='Upload Shape File'
+    if area == 'station_id':dp = 'Single Station'
+    if area == 'station_ids':dp = 'List of Stations'
     if area in ['bounding_box','state']:
-        TEMPORAL_SUMMARY_AREA_TUPLE+=((area, DISPLAY_PARAMS[area]),)
+        TEMPORAL_SUMMARY_AREA_TUPLE+=((area, dp),)
     if area not in ['station_id','location','bounding_box']:
-        MULTI_AREA_TUPLE+=((area, DISPLAY_PARAMS[area]),)
+        MULTI_AREA_TUPLE+=((area, dp),)
     if area not in ['location','locations','bounding_box']:
-        STATION_FINDER_AREA_TUPLE+=((area, DISPLAY_PARAMS[area]),)
+        STATION_FINDER_AREA_TUPLE+=((area, dp),)
     if area in ['station_id','location']:
-        SINGLE_AREA_TUPLE+=((area, DISPLAY_PARAMS[area]),)
-
+        SINGLE_AREA_TUPLE+=((area, dp),)
 
 BOOLEAN_TUPLE = (
     ('T','Yes'),
     ('F', 'No')
 )
+
+DATA_SUMMARY_TUPLE=(
+    ('none', DISPLAY_PARAMS['none']),
+    ('spatial_summary', DISPLAY_PARAMS['spatial_summary']),
+    ('temporal_summary', DISPLAY_PARAMS['temporal_summary']),
+    ('windowed_data', DISPLAY_PARAMS['windowed_data'])
+)
+STATISTIC = (
+    ('max', 'Maximum'),
+    ('min', 'Minimium'),
+    ('sum', 'Sum'),
+    ('mean', 'Mean'),
+    ('median','Median')
+)
+
+UNIT_TUPLE = (
+    ('english',DISPLAY_PARAMS['english']),
+    ('metric',DISPLAY_PARAMS['metric'])
+)
+
 
 STATE_TUPLE = (
     ('al','Alabama'),
@@ -1525,7 +1543,32 @@ STATE_TUPLE = (
 SCENIC_FORM_OPTIONS = {
     'map_overlay':{
         'state':copy.deepcopy(STATE_TUPLE),
-        'elements':copy.deepcopy(ACIS_ELEMENTS_TUPLE)
+        'elements':copy.deepcopy(ACIS_ELEMENTS_TUPLE),
+        'add_degree_days':copy.deepcopy(BOOLEAN_TUPLE),
+        'elements_constraints':(
+            ('all','All of the elements'),
+            ('any','Any of the elements')
+        ),
+        'dates_constraints':(
+            ('all','All of the dates'),
+            ('any','Any of the dates')
+        )
+
+    },
+    'sf_download':{
+        'state':copy.deepcopy(STATE_TUPLE),
+        'area_type':copy.deepcopy(STATION_FINDER_AREA_TUPLE),
+        'elements':copy.deepcopy(ACIS_ELEMENTS_TUPLE),
+        'elements_constraints':(
+            ('all','All of the elements'),
+            ('any','Any of the elements')
+        ),
+        'dates_constraints':(
+            ('all','All of the dates'),
+            ('any','Any of the dates')
+        ),
+        'units':copy.deepcopy(UNIT_TUPLE),
+        'data_summary':copy.deepcopy(DATA_SUMMARY_TUPLE)
     },
     'station_finder': {
         'state':copy.deepcopy(STATE_TUPLE),
@@ -1538,22 +1581,17 @@ SCENIC_FORM_OPTIONS = {
         'dates_constraints':(
             ('all','All of the dates'),
             ('any','Any of the dates')
-        )
+        ),
+        'units':copy.deepcopy(UNIT_TUPLE),
+        'data_summary':copy.deepcopy(DATA_SUMMARY_TUPLE)
     },
     'single_lister':{
         'area_type':copy.deepcopy(SINGLE_AREA_TUPLE),
         'grid':copy.deepcopy(GRID_CHOICES_TUPLE),
         'elements':copy.deepcopy(ACIS_ELEMENTS_TUPLE),
-        'add_special_degree_days':copy.deepcopy(BOOLEAN_TUPLE),
-        'units':(
-            ('english',DISPLAY_PARAMS['english']),
-            ('metric',DISPLAY_PARAMS['metric'])
-        ),
-        'data_summary':(
-            ('none', DISPLAY_PARAMS['none']),
-            ('temporal_summary', DISPLAY_PARAMS['temporal_summary']),
-            ('windowed_data', DISPLAY_PARAMS['windowed_data'])
-        ),
+        'add_degree_days':copy.deepcopy(BOOLEAN_TUPLE),
+        'units':copy.deepcopy(UNIT_TUPLE),
+        'data_summary':copy.deepcopy(DATA_SUMMARY_TUPLE),
         'show_flags':copy.deepcopy(BOOLEAN_TUPLE),
         'show_observation_time':copy.deepcopy(BOOLEAN_TUPLE),
     },
@@ -1566,31 +1604,23 @@ SCENIC_FORM_OPTIONS = {
         ),
         'grid':copy.deepcopy(GRID_CHOICES_TUPLE),
         'elements':copy.deepcopy(ACIS_ELEMENTS_TUPLE),
-        'add_special_degree_days':copy.deepcopy(BOOLEAN_TUPLE),
-        'units':(
-            ('english',DISPLAY_PARAMS['english']),
-            ('metric',DISPLAY_PARAMS['metric'])
-        ),
-        'data_summary':(
-            ('none', DISPLAY_PARAMS['none']),
-            ('spatial_summary', DISPLAY_PARAMS['spatial_summary']),
-            ('temporal_summary', DISPLAY_PARAMS['temporal_summary']),
-            ('windowed_data', DISPLAY_PARAMS['windowed_data'])
-        ),
+        'add_degree_days':copy.deepcopy(BOOLEAN_TUPLE),
+        'units':copy.deepcopy(UNIT_TUPLE),
+        'data_summary':copy.deepcopy(DATA_SUMMARY_TUPLE),
     },
     'monthly_summaries':{
         'area_type':copy.deepcopy(SINGLE_AREA_TUPLE),
         'grid':copy.deepcopy(GRID_CHOICES_TUPLE),
         'element':copy.deepcopy(ACIS_ELEMENTS_TUPLE),
         'statistic':'msum',
-        'units':'english',
+        'units':copy.deepcopy(UNIT_TUPLE),
         'departures_from_averages':'F'
     },
     'interannual':{
         'area_type':copy.deepcopy(SINGLE_AREA_TUPLE),
         'grid':copy.deepcopy(GRID_CHOICES_TUPLE),
         'element':copy.deepcopy(ACIS_ELEMENTS_TUPLE),
-        'units':'english',
+        'units':copy.deepcopy(UNIT_TUPLE),
         'start_month':'01',
         'start_day':'01',
         'end_month':'01',
@@ -1604,7 +1634,7 @@ SCENIC_FORM_OPTIONS = {
         'grid':copy.deepcopy(GRID_CHOICES_TUPLE),
         'element':copy.deepcopy(ACIS_ELEMENTS_TUPLE),
         'calculation':'cumulative',
-        'units':'english',
+        'units':copy.deepcopy(UNIT_TUPLE),
         'start_month':'01',
         'start_day':'01',
         'start_year':'1980',
@@ -1620,31 +1650,26 @@ SCENIC_FORM_OPTIONS = {
         'start_year':'',
         'end_year':'',
         'summary_type':'',
-        'units':'',
+        'units':copy.deepcopy(UNIT_TUPLE),
         'max_missing_days':''
 
     },
     'spatial_summary':{
         'state':copy.deepcopy(STATE_TUPLE),
         'area_type':copy.deepcopy(MULTI_AREA_TUPLE),
-        'state':'',
         'data_type':'',
         'grid':copy.deepcopy(GRID_CHOICES_TUPLE),
         'elements':copy.deepcopy(ACIS_ELEMENTS_TUPLE),
-        'add_degree_days':'',
-        'degree_days':'',
-        'units':'',
-        'start_date':'',
-        'end_date':'',
+        'add_degree_days':copy.deepcopy(BOOLEAN_TUPLE),
+        'units':copy.deepcopy(UNIT_TUPLE),
         'spatial_summary':''
     },
     'temporal_summary':{
         'state':copy.deepcopy(STATE_TUPLE),
         'area_type':copy.deepcopy(TEMPORAL_SUMMARY_AREA_TUPLE),
         'elements':copy.deepcopy(ACIS_ELEMENTS_TUPLE),
-        'add_degree_days':'',
-        'degree_days':'',
-        'units':'',
+        'add_degree_days':copy.deepcopy(BOOLEAN_TUPLE),
+        'units':copy.deepcopy(UNIT_TUPLE),
         'temporal_summary':'',
         'grid':copy.deepcopy(GRID_CHOICES_TUPLE)
     },
@@ -1686,7 +1711,7 @@ SCENIC_DATA_PARAMS = {
         'area_type':'station_id',
         'station_id':'RENO TAHOE INTL AP, 266779',
         'elements':['maxt', 'mint', 'pcpn'],
-        'add_special_degree_days':'F',
+        'add_degree_days':'F',
         'start_date':'POR',
         'end_date':'POR',
         'units':'english',
@@ -1699,7 +1724,7 @@ SCENIC_DATA_PARAMS = {
         'state':'NV',
         'data_type':'station',
         'elements':['maxt', 'mint', 'pcpn'],
-        'add_special_degree_days':'F',
+        'add_degree_days':'F',
         'start_date':fourtnight,
         'end_date': yesterday,
         'units':'english',

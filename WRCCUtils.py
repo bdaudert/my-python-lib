@@ -1759,8 +1759,6 @@ def get_single_intraannual_data(form):
     climoData = []; percentileData = [[] for p in percentiles]
     #Set up time vars
     doyS = compute_doy(form['start_month'],form['start_day'])
-    #yS = form['start_date'][0:4]
-    #yE = form['end_date'][0:4]
     yS = form['start_year']
     yE = form['end_year']
     target_year = int(form['target_year'])
@@ -1997,8 +1995,6 @@ def get_single_interannaul_data(form):
         unit_convert =  getattr(thismodule,'convert_nothing')
     el_vX = WRCCData.ACIS_ELEMENTS_DICT[form['element']]['vX']
     acis_params = {
-        #'sdate':form['start_date'],
-        #'edate':form['end_date'],
         'sdate':form['start_year']+ '0101',
         'elems': [{'vX':el_vX}]
     }

@@ -212,7 +212,8 @@ def set_initial(request,app_name):
             initial['degree_days'] = Get('degree_days', 'gdd55,hdd70').replace(', ',',')
 
     #Set dates
-    sd, ed, sd_fut, ed_fut = set_min_max_dates(initial)
+    if 'grid' in initial.keys():
+        sd, ed, sd_fut, ed_fut = set_min_max_dates(initial)
     if app_name in ['monthly_summaries','climatology']:
         initial['start_year'] = Get('start_year', None)
         if initial['start_year'] is None:
@@ -234,8 +235,10 @@ def set_initial(request,app_name):
         initial['max_year_fut'] = ed_fut[0:4]
     elif app_name in ['interannual', 'intraannual']:
         #sd, ed, sd_fut, ed_fut = set_min_max_dates(initial)
-        initial['start_year'] = Get('start_year',sd[0:4])
-        initial['end_year'] = Get('end_year',ed[0:4])
+        #initial['start_year'] = Get('start_year',sd[0:4])
+        #initial['end_year'] = Get('end_year',ed[0:4])
+        initial['start_year'] = Get('start_year','POR')
+        initial['end_year'] = Get('end_year','POR')
         initial['start_month']  = Get('start_month', '1')
         initial['start_day']  = Get('start_day', '1')
         initial['min_year'] = Get('min_year',sd[0:4])
@@ -253,10 +256,12 @@ def set_initial(request,app_name):
             initial['show_percentile_25'] = Get('show_percentile_25','F')
             initial['target_year'] = Get('target_year_figure', None)
             if initial['target_year'] is None:
-                initial['target_year'] = Get('target_year_form', str(int(initial['end_year']) - 1))
+                initial['target_year'] = Get('target_year_form',initial['min_year'])
+            '''
             #Sanity check on target year
             if initial['target_year'] < int(initial['start_year']) or initial['target_year'] > int(initial['end_year']):
                 initial['target_year'] = str(int(initial['end_year']) - 1)
+            '''
             if initial['element'] in ['pcpn','snow','evap','pet']:
                 initial['calculation'] = Get('calculation','cumulative')
             else:
@@ -344,7 +349,7 @@ def set_initial(request,app_name):
             if app_name == 'spatial_summary':
                 shown_indices = ','.join([str(idx) for idx in range(len(initial['elements']))])
             elif app_name == 'intraannual':
-                shown_indices = str(int(initial['target_year']) - int(initial['start_year']))
+                shown_indices = str(int(initial['target_year']) - int(initial['min_year']))
             else:
                 shown_indices = '0'
             initial['chart_indices_string'] = Get('chart_indices_string',shown_indices)
@@ -363,49 +368,16 @@ def set_initial(request,app_name):
             initial['show_range'] = Get('show_range','F')
     #Checkbox vals
     checkbox_vals['state_' + initial['overlay_state'] + '_selected'] = 'selected'
-    if 'elements_constraints' in initial.keys() and 'dates_constraints' in initial.keys():
-        for b in ['any', 'all']:
-            checkbox_vals['elements_' + b  + '_selected'] =''
-            checkbox_vals['dates_' + b  + '_selected'] =''
-            if initial['elements_constraints'] == b:
-                checkbox_vals['elements_' + b  + '_selected'] ='selected'
-            if initial['dates_constraints'] == b:
-                checkbox_vals['dates_' + b  + '_selected'] ='selected'
-    if 'area_type' in initial.keys():
-        for area_type in WRCCData.SEARCH_AREA_FORM_TO_ACIS.keys() + ['none']:
-            checkbox_vals[area_type + '_selected'] =''
-            if area_type == initial['area_type']:
-                checkbox_vals[area_type + '_selected'] ='selected'
     if 'data_type' in initial.keys():
         for data_type in ['station','grid']:
             checkbox_vals['data_type_' + data_type + '_selected'] =''
             if data_type == initial['data_type']:
                 checkbox_vals['data_type_' + data_type + '_selected'] ='selected'
-    if 'elements' in initial.keys():
-        for element in initial['elements']:
-            checkbox_vals['elements_' + element + '_selected'] ='selected'
-            '''
-            for el in initial['elements']:
-                if str(el) == element:
-                    checkbox_vals['elements_' + element + '_selected'] ='selected'
-            '''
-    if 'element' in initial.keys():
-        checkbox_vals['element_' + initial['element'] + '_selected'] ='selected'
     if 'data_format' in initial.keys():
         for df in ['clm', 'dlm','xl', 'html']:
             checkbox_vals['data_format_' + df + '_selected'] =''
             if df == initial['data_format']:
                 checkbox_vals['data_format_' + df + '_selected'] ='selected'
-    if 'units' in initial.keys():
-        for u in ['english', 'metric']:
-            checkbox_vals['units_' + u + '_selected'] =''
-            if u == initial['units']:
-                checkbox_vals['units_' +u + '_selected'] ='selected'
-    if 'data_summary' in initial.keys():
-        for ds in ['none','windowed_data','temporal_summary', 'spatial_summary']:
-            checkbox_vals['data_summary_' + ds + '_selected'] =''
-            if ds == initial['data_summary']:
-                checkbox_vals['data_summary_' + ds + '_selected'] ='selected'
     if 'temporal_summary' in initial.keys():
         for st in ['max','min','mean','sum','median']:
             checkbox_vals['temporal_summary_' + st + '_selected'] =''
@@ -445,21 +417,6 @@ def set_initial(request,app_name):
             checkbox_vals[dl + '_selected'] =''
             if dl == initial['delimiter']:
                 checkbox_vals[dl + '_selected'] ='selected'
-    if 'show_flags' in initial.keys():
-        for bl in ['T','F']:
-            checkbox_vals['show_flags_' + bl + '_selected'] = ''
-            if initial['show_flags'] == bl:
-                checkbox_vals['show_flags_' + bl + '_selected'] = 'selected'
-    if 'show_observation_time' in initial.keys():
-        for bl in ['T','F']:
-            checkbox_vals['show_observation_time_' + bl + '_selected'] = ''
-            if initial['show_observation_time'] == bl:
-                checkbox_vals['show_observation_time' + '_' + bl + '_selected'] = 'selected'
-    if 'add_degree_days' in initial.keys():
-        for bl in ['T','F']:
-            checkbox_vals['add_degree_days_' + bl + '_selected'] = ''
-            if initial['add_degree_days'] == bl:
-                checkbox_vals['add_degree_days_' + bl + '_selected'] = 'selected'
     if 'show_running_mean' in initial.keys():
         for bl in ['T','F']:
             checkbox_vals['show_running_mean_' + bl + '_selected'] = ''
@@ -566,6 +523,7 @@ def set_form(request, clean=True):
         return form
     #Clean up form for submission
     #Clean Dates and windows
+    vd = None
     for key in ['start_date', 'end_date', 'start_year', 'end_year','start_window','end_window']:
         if key not in form.keys():
             continue
@@ -594,9 +552,16 @@ def set_form(request, clean=True):
                     el_list = form['elements']
             else:
                 el_list = None
+
             if 'station_id' in form.keys():
-                stn_id, stn_name = WRCCUtils.find_id_and_name(str(form['station_id']),settings.MEDIA_DIR +'json/US_station_id.json')
-                form[k] = WRCCUtils.find_valid_daterange(stn_id, start_date=sd, end_date=ed, el_list=el_list, max_or_min='max')[idx]
+                if vd is None:
+                    stn_id, stn_name = WRCCUtils.find_id_and_name(str(form['station_id']),settings.MEDIA_DIR +'json/US_station_id.json')
+                    vd = WRCCUtils.find_valid_daterange(stn_id, start_date=sd, end_date=ed, el_list=el_list, max_or_min='max')
+                form[k] = vd[idx]
+                if key == 'start_year' and form['start_year'].lower() == 'por':
+                    form['start_year'] = vd[0][0:4]
+                if key == 'end_year' and form['end_year'].lower() == 'por':
+                    form['end_year'] = vd[1][0:4]
             else:
                 form[str(key)] = str(form[key]).replace('-','').replace(':','').replace('/','').replace(' ','')
         else:

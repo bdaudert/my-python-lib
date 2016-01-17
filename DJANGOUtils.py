@@ -65,6 +65,7 @@ def set_min_max_dates(initial):
             els = [initial['element']]
             if initial['element'] == 'dtr':els = ['maxt','mint']
         if 'elements' in initial.keys():
+            els = ['maxt','mint','pcpn']
             els = initial['elements']
             if 'dtr' in els and 'maxt' not in els:
                 els.append('maxt')
@@ -98,11 +99,9 @@ def set_initial(request,app_name):
     Returns:
         two dictionaries
         initial: form input
-        checkbox_vals: values for checkboxes (selected or '')
     '''
     initial = {}
     initial['app_name'] = app_name
-    checkbox_vals = {}
     Get = set_GET(request)
     Getlist = set_GET_list(request)
     #Set area type: station_id(s), location, basin,...
@@ -239,14 +238,14 @@ def set_initial(request,app_name):
         #initial['end_year'] = Get('end_year',ed[0:4])
         initial['start_year'] = Get('start_year','POR')
         initial['end_year'] = Get('end_year','POR')
-        initial['start_month']  = Get('start_month', '1')
-        initial['start_day']  = Get('start_day', '1')
+        initial['start_month']  = Get('start_month', '01')
+        initial['start_day']  = Get('start_day', '01')
         initial['min_year'] = Get('min_year',sd[0:4])
         initial['max_year'] = Get('max_year', ed[0:4])
         initial['min_year_fut'] = sd_fut[0:4]
         initial['max_year_fut'] = ed_fut[0:4]
         if app_name == 'interannual':
-            initial['end_month']  = Get('end_month', '1')
+            initial['end_month']  = Get('end_month', '01')
             initial['end_day']  = Get('end_day', '31')
         if app_name in ['intraannual']:
             #Plotting vars
@@ -366,84 +365,21 @@ def set_initial(request,app_name):
         initial['show_average'] = Get('show_average','F')
         if app_name in ['monthly_summaries']:
             initial['show_range'] = Get('show_range','F')
-    #Checkbox vals
-    checkbox_vals['state_' + initial['overlay_state'] + '_selected'] = 'selected'
-    if 'data_type' in initial.keys():
-        for data_type in ['station','grid']:
-            checkbox_vals['data_type_' + data_type + '_selected'] =''
-            if data_type == initial['data_type']:
-                checkbox_vals['data_type_' + data_type + '_selected'] ='selected'
-    if 'data_format' in initial.keys():
-        for df in ['clm', 'dlm','xl', 'html']:
-            checkbox_vals['data_format_' + df + '_selected'] =''
-            if df == initial['data_format']:
-                checkbox_vals['data_format_' + df + '_selected'] ='selected'
-    if 'temporal_summary' in initial.keys():
-        for st in ['max','min','mean','sum','median']:
-            checkbox_vals['temporal_summary_' + st + '_selected'] =''
-            if st == initial['temporal_summary']:
-                checkbox_vals['temporal_summary_' + st + '_selected'] ='selected'
-    if 'spatial_summary' in initial.keys():
-        for st in ['max','min','mean','sum','median']:
-            checkbox_vals['spatial_summary_' + st + '_selected'] =''
-            if st == initial['spatial_summary']:
-                checkbox_vals['spatial_summary_' + st + '_selected'] ='selected'
-    if 'statistic' in initial.keys():
-        checkbox_vals[initial['statistic'] + '_selected'] ='selected'
-        for lgb in ['l', 'g', 'b']:
-            if initial['less_greater_or_between'] == lgb:
-                checkbox_vals[lgb + '_selected'] ='selected'
-        #set plot type and plot months
-        '''
-        plot_months = initial['plot_months'].split(',')
-        for m_idx in range(0,12):
-            if str(m_idx) in plot_months:
-                checkbox_vals['monthly_summaries_chart_indices_' +  str(m_idx) + '_selected'] ='selected'
-        checkbox_vals['chart_smry_' +  initial['plot_type'] + '_selected'] = 'selected'
-        '''
-    if 'statistic_period' in initial.keys():
-        checkbox_vals[initial['statistic_period'] + '_selected'] =''
-        for sp in ['monthly', 'weekly']:
-            checkbox_vals[sp  + '_selected'] =''
-            if initial['statistic_period'] == sp:
-                checkbox_vals[initial['statistic_period'] + '_selected'] ='selected'
-    if 'temporal_resolution' in initial.keys():
-        for tr in ['dly','mly','yly']:
-            checkbox_vals['temporal_resolution_' + tr + '_selected'] = ''
-            if tr == initial['temporal_resolution']:
-                checkbox_vals['temporal_resolution_' + tr + '_selected'] = 'selected'
-    if 'delimiter' in initial.keys():
-        for dl in ['comma', 'tab', 'space', 'colon', 'pipe']:
-            checkbox_vals[dl + '_selected'] =''
-            if dl == initial['delimiter']:
-                checkbox_vals[dl + '_selected'] ='selected'
-    if 'show_running_mean' in initial.keys():
-        for bl in ['T','F']:
-            checkbox_vals['show_running_mean_' + bl + '_selected'] = ''
-            if initial['show_running_mean'] == bl:
-                checkbox_vals['show_running_mean_' + bl + '_selected'] = 'selected'
-    if 'calculation' in initial.keys():
-        for c in ['cumulative','values']:
-            checkbox_vals['calculation_' + c + '_selected'] = ''
-            if initial['calculation'] == c:
-                checkbox_vals['calculation_' + c + '_selected'] = 'selected'
-    if 'delimiter' in initial.keys():
-        for d in ['colon','pipe','tab','space','comma']:
-            checkbox_vals['delimiter_' + d + '_selected'] = ''
-            if initial['delimiter'] == d:
-                checkbox_vals['delimiter_' + d + '_selected'] = 'selected'
-    if 'departures_from_averages' in initial.keys():
-        for bl in ['T','F']:
-            checkbox_vals['departures_from_averages_' + bl + '_selected'] = ''
-            if initial['departures_from_averages'] == bl:
-                checkbox_vals['departures_from_averages_' + bl + '_selected'] = 'selected'
-    if app_name == 'climatology':
-        for st in ['all','temp','prsn','both','hc','g']:
-            checkbox_vals[st + '_selected'] =''
-            if st == initial['summary_type']:
-                checkbox_vals[st + '_selected'] ='selected'
     initial['form_options'] = WRCCData.SCENIC_FORM_OPTIONS[app_name]
-    return initial,checkbox_vals
+    return initial
+
+def set_map_plot_options(request):
+    initial = {}
+    Get = set_GET(request)
+    initial['image_size'] = Get('image_size', 'medium')
+    initial['level_number'] = Get('level_number', '5')
+    initial['cmap'] = Get('cmap', 'rainbow')
+    initial['cmaps'] = WRCCData.CMAPS
+    initial['map_ol'] = Get('map_ol', 'state')
+    initial['interpolation'] = Get('interpolation', 'cspline')
+    initial['projection'] = Get('projection', 'lcc')
+    return initial
+
 
 def set_form(request, clean=True):
     '''

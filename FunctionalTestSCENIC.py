@@ -51,11 +51,11 @@ class setUp(object):
     def setInitial(self, params):
         err = None
         try:
-            initial, checkbox_vals = DJANGOUtils.set_initial(params, self.app_name)
+            initial = DJANGOUtils.set_initial(params, self.app_name)
         except Exception, e:
             err = 'FAIL: set_initial. ERROR: ' + str(e) + ' PARAMS: ' + str(params)
             return {},{},err
-        return initial, checkbox_vals, err
+        return initial, err
 
     def setForm(self,params):
         err = None
@@ -93,7 +93,7 @@ class setUp(object):
     def run_single_lister(self,params):
         err = None
         results = {}
-        initial, checkbox_vals, err = self.setInitial(params)
+        initial, err = self.setInitial(params)
         if err is not None:return results, err
         form, err = self.setForm(initial)
         if err is not None:return results, err
@@ -144,7 +144,7 @@ class setUp(object):
 
     def run_multi_lister(self,params):
         results = {};err = None
-        initial, checkbox_vals, err = self.setInitial(params)
+        initial, err = self.setInitial(params)
         if err is not None:return results, err
         form, err = self.setForm(initial)
         if err is not None:return results, err
@@ -183,7 +183,7 @@ class setUp(object):
 
     def run_interannual(self,params):
         results = {};err = None
-        initial, checkbox_vals, err = self.setInitial(params)
+        initial, err = self.setInitial(params)
         if err is not None:return results, err
         form, err = self.setForm(initial)
         if err is not None:return results, err
@@ -226,7 +226,7 @@ class setUp(object):
 
     def run_intraannual(self,params):
         results = {};err = None
-        initial, checkbox_vals, err = self.setInitial(params)
+        initial, err = self.setInitial(params)
         if err is not None:return results, err
         form, err = self.setForm(initial)
         if err is not None:return results, err
@@ -281,7 +281,7 @@ class setUp(object):
 
     def run_monthly_summaries(self, params):
         results = [];err=''
-        initial, checkbox_vals, err = self.setInitial(params)
+        initial, err = self.setInitial(params)
         if err is not None:return results, err
         form, err = self.setForm(initial)
         if err is not None:return results, err
@@ -361,7 +361,7 @@ class Test_station_finder(unittest.TestCase):
         params = copy.deepcopy(self.params)
         logger.info(str(params) + '\n')
         #Test Initializers
-        initial, checkbox_vals, err = self.setUp.setInitial(params)
+        initial, err = self.setUp.setInitial(params)
         if err is not None:
             logger.error(err + '\n')
         try:
@@ -405,7 +405,7 @@ class Test_station_finder(unittest.TestCase):
             params[at] = WRCCData.TEST_AREAS[at]
             logger.info(str(params) + '\n')
             #Test Initializers
-            initial, checkbox_vals, err = self.setUp.setInitial(params)
+            initial, err = self.setUp.setInitial(params)
             if err is not None:
                 logger.error(err + '\n')
             try:

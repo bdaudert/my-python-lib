@@ -1758,7 +1758,7 @@ def get_single_intraannual_data(form):
     percentiles = [[5, 95],[10,90],[25,75]]
     climoData = []; percentileData = [[] for p in percentiles]
     #Set up time vars
-    doyS = compute_doy(form['start_month'],form['start_day'])
+    doyS = compute_doy(int(form['start_month']),int(form['start_day']))
     yS = form['start_year']
     yE = form['end_year']
     target_year = int(form['target_year'])

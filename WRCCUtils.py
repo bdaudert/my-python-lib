@@ -1764,7 +1764,7 @@ def get_single_intraannual_data(form):
     target_year = int(form['target_year'])
     #Sanity check on  target year
     if target_year < int(yS) or target_year > int(yE):
-        target_year = int(yE) - 1
+        target_year = int(yS)
     if is_leap_year(target_year):yr_len = 366
     else:yr_len = 365
     doyE = doyS + yr_len
@@ -1787,8 +1787,6 @@ def get_single_intraannual_data(form):
     else:
         elems = [{'vX':WRCCData.ACIS_ELEMENTS_DICT[form['element']]['vX']}]
     acis_params = {
-        #'sdate':form['start_date'],
-        #'edate':form['end_date'],
         'sdate':form['start_year'] + '0101',
         'elems': elems,
         'meta':'ll'
@@ -1854,7 +1852,7 @@ def get_single_intraannual_data(form):
                 if year_txt_data[data_year]:
                     summ = year_txt_data[data_year][-1][1]
                     if val != -9999:
-                        summ = round(summ + val,2)
+                        summ = round(summ + val,4)
                     year_txt_data[data_year].append([date_str, summ])
                     year_graph_data[data_year].append([int_time,summ])
                     year_doy_data[data_year][doy] = [int_time,summ]
@@ -1876,7 +1874,7 @@ def get_single_intraannual_data(form):
                 if year_txt_data[data_year]:
                     summ = year_txt_data[data_year][-1][1]
                     if val != -9999:
-                        summ = round(summ + val,2)
+                        summ = round(summ + val,4)
                     year_txt_data[data_year].append([date_str, summ])
                     year_graph_data[data_year].append([int_time,summ])
                     year_doy_data[data_year][doy] = [int_time,summ]
@@ -1898,7 +1896,7 @@ def get_single_intraannual_data(form):
                 if year_txt_data[data_year - 1]:
                     summ = year_txt_data[data_year -1][-1][1]
                     if val != -9999:
-                        summ = round(summ + val,2)
+                        summ = round(summ + val,4)
                     year_txt_data[data_year - 1].append([date_str, summ])
                     year_graph_data[data_year - 1].append([int_time,summ])
                     year_doy_data[data_year - 1][doy] = [int_time,summ]
@@ -1931,15 +1929,11 @@ def get_single_intraannual_data(form):
     else:
         doy_list = range(int(doyS), 367) + range(1,int(doyE)+1)
     for doy_idx, doy in enumerate(doy_list):
-        #Omit Feb 29
-        #if doy in [60]:
-        #    continue
         #Convert target year and doy to integer time
         if doy < 60:
             datetime = dt.datetime(target_year, int(form['start_month']), int(form['start_day'])) + dt.timedelta(days = doy_idx)
         else:
             datetime = dt.datetime(target_year, int(form['start_month']), int(form['start_day'])) + dt.timedelta(days = doy_idx - 1)
-        #epoch = dt.datetime(1970,1,1)
         epoch = dt.datetime.utcfromtimestamp(0)
         int_time = int((datetime - epoch).total_seconds() * 1000)
         doy_vals = []; d_array = []

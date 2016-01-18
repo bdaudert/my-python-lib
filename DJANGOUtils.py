@@ -233,21 +233,26 @@ def set_initial(request,app_name):
         initial['min_year_fut'] = sd_fut[0:4]
         initial['max_year_fut'] = ed_fut[0:4]
     elif app_name in ['interannual', 'intraannual']:
-        #sd, ed, sd_fut, ed_fut = set_min_max_dates(initial)
-        #initial['start_year'] = Get('start_year',sd[0:4])
-        #initial['end_year'] = Get('end_year',ed[0:4])
         initial['start_year'] = Get('start_year','POR')
         initial['end_year'] = Get('end_year','POR')
         initial['start_month']  = Get('start_month', '01')
         initial['start_day']  = Get('start_day', '01')
-        initial['min_year'] = Get('min_year',sd[0:4])
-        initial['max_year'] = Get('max_year', ed[0:4])
         initial['min_year_fut'] = sd_fut[0:4]
         initial['max_year_fut'] = ed_fut[0:4]
         if app_name == 'interannual':
+            initial['min_year'] = Get('min_year',sd[0:4])
+            initial['max_year'] = Get('max_year', ed[0:4])
             initial['end_month']  = Get('end_month', '01')
             initial['end_day']  = Get('end_day', '31')
         if app_name in ['intraannual']:
+            if initial['start_year'].lower() != 'por':
+                initial['min_year'] = initial['start_year']
+            else:
+                initial['min_year'] = Get('min_year',sd[0:4])
+            if initial['end_year'].lower() != 'por':
+                initial['max_year'] = initial['end_year']
+            else:
+                initial['max_year'] = Get('max_year', ed[0:4])
             #Plotting vars
             initial['show_climatology'] = Get('show_climatology','F')
             initial['show_percentile_5'] = Get('show_percentile_5','F')
@@ -256,11 +261,6 @@ def set_initial(request,app_name):
             initial['target_year'] = Get('target_year_figure', None)
             if initial['target_year'] is None:
                 initial['target_year'] = Get('target_year_form',initial['min_year'])
-            '''
-            #Sanity check on target year
-            if initial['target_year'] < int(initial['start_year']) or initial['target_year'] > int(initial['end_year']):
-                initial['target_year'] = str(int(initial['end_year']) - 1)
-            '''
             if initial['element'] in ['pcpn','snow','evap','pet']:
                 initial['calculation'] = Get('calculation','cumulative')
             else:

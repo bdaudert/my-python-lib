@@ -380,13 +380,45 @@ class CsvWriter(object):
         #Loop over data points
         for p_idx, p_data in enumerate(self.data):
             self.writer.writerow(['*'])
+            p_id = '';p_name = ''
             if 'meta' in self.req.keys():
+                '''
+                if isinstance(self.req['meta'][p_idx],dict):
+                    if 'sids' in self.req['meta'][p_idx].keys():
+                        p_id = self.req['meta'][p_idx]['sids'][0].split(' ')[0]
+                        for sid in self.req['meta'][p_idx]['sids']:
+                            if sid.split(' ')[1] == '2':
+                                p_id = sid.split(' ')[0]
+                                break
+                    if 'name' in self.req['meta'][p_idx].keys():
+                        p_name = self.req['meta'][p_idx]['name']
+                    if 'll' in self.req['meta'][p_idx].keys():
+                        if isinstance(self.req['meta'][p_idx]['ll'],list):
+                            p_name = ','.join(self.req['meta'][p_idx]['ll'])
+                        else:
+                            p_name = val
+                elif isinstance(self.req['meta'][p_idx],list):
+                    for key_val in self.req['meta'][p_idx]:
+                        key = key_val[0];val = key_val[1]
+                        if key == 'Station ID/Network List':
+                            sids = []
+                            id_net = val.replace(', ',',').split(',')
+                            p_id = id_net[0].split('/')[0]
+                            for s in id_net:
+                                if s.split('/')[1] == 'COOP':
+                                    p_id = s.split('/')[0]
+                                    break
+                        if key == 'Station Name':p_name =  val
+                        if key == 'Longitude, Latitude':
+                            if isinstance(val,list):p_name = ','.join(val)
+                            else:p_name = val
+
+                '''
                 meta_display_params = []
                 if isinstance(self.req['meta'][p_idx],dict):
                     #Write meta
                     meta_display_params = WRCCUtils.metadict_to_display_list(self.req['meta'][p_idx], self.meta_keys, self.form)
                     for key_val in meta_display_params:
-                        #row = ['*' + key_val[0].replace(' ',''),' '.join(key_val[1])]
                         row = ['*' + key_val[0].replace(' ',''),key_val[1]]
                         self.writer.writerow(row)
                 elif isinstance(self.req['meta'][p_idx],list):
@@ -402,16 +434,19 @@ class CsvWriter(object):
                 self.writer.writerow(h)
             else:
                 self.writer.writerow(['*'])
+            #Data header
             for d_idx, date_data in enumerate(p_data):
+                h = [date_data[0]]
                 if d_idx == 0:
                     #Data Header
-                    if 'app_name' in self.form.keys() and self.form['app_name'] in ['intraannual','interannual']:
-                        h = [date_data[0]]
-                    else:
-                        h = ['*' + date_data[0]]
-                else:
-                    h = [date_data[0]]
+                    if self.form['app_name'] not in ['intraannual','interannual']:
+                        if p_name:h = ['Name'] + h
+                        if p_id:h = ['ID'] + h
+                        h = ['*'] + h
                 d = date_data[1:]
+                #Add name and ID as columns
+                if p_name:d = [p_name] + d
+                if p_id:d =[p_id] + d
                 self.writer.writerow(h + d)
 
 

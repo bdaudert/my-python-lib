@@ -2381,6 +2381,8 @@ def set_display_keys(app_name, form):
         header_keys.insert(1,'grid')
     return header_keys
 
+
+
 def form_to_display_list(key_order_list, form):
     '''
     Converts form parameters
@@ -2507,7 +2509,6 @@ def metadict_to_display_list(metadata, key_order_list,form):
         except:
             continue
         if key == 'sids':
-            #sid_list = sids_to_display(metadata['sids'])
             sid_str = sids_to_display(metadata['sids'])
             meta[idx].append(sid_str)
         elif key == 'valid_daterange':

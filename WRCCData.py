@@ -1577,6 +1577,7 @@ STATE_TUPLE = (
 SCENIC_FORM_OPTIONS = {
     'map_overlay':{
         'state':copy.deepcopy(STATE_TUPLE),
+        'area_type':copy.deepcopy(STATION_FINDER_AREA_TUPLE),
         'elements':copy.deepcopy(ACIS_ELEMENTS_TUPLE),
         'add_degree_days':copy.deepcopy(BOOLEAN_TUPLE),
         'elements_constraints':(

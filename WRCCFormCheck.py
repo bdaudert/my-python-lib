@@ -50,7 +50,7 @@ def check_start_year(form):
         if 'temporal_resolution' in form.keys() and form['temporal_resolution'] in ['mly','yly'] and str(form['grid']) == '21':
             grid_dr = WRCCData.PRISM_MLY_YLY[str(form['grid'])][3]
         for dr in grid_dr:
-            if int(grid_dr[0][0:4]) <= int(yr) and int(e_yr) <= int(grid_dr[1][0:4]):
+            if int(dr[0][0:4]) <= int(yr) and int(e_yr) <= int(dr[1][0:4]):
                 flag = False
                 break
             else:
@@ -95,7 +95,7 @@ def check_end_year(form):
         if 'temporal_resolution' in form.keys() and form['temporal_resolution'] in ['mly','yly'] and str(form['grid']) == '21':
             grid_dr = WRCCData.PRISM_MLY_YLY[str(form['grid'])][3]
         for dr in grid_dr:
-            if int(grid_dr[0][0:4]) <= int(s_yr) and int(yr) <= int(grid_dr[1][0:4]):
+            if int(dr[0][0:4]) <= int(s_yr) and int(yr) <= int(dr[1][0:4]):
                 flag = False
                 break
             else:

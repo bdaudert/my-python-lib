@@ -2800,6 +2800,146 @@ def is_leap_year(year):
 ###############################
 #GEOSPATIAL
 ##############################
+def read_shapefile(app_name,shp_file):
+    '''
+    reads shapefile and converts coordinates to
+    lon, lat strings for each polygon found
+    Args:
+        app_name: application name
+        shp_file: path to shapefile
+    Returns:
+        feats_lls: List of list containing
+                   polygon coords of multi polygons
+                   for each feature in shapefile
+    '''
+    feats_lls= [] #each poly is a ll_string in this list
+    ## Project all coordinates to WGS84
+    output_osr = osr.SpatialReference()
+    output_osr.ImportFromEPSG(4326)  ## WGS84
+    ##output_osr.ImportFromEPSG(4269)  ## NAD83
+    ## Get the spatial reference
+    input_ds = ogr.Open(shp_file)
+    if not input_ds:
+        return []
+    input_layer = input_ds.GetLayer()
+    ## Get the projection
+    input_osr = input_layer.GetSpatialRef()
+    ## Build the tranform object for projecting the coordinates
+    tx = osr.CoordinateTransformation(input_osr, output_osr)
+    #Loop over feature ids
+    ## Iterate through the features
+    input_ftr = input_layer.GetNextFeature()
+    while input_ftr:
+        polys_ll = []
+        input_fid = input_ftr.GetFID()
+        input_geom = input_ftr.GetGeometryRef()
+        ## Project a copy of the geometry
+        proj_geom = input_geom.Clone()
+        proj_geom.Transform(tx)
+        geom_info = {
+            'input_geom':input_geom,
+            'input_geom_type':input_geom.GetGeometryName(),
+            'proj_geom':proj_geom
+        }
+        polys_ll = feat_id_to_lls(app_name,geom_info)
+        feats_lls.append(polys_ll)
+        ## Get the next feature
+        input_ftr = input_layer.GetNextFeature()
+    return feats_lls
+
+def feat_id_to_lls(app_name,geom_info):
+    '''
+    Args:
+        app_name: application name
+        geom_info:{
+            'input_geom':
+            'input_geom_type':
+            'proj_geom'
+        }
+    Return:
+        polys_lls: List of list containing
+                  polygon coords of multi polygons
+    '''
+    multi_polys_lls = []# Eash multi poly is a list item
+    #Extract lon, lat coordinates from different geometry types
+    #1.POINT and MULTIPOINT -- Not allowed
+    if geom_info['input_geom_type'] in  ['POINT','MULTIPOINT']:
+        '''
+        ll_str = ''
+        for i in range(0, geom_info['proj_geom'].GetPointCount()):
+            pt = geom_info['proj_geom'].GetPoint(i)
+            ll_str+=str(round(pt[0],4)) + ',' + str(round(pt[1],4)) + ','
+        #Remove last comma
+        ll_str = ll_str[0:-1]
+        '''
+        return multi_poly_lls
+    #2.LINES, MULTILINESTRINGS -- not allowed
+    if geom_info['input_geom_type'] in ['LINE','MULTILINESTRING']:
+        return multi_poly_lls
+    #3.POLYGONS
+    if geom_info['input_geom_type'] in ['POLYGON']:
+        #FIX ME: NEED TO DEALWITH HOLY POLYS
+        '''
+        #Check that polygon has no hole
+        print geom_info['proj_geom'].GetGeometryCount()
+        if len(range(geom_info['proj_geom'].GetGeometryCount())) > 1:
+            return multi_polys_lls
+        '''
+        ll_str = ''
+        ll_list = []
+        ## POLYGONS are made up of LINEAR RINGS
+        for i in range(0, geom_info['proj_geom'].GetGeometryCount()):
+            sub_geom = geom_info['proj_geom'].GetGeometryRef(i)
+            ## LINEAR RINGS are made up of POINTS
+            for j in range(0, sub_geom.GetPointCount()):
+                pt = sub_geom.GetPoint(j)
+                ll = str(round(pt[0],4)) + ',' + str(round(pt[1],4))
+                if ll in ll_list:
+                    if j != sub_geom.GetPointCount() - 1:
+                        continue
+                ll_str+=ll + ','
+                ll_list.append(ll)
+                #Close poly if user hasn't
+                if j == 0:first = ll
+                if j == sub_geom.GetPointCount() - 1:
+                    if ll != first:
+                        ll_str+=first + ','
+                        ll_list.append(first)
+        #Remove last comma
+        ll_str = ll_str[0:-1]
+        multi_polys_lls.append(ll_str)#save poly in first multi polygon slot
+    #4.MULTIPOLYGONS
+    if geom_info['input_geom_type'] in ['MULTIPOLYGON']:
+        polys_lls = []
+        #MULTIPOLYGONS are made of polygons
+        #print geom_info['proj_geom'].GetGeometryCount()
+        ll_list = []
+        for i in range(0, geom_info['proj_geom'].GetGeometryCount()):
+            poly = geom_info['proj_geom'].GetGeometryRef(i)
+            ll_str = ''#each poly gets its own ll string
+            ll_list.append([])
+            ## POLYGONS are made up of LINEAR RINGS
+            for j in range(0, poly.GetGeometryCount()):
+                linear_ring = poly.GetGeometryRef(j)
+                for k in range(0, linear_ring.GetPointCount()):
+                    pt = linear_ring.GetPoint(k)
+                    ll = str(round(pt[0],4)) + ',' + str(round(pt[1],4))
+                    if ll in ll_list:
+                        if k != poly.GetGeometryCount() - 1:
+                            continue
+                    ll_str+=ll + ','
+                    ll_list[-1].append(ll)
+                    #Close poly if user hasn't
+                    if k == 0:first = ll
+                    if k == poly.GetGeometryCount() - 1:
+                        if ll != first:
+                            ll_str+=first + ','
+                            ll_list[-1].append(ll)
+            #Remove last comma
+            ll_str = ll_str[0:-1]
+            multi_polys_lls.append(ll_str)
+    return multi_polys_lls
+
 def shapefile_to_ll(app_name, shp_file, feature_id):
     poly_ll = ''
     ## Project all coordinates to WGS84

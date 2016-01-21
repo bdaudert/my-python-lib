@@ -2841,8 +2841,8 @@ def read_shapefile(app_name,shp_file):
             'input_geom_type':input_geom.GetGeometryName(),
             'proj_geom':proj_geom
         }
-        polys_ll = feat_id_to_lls(app_name,geom_info)
-        feats_lls.append(polys_ll)
+        multi_polys_lls = feat_id_to_lls(app_name,geom_info)
+        feats_lls.append(multi_polys_lls)
         ## Get the next feature
         input_ftr = input_layer.GetNextFeature()
     return feats_lls
@@ -2878,13 +2878,12 @@ def feat_id_to_lls(app_name,geom_info):
         return multi_poly_lls
     #3.POLYGONS
     if geom_info['input_geom_type'] in ['POLYGON']:
-        #FIX ME: NEED TO DEALWITH HOLY POLYS
-        '''
+
+        #FIX ME: NEED TO DEAL WITH HOLY POLYS
         #Check that polygon has no hole
-        print geom_info['proj_geom'].GetGeometryCount()
         if len(range(geom_info['proj_geom'].GetGeometryCount())) > 1:
             return multi_polys_lls
-        '''
+
         ll_str = ''
         ll_list = []
         ## POLYGONS are made up of LINEAR RINGS
@@ -2942,6 +2941,7 @@ def feat_id_to_lls(app_name,geom_info):
 
 def shapefile_to_ll(app_name, shp_file, feature_id):
     poly_ll = ''
+    f_id = long(int(feature_id) - 1)
     ## Project all coordinates to WGS84
     output_osr = osr.SpatialReference()
     output_osr.ImportFromEPSG(4326)  ## WGS84
@@ -2956,7 +2956,7 @@ def shapefile_to_ll(app_name, shp_file, feature_id):
     ## Build the tranform object for projecting the coordinates
     tx = osr.CoordinateTransformation(input_osr, output_osr)
     #Get the feature by ID
-    input_ftr = input_layer.GetFeature(long(feature_id))
+    input_ftr = input_layer.GetFeature(f_id)
     input_geom = input_ftr.GetGeometryRef()
     input_geom_type = input_geom.GetGeometryName()
     ## Project a copy of the geometry

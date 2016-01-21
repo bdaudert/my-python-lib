@@ -2546,8 +2546,8 @@ def Sodsumm(**kwargs):
                 #1) Averages and Daily extremes
                 max_max = -9999.0
                 min_min = 9999.0
-                date_min ='00000000'
-                date_max = '00000000'
+                date_min ='99999999'
+                date_max = '99999999'
                 for el_idx,el in enumerate(['maxt', 'mint', 'avgt']):
                     #Omit data yrs for month where max_missing day threshold is not met
                     data_list = []
@@ -2618,14 +2618,30 @@ def Sodsumm(**kwargs):
                         val_list.append('%.1f' % ucv(el, s_ave))
                 val_list.append(int(round(ucv('maxt',max_max),0)))
                 if cat_idx >=12:
-                    val_list.append('%s%s%s' % (date_max[0:4],date_max[4:6],date_max[6:8]))
+                    if date_max == '99999999':
+                        val_list.append('-9999')
+                    else:
+                        val_list.append('%s%s%s' % (date_max[0:4],date_max[4:6],date_max[6:8]))
                 else:
-                    val_list.append('%s/%s' % (date_max[6:8], date_max[0:4]))
-                val_list.append(int(round(ucv('mint',min_min),0)))
+                    if date_max == '99999999':
+                        val_list.append('-9999')
+                    else:
+                        val_list.append('%s/%s' % (date_max[6:8], date_max[0:4]))
+                if min_min == '-9999' or min_min == '9999':
+                    val_list.append('-9999')
+                else:
+                    val_list.append(int(round(ucv('mint',min_min),0)))
+
                 if cat_idx >=12:
-                    val_list.append('%s%s%s' % (date_min[0:4],date_min[4:6],date_min[6:8]))
+                    if date_min == '99999999':
+                        val_list.append('-9999')
+                    else:
+                        val_list.append('%s%s%s' % (date_min[0:4],date_min[4:6],date_min[6:8]))
                 else:
-                    val_list.append('%s/%s' % (date_min[6:8], date_min[0:4]))
+                    if date_min == '99999999':
+                        val_list.append('-9999')
+                    else:
+                        val_list.append('%s/%s' % (date_min[6:8], date_min[0:4]))
 
                 #3)  Mean Extremes (over yrs)
                 means_yr=[]
@@ -2665,8 +2681,8 @@ def Sodsumm(**kwargs):
                 else:
                     ave_low = '-9999'
                     ave_high = '-9999'
-                    yr_low = '9999'
-                    yr_high = '9999'
+                    yr_low = '-9999'
+                    yr_high = '-9999'
                     val_list.append(ave_high)
                     val_list.append(yr_high)
                     val_list.append(ave_low)
@@ -2815,9 +2831,15 @@ def Sodsumm(**kwargs):
                         date_max = el_dates['pcpn'][idx_max]
                         val_list.append('%.2f' %round(prec_max,2))
                         if cat_idx <12:
-                            val_list.append('%s/%s' % (date_max[6:8], date_max[0:4]))
+                            if date_max == '99999999':
+                                val_list.append('-9999')
+                            else:
+                                val_list.append('%s/%s' % (date_max[6:8], date_max[0:4]))
                         else:
-                            val_list.append(date_max)
+                            if date_max == '99999999':
+                                val_list.append('-9999')
+                            else:
+                                val_list.append(date_max)
 
                 #3) Precip Thresholds
                 threshs = [0.01, 0.10, 0.50, 1.00]

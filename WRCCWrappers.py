@@ -345,7 +345,8 @@ def sodxtrmts_wrapper(argv, offline = False):
         'sid':args['station_id'],
         'element':args['element'],
         'start_date':args['start_year'],
-        'end_date':args['end_year']
+        'end_date':args['end_year'],
+
     }
     app_params = {
         'base_temperature':args['base_temperature'],
@@ -1367,18 +1368,13 @@ def format_sodxtrmts_results_txt(results, data, data_params, app_params, wrapper
                 print ''
             row = ''
             for idx,val in enumerate(yr_data):
-                if str(val) == '-9999.00':
-                    v = '-9999'
-                elif  str(val) == '9999.00':
-                    v = '9999'
-                else:
-                    v = val
-                if idx == 0:
-                    row+='%7s ' %str(v)
-                elif idx != 0 and idx%2 ==0:
-                    row+='%s' %str(v)
-                else:
-                    row+='%6s' %str(v)
+                if str(val) == '-9999.00':v = '-9999'
+                elif  str(val) == '9999.00':v = '9999'
+                else:v = val
+
+                if idx == 0:row+='%7s ' %str(v)
+                elif idx != 0 and idx%2 ==0:row+='%s' %str(v)
+                else:row+='%6s' %str(v)
             print row
 
 def format_sodxtrmts_results_web(results, data, data_params, app_params, wrapper, user_start_year, user_end_year):
@@ -1407,12 +1403,14 @@ def format_sodxtrmts_results_web(results, data, data_params, app_params, wrapper
         print header2
         print '<H3> (<B>' + data_params['sid'] + '</B>) </H3>'
         if data_params['element'] in ['hdd', 'cdd', 'gdd']:
-            print '<H4>   Base Temperature = ' + str(data_params['base_temperature'])+' F</H4>'
+            print '<H4>   Base Temperature = ' + str(app_params['base_temperature'])+' F</H4>'
         if not results or not results[0]:
             print '<H1>No Data found!</H1>'
             print '<H3>Start Year: ' + user_start_year + ', End Year:' + user_end_year +'</H3>'
             print '</CENTER>'
             print '<PRE>'
+            #print 'NO DATA FOUND!'
+            #print '</CENTER>'
             print '</PRE>'
             print '</BODY>'
             print '</HTML>'
@@ -1435,7 +1433,7 @@ def format_sodxtrmts_results_web(results, data, data_params, app_params, wrapper
             print 'Individual Months not used for annual or monthly statistics if more than 5 days are missing. <BR>'
             print 'Individual Years not used for annual statistics if any month in that year has more than 5 days missing.</CENTER>'
             print '<BR>'
-            if not data or not results or not results[0]:
+            if not data:
                 print 'NO DATA FOUND!'
                 print '</CENTER>'
                 print '<PRE></PRE>'
@@ -1458,7 +1456,17 @@ def format_sodxtrmts_results_web(results, data, data_params, app_params, wrapper
                 for yr_idx,yr_data in enumerate(results[0]):
                     if yr_idx == len(results[0]) - 6:
                         print '<TR><TD ALIGN=CENTER COLSPAN=26> Period of Record Statistics</TD></TR>'
-                    row = '<TR><TD ALIGN=CENTER WIDTH=8%>' + yr_data[0] + '</TD>'
+                    yrs = str(yr_data[0]); w='CENTER'
+                    if s_month != 1:
+                        w = 'LEFT'
+                        if yr_idx < len(results[0]) - 6:
+                            yrs = yrs + '/' + str(results[0][yr_idx+1][0][2:4])
+                        elif yr_idx == len(results[0]) - 6:
+                            yrs = yrs + '/' + str(int(yrs) + 1)[2:4]
+                        else:
+                            pass
+
+                    row = '<TR><TD ALIGN=' + w + ' WIDTH=8%>' + yrs + '</TD>'
                     for idx,val in enumerate(yr_data[2*s_month - 1 :25] + yr_data[1:2*s_month - 1]):
                         if str(val) == '-9999.00':v = '-9999'
                         elif  str(val) == '9999.00':v = '9999'

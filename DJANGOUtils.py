@@ -313,7 +313,7 @@ def set_initial(request,app_name):
 
     #Set app specific params
     if app_name in ['multi_lister','spatial_summary','station_finder']:
-        initial['feature_id'] = 0
+        initial['feature_id'] = 1
     if app_name in ['monthly_summaries','climatology','sf_link']:
         initial['max_missing_days']  = Get('max_missing_days', '5')
     if app_name == 'station_finder':

@@ -2658,15 +2658,19 @@ def Sodsumm(**kwargs):
                     yr_high = yr_list[yr_idx_high]
                     #yr_low = str(int(start_year) + yr_idx_low)
                     #yr_high = str(int(start_year) + yr_idx_high)
+                    val_list.append('%.1f' %ucv('avgt',ave_high))
+                    val_list.append(yr_high)
+                    val_list.append('%.1f' %ucv('avgt',ave_low))
+                    val_list.append(yr_low)
                 else:
-                    ave_low = 99.0
-                    ave_high = -99.0
-                    yr_low = '0000'
-                    yr_high = '0000'
-                val_list.append('%.1f' %ucv('avgt',ave_high))
-                val_list.append(yr_high)
-                val_list.append('%.1f' %ucv('avgt',ave_low))
-                val_list.append(yr_low)
+                    ave_low = '-9999'
+                    ave_high = '-9999'
+                    yr_low = '9999'
+                    yr_high = '9999'
+                    val_list.append(ave_high)
+                    val_list.append(yr_high)
+                    val_list.append(ave_low)
+                    val_list.append(yr_low)
 
                 #4) Threshold days for maxt, mint
                 for el in ['maxt', 'mint']:
@@ -2693,9 +2697,9 @@ def Sodsumm(**kwargs):
                             try:
                                 val_list.append('%.1f' % round(numpy.mean(cnt_days),2))
                             except:
-                                val_list.append('-99.0')
+                                val_list.append('-9999')
                         else:
-                            val_list.append('-99.0')
+                            val_list.append('-9999')
                 results[i]['temp'].append(val_list)
 
             #2) Precip/Snow Stats
@@ -2744,11 +2748,13 @@ def Sodsumm(**kwargs):
                         if cat_idx < 12:
                             m = numpy.mean(sum_yr)
                             if numpy.isnan(m):
-                                m=-99.0
-                            if el == 'snow':
+                                m='-9999'
+                            if el == 'snow' and m != '-9999':
                                 val_list.append('%.1f' % round(ucv(el,m),2))
-                            else:
+                            elif  m != '-9999':
                                 val_list.append('%.2f' % round(ucv(el,m),3))
+                            else:
+                                val_lisr.append(m)
                         else:
                             if cat_idx == 12:m_idx = range(1,13)
                             if cat_idx == 13:m_idx =[12,1,2]
@@ -2765,7 +2771,7 @@ def Sodsumm(**kwargs):
                                 s_ave = round(s_ave,2)
                                 val_list.append('%.2f' % ucv(el,s_ave))
                     except:
-                        val_list.append('-99.0')
+                        val_list.append('-9999')
                     if sum_yr:
                         prec_high = max(sum_yr)
                         yr_idx_high = sum_yr.index(prec_high)
@@ -2781,21 +2787,27 @@ def Sodsumm(**kwargs):
                             else:
                                 yr_low = yr_list[yr_idx_low]
                     else:
-                        prec_high = -99.0
-                        yr_high = '0000'
+                        prec_high = '-9999'
+                        yr_high = '9999'
                         if el == 'pcpn':
-                            prec_low = 99.0
-                            yr_low = '0000'
-                    if el == 'snow':
+                            prec_low = '-9999'
+                            yr_low = '9999'
+                    if el == 'snow' and prec_high != '-9999':
                         val_list.append('%.1f' %round(ucv('pcpn',prec_high),2))
+                    elif el == 'snow' and prec_high == '-9999':
+                        val_list.append(prec_high)
                     else:
-                        val_list.append('%.2f' %round(ucv('pcpn',prec_high),2))
-                    val_list.append(yr_high)
-                    if el == 'pcpn':
-                        if el == 'snow':
-                            val_list.append('%.1f' %round(ucv('pcpn',prec_low),2))
+                        if prec_high !='-9999':
+                            val_list.append('%.2f' %round(ucv('pcpn',prec_high),2))
                         else:
+                            val_list.append(prec_high)
+                    val_list.append(yr_high)
+                    if el in ['pcpn']:
+                        if prec_low != '-9999':
                             val_list.append('%.2f' %round(ucv('pcpn',prec_low),2))
+                        else:
+                            val_list.append(prec_low)
+                    if el == 'pcpn':
                         val_list.append(yr_low)
                         #2) Daily Prec max
                         prec_max = max(el_data['pcpn'])

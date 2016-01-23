@@ -169,7 +169,7 @@ class GraphDictWriter(object):
             if 'location' in self.form.keys():
                 subTitle = 'Location: ' + self.form['location']
         if 'start_month' in self.form.keys() and 'start_day' in self.form.keys():
-            #Interannual/Intraannual
+            #Yearly Summary/Intraannual
             if 'location' in self.form.keys():
                 subTitle = 'Grid: ' + WRCCData.GRID_CHOICES[str(self.form['grid'])][0] + ', '
             else:
@@ -348,29 +348,14 @@ class CsvWriter(object):
             self.writer = csv.writer(self.response, delimiter=self.delim, quotechar=qc, quoting=csv.QUOTE_MINIMAL)
 
     def write_header(self):
-        #Search params header:
-        if self.smry and 'data_summary' in self.form.keys() and self.form['data_summary'] != 'None':
-            header_keys = [self.form['area_type'],'data_summary','start_date', 'end_date']
-        elif 'app_name' in self.form.keys() and self.form['app_name'] == 'interannual':
-            header_keys = ['element','start_month','start_day', \
-            'end_month', 'end_day','temporal_summary']
-        elif 'app_name' in self.form.keys() and self.form['app_name'] == 'intraannual':
-            header_keys = ['element','start_month','start_day']
-        else:
-            header_keys = [self.form['area_type'],'start_date', 'end_date']
-        if 'data_type' in self.form.keys():
-            header_keys.insert(0,'data_type')
-        '''
-        if 'user_area_id' in self.form.keys():
-            header_keys.insert(0,'user_area_id')
-        '''
+        header_keys = WRCCData.CSV_HEADER_KEYS[self.form['app_name']]
         header = WRCCUtils.form_to_display_list(header_keys, self.form)
         for key_val in header:
             row = ['*' + key_val[0].replace(' ',''),key_val[1]]
             self.writer.writerow(row)
 
         if self.data_type == 'station' and not self.smry:
-            if 'app_name' in self.form.keys() and self.form['app_name'] in  ['interannual','intraannual']:
+            if 'app_name' in self.form.keys() and self.form['app_name'] in  ['yearly_summary','intraannual']:
                 pass
             else:
                 row = ['*DataFlags','M=Missing', 'T=Trace', 'S=Subsequent', 'A=Accumulated']
@@ -382,38 +367,6 @@ class CsvWriter(object):
             self.writer.writerow(['*'])
             p_id = '';p_name = ''
             if 'meta' in self.req.keys():
-                '''
-                if isinstance(self.req['meta'][p_idx],dict):
-                    if 'sids' in self.req['meta'][p_idx].keys():
-                        p_id = self.req['meta'][p_idx]['sids'][0].split(' ')[0]
-                        for sid in self.req['meta'][p_idx]['sids']:
-                            if sid.split(' ')[1] == '2':
-                                p_id = sid.split(' ')[0]
-                                break
-                    if 'name' in self.req['meta'][p_idx].keys():
-                        p_name = self.req['meta'][p_idx]['name']
-                    if 'll' in self.req['meta'][p_idx].keys():
-                        if isinstance(self.req['meta'][p_idx]['ll'],list):
-                            p_name = ','.join(self.req['meta'][p_idx]['ll'])
-                        else:
-                            p_name = val
-                elif isinstance(self.req['meta'][p_idx],list):
-                    for key_val in self.req['meta'][p_idx]:
-                        key = key_val[0];val = key_val[1]
-                        if key == 'Station ID/Network List':
-                            sids = []
-                            id_net = val.replace(', ',',').split(',')
-                            p_id = id_net[0].split('/')[0]
-                            for s in id_net:
-                                if s.split('/')[1] == 'COOP':
-                                    p_id = s.split('/')[0]
-                                    break
-                        if key == 'Station Name':p_name =  val
-                        if key == 'Longitude, Latitude':
-                            if isinstance(val,list):p_name = ','.join(val)
-                            else:p_name = val
-
-                '''
                 meta_display_params = []
                 if isinstance(self.req['meta'][p_idx],dict):
                     #Write meta
@@ -439,7 +392,7 @@ class CsvWriter(object):
                 h = [date_data[0]]
                 if d_idx == 0:
                     #Data Header
-                    if self.form['app_name'] not in ['intraannual','interannual']:
+                    if self.form['app_name'] not in ['intraannual','yearly_summary']:
                         if p_name:h = ['Name'] + h
                         if p_id:h = ['ID'] + h
                         h = ['*'] + h
@@ -476,6 +429,228 @@ class CsvWriter(object):
             self.write_data()
         self.close_writer()
 
+class CsvWriterNew(object):
+    '''
+    Writes data to csv
+    Simplified format for easy download
+    Args:
+        req data requestdictionary with keys
+            data,meta, smry,form,errors
+        f file, if given, data will be written to file
+        response HTTPResponse object, if given, output file will appear in browser
+    Returns: csv file
+    '''
+    def __init__(self, req, f=None, response=None):
+        self.req = req
+        self.form =  self.req['form']
+        self.response = response
+        self.f = f
+        self.delim = WRCCData.DELIMITERS[self.form['delimiter']]
+
+    def set_data_type(self):
+        self.data_type = WRCCUtils.get_data_type(self.form)
+
+    def set_data(self):
+        if 'smry' in self.req.keys() and self.req['smry']:
+            self.data = self.req['smry']
+            self.smry = True
+        else:
+            self.data = self.req['data']
+            self.smry = False
+
+    def set_meta_keys(self):
+        self.meta_keys = WRCCUtils.get_meta_keys(self.form)
+
+    def set_writer(self):
+        import csv
+        qc = ' '
+        #qc = "\'"
+        if self.f is not None:
+            self.csvfile = open(self.f, 'w+')
+            self.writer = csv.writer(self.csvfile, delimiter=self.delim, quotechar=qc, quoting=csv.QUOTE_MINIMAL )
+        if self.response is not None:
+            self.writer = csv.writer(self.response, delimiter=self.delim, quotechar=qc, quoting=csv.QUOTE_MINIMAL)
+
+    def write_header(self):
+        header_keys = WRCCData.CSV_HEADER_KEYS[self.form['app_name']]
+        header = WRCCUtils.form_to_display_list(header_keys, self.form)
+        for key_val in header:
+            row = ['*' + key_val[0].replace(' ',''),key_val[1]]
+            self.writer.writerow(row)
+
+        if self.data_type == 'station' and not self.smry:
+            if self.form['app_name'] not in ['interannual','intraannual']:
+                row = ['*DataFlags','M=Missing', 'T=Trace', 'S=Subsequent', 'A=Accumulated']
+                self.writer.writerow(row)
+
+    def set_seperators(self):
+        if self.delim == ' ': sep_name = '_'
+        else:sep_name = ' '
+        if self.delim == ',':sep_id = ' '
+        else:sep_id = ','
+        return sep_id, sep_name
+
+    def write_data(self):
+        #Override data headers
+        h = ['*'] + self.data[0][0]
+        if self.form['app_name'] in  ['intraannual']:
+            h = ['*' + 'Year: ', self.data[0][0][0][0:4]]
+        else:
+            if 'data_type' in self.form.keys() and self.form['data_type'] == 'station':
+                h = ['*Name (IDs)'] + self.data[0][0]
+            if 'data_type' in self.form.keys() and self.form['data_type'] == 'grid':
+                h = ['*Lon, Lat'] + self.data[0][0]
+        self.writer.writerow(h)
+        #Loop over data points
+        for p_idx, p_data in enumerate(self.data):
+            #self.writer.writerow(['*'])
+            p_id = '';p_name = ''
+            if 'meta' in self.req.keys():
+                p_id, p_name = WRCCUtils.set_point_name_and_id(self.form, self.req['meta'][p_idx])
+
+            #Write data
+            for date_data in p_data[1:]:
+                if p_id:d = [p_name + ' (' + p_id + ')'] + date_data
+                else:d = [p_name] + date_data
+                self.writer.writerow(d)
+
+
+    def write_summary(self):
+        for s_idx, s_data in enumerate(self.data):
+            if s_idx == 0:
+                #Data Header
+                s_data[0] = '*' + s_data[0]
+            row = s_data
+            self.writer.writerow(row)
+
+    def close_writer(self):
+        try:
+            self.csvfile.close()
+        except:
+            pass
+
+    def write_to_file(self):
+        self.set_data_type()
+        self.set_data()
+        self.set_meta_keys()
+        self.set_writer()
+        self.write_header()
+        if self.smry:self.write_summary()
+        else:self.write_data()
+        self.close_writer()
+
+class ExcelWriterNew(object):
+    '''
+    Writes data to excel
+    Simplified format for easy download
+    Keyword arguments:
+        req data requestdictionary with keys
+            data, meta, smry, form, errors
+            f file, if given, data will be written to file
+        response HTTPResponse object, if given, output file will appear in browser
+    '''
+    def __init__(self, req, f = None, response = None):
+        self.req = req
+        self.form =  self.req['form']
+        self.f = f
+        self.response = response
+        self.delim = WRCCData.DELIMITERS[self.form['delimiter']]
+
+    def set_data_type(self):
+        self.data_type = WRCCUtils.get_data_type(self.form)
+
+    def set_data(self):
+        if 'smry' in self.req.keys() and self.req['smry']:
+            self.data = self.req['smry']
+            self.smry = True
+        else:
+            self.data = self.req['data']
+            self.smry = False
+
+    def set_meta_keys(self):
+        self.meta_keys = WRCCUtils.get_meta_keys(self.form)
+
+    def set_workbook(self):
+        from xlwt import Workbook
+        self.wb = Workbook()
+
+    def write_header(self,ws):
+        header_keys = WRCCData.CSV_HEADER_KEYS[self.form['app_name']]
+        header = WRCCUtils.form_to_display_list(header_keys, self.form)
+        for k_idx, key_val in enumerate(header):
+            ws.write(0,k_idx,key_val[0].replace(' ',''))
+            ws.write(1,k_idx,key_val[1])
+
+    def write_data(self):
+        #Loop over data points
+        ws = self.wb.add_sheet('Data')
+        self.write_header(ws)
+        if self.data_type =='station':
+            ws.write(3,0,'DataFlags')
+            ws.write(3,1,'M=Missing')
+            ws.write(3,2,'T=Trace')
+            ws.write(3,3,'S=Subsequent')
+            ws.write(3,4,'A=Accumulated')
+        #Data header
+        if self.form['app_name'] in  ['intraannual']:
+            ws.write(5,0,'Year')
+            ws.write(5,1,'Value')
+        else:
+            if 'data_type' in self.form.keys() and self.form['data_type'] == 'station':
+                ws.write(5,0,'Name (IDs)')
+            if 'data_type' in self.form.keys() and self.form['data_type'] == 'grid':
+                ws.write(5,0,'Lon, Lat')
+            for d_idx, d in enumerate(self.data[0][0]):
+                ws.write(5, d_idx+1,d)
+        row_idx = 6
+        for p_idx, p_data in enumerate(self.data):
+            if 'meta' in self.req.keys():
+                p_id, p_name = WRCCUtils.set_point_name_and_id(self.form, self.req['meta'][p_idx])
+            #Write data omitting header line
+            for date_idx, data in enumerate(p_data[1:]):
+                row_idx+=1
+                name_ids = p_name
+                if p_id:name_ids+=' (' + p_id+ ')'
+                ws.write(row_idx,0,name_ids)
+                col_idx = 1
+                for data_idx in range(len(data)):
+                    try:
+                        ws.write(row_idx, data_idx + col_idx, float(data[data_idx]))
+                    except:
+                        ws.write(row_idx, data_idx + col_idx, data[data_idx])
+        #Save workbook
+        if self.f is not None:
+            self.wb.save(self.f)
+        if self.response is not None:
+            self.wb.save(self.response)
+
+    def write_summary(self):
+        ws = self.wb.add_sheet('Data')
+        self.write_header(ws)
+        #Write data
+        for row_idx in range(len(self.data)):
+            for val_idx in range(len(self.data[row_idx])):
+                try:
+                    val =  round(float(self.data[row_idx][val_idx]),4)
+                except:
+                    val = self.data[row_idx][val_idx]
+                ws.write(row_idx + 5 ,val_idx,val)
+        #Save workbook
+        if self.f is not None:
+            self.wb.save(self.f)
+        if self.response is not None:
+            self.wb.save(self.response)
+
+    def write_to_file(self):
+        self.set_data_type()
+        self.set_data()
+        self.set_meta_keys()
+        self.set_workbook()
+        if self.smry:
+            self.write_summary()
+        else:
+            self.write_data()
+
 class ExcelWriter(object):
     '''
     Writes data to excel
@@ -511,21 +686,7 @@ class ExcelWriter(object):
         self.wb = Workbook()
 
     def write_header(self,ws):
-        if self.smry and self.form['data_summary'] != 'None':
-            header_keys = [self.form['area_type'],'data_summary','start_date', 'end_date']
-        elif 'app_name' in self.form.keys() and self.form['data_summary'] == 'interannual':
-            header_keys = ['element','start_month','start_day', \
-            'end_month', 'end_day','temporal_summary']
-        elif 'app_name' in self.form.keys() and self.form['data_summary'] == 'intraannual':
-            header_keys = ['element','start_month','start_day']
-        else:
-            header_keys = [self.form['area_type'],'start_date', 'end_date']
-        if 'data_type' in self.form.keys():
-            header_keys.insert(0,'data_type')
-        '''
-        if 'user_area_id' in self.form.keys():
-            header_keys.insert(0,'user_area_id')
-        '''
+        header_keys = WRCCData.CSV_HEADER_KEYS[self.form['app_name']]
         header = WRCCUtils.form_to_display_list(header_keys, self.form)
         for k_idx, key_val in enumerate(header):
             ws.write(0,k_idx,key_val[0].replace(' ',''))

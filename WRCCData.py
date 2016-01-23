@@ -1256,6 +1256,19 @@ COLUMN_HEADERS = {
     'Sodsumm':None
 }
 
+CSV_HEADER_KEYS = {
+    'station_finder':[],
+    'single_lister':['area_type','data_summary','start_date','end_date'],
+    'monthly_summary':['area_type','element','start_year','end_year'],
+    'yearly_summary':['element','start_month','start_day'],
+    'intraannual':['element','start_month','start_day','end_month', 'end_day','temporal_summary'],
+    'data_comparison':['area_type','start_date','end_date'],
+    'climatology':['area_type','element','start_year','end_year'],
+    'multi_lister':['data_type','area_type','data_summary','start_date','end_date'],
+    'spatial_summary':['data_type','area_type','spatial_summary','start_date','end_date'],
+    'temporal_summary':['data_type','area_type','temporal_summary','start_date','end_date'],
+    'climate_engine':[]
+}
 
 ##########
 #SODXTRMTS
@@ -1663,7 +1676,7 @@ SCENIC_FORM_OPTIONS = {
         'data_format':copy.deepcopy(DATA_FORMAT_CHOICES),
         'delimiter':copy.deepcopy(DELIMITER_TUPLE)
     },
-    'monthly_summaries':{
+    'monthly_summary':{
         'area_type':copy.deepcopy(SINGLE_AREA_TUPLE),
         'grid':copy.deepcopy(GRID_CHOICES_TUPLE),
         'element':copy.deepcopy(ACIS_ELEMENTS_TUPLE),
@@ -1684,7 +1697,7 @@ SCENIC_FORM_OPTIONS = {
         'data_format':copy.deepcopy(DATA_FORMAT_CHOICES),
         'delimiter':copy.deepcopy(DELIMITER_TUPLE)
     },
-    'interannual':{
+    'yearly_summary':{
         'area_type':copy.deepcopy(SINGLE_AREA_TUPLE),
         'grid':copy.deepcopy(GRID_CHOICES_TUPLE),
         'element':copy.deepcopy(ACIS_ELEMENTS_TUPLE),
@@ -1828,7 +1841,7 @@ SCENIC_DATA_PARAMS = {
         'data_summary':'spatial_summary',
         'spatial_summary':'mean'
     },
-    'monthly_summaries':{
+    'monthly_summary':{
         'station_id':'RENO TAHOE INTL AP, 266779',
         'start_year':'POR',
         'end_year':'POR',
@@ -1838,7 +1851,7 @@ SCENIC_DATA_PARAMS = {
         'max_missing_days':'5',
         'departures_from_averages':'F'
     },
-    'interannual':{
+    'yearly_summary':{
         'area_type':'station_id',
         'station_id':'RENO TAHOE INTL AP, 266779',
         'element':'pcpn',

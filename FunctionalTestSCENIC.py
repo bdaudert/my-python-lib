@@ -181,7 +181,7 @@ class setUp(object):
             except AssertionError as err:
                 logger.error('AssertionError ' + str(err) + '\n')
 
-    def run_interannual(self,params):
+    def run_yearly_summary(self,params):
         results = {};err = None
         initial, err = self.setInitial(params)
         if err is not None:return results, err
@@ -190,9 +190,9 @@ class setUp(object):
         form_cleaned, err = self.setFormCleaned(initial)
         if err is not None:return results, err
         try:
-            year_data, hc_data = WRCCUtils.get_single_interannaul_data(form_cleaned)
+            year_data, hc_data = WRCCUtils.get_single_yearly_summary_data(form_cleaned)
         except Exception, e:
-            err = 'FAIL get_single_interannual_data. ERROR: ' + \
+            err = 'FAIL get_single_yearly_summary_data. ERROR: ' + \
             str(e) + ' PARAMS: ' + str(params)
             return results, err
         results['year_data'] = year_data
@@ -207,7 +207,7 @@ class setUp(object):
         results['graph_dict'] = graph_dict
         return results, err
 
-    def test_interannual_results(self,utClass,results,err):
+    def test_yearly_summary_results(self,utClass,results,err):
         if err is not None:
             logger.error(err + '\n')
         try:
@@ -279,7 +279,7 @@ class setUp(object):
         except AssertionError as err:
             logger.error('AssertionError ' + str(err) + '\n')
 
-    def run_monthly_summaries(self, params):
+    def run_monthly_summary(self, params):
         results = [];err=''
         initial, err = self.setInitial(params)
         if err is not None:return results, err
@@ -659,18 +659,18 @@ class Test_multi_lister(unittest.TestCase):
                     results, err = self.setUp.run_multi_lister(params)
                     self.setUp.test_multi_lister_results(self,results,err)
 
-class Test_interannual(unittest.TestCase):
+class Test_yearly_summary(unittest.TestCase):
     def setUp(self):
-        self.params = copy.deepcopy(WRCCData.SCENIC_DATA_PARAMS['interannual'])
-        self.setUp = setUp('interannual')
+        self.params = copy.deepcopy(WRCCData.SCENIC_DATA_PARAMS['yearly_summary'])
+        self.setUp = setUp('yearly_summary')
 
     def test_default(self):
         msg = 'Testing Yearly Summaries with default values'
         logger.info(msg + '\n')
         params = copy.deepcopy(self.params)
         logger.info(str(params) + '\n')
-        results, err = self.setUp.run_interannual(params)
-        self.setUp.test_interannual_results(self,results,err)
+        results, err = self.setUp.run_yearly_summary(params)
+        self.setUp.test_yearly_summary_results(self,results,err)
 
 class Test_intraannual(unittest.TestCase):
     def setUp(self):
@@ -685,17 +685,17 @@ class Test_intraannual(unittest.TestCase):
         results, err = self.setUp.run_intraannual(params)
         self.setUp.test_intraannual_results(self,results,err)
 
-class Test_monthly_summaries(unittest.TestCase):
+class Test_monthly_summary(unittest.TestCase):
     def setUp(self):
-        self.params = copy.deepcopy(WRCCData.SCENIC_DATA_PARAMS['monthly_summaries'])
-        self.setUp = setUp('monthly_summaries')
+        self.params = copy.deepcopy(WRCCData.SCENIC_DATA_PARAMS['monthly_summary'])
+        self.setUp = setUp('monthly_summary')
 
     def test_default(self):
         msg = 'Testing Monthly Summaries with default values'
         logger.info(msg + '\n')
         params = copy.deepcopy(self.params)
         logger.info(str(params) + '\n')
-        results = self.setUp.run_monthly_summaries(params)
+        results = self.setUp.run_monthly_summary(params)
         try:
             self.assertNotEqual(results[0], [])
         except AssertionError as err:
@@ -712,7 +712,7 @@ class Test_monthly_summaries(unittest.TestCase):
         params['start_year'] = '1970'
         params['end_year'] = '1980'
         logger.info(str(params) + '\n')
-        results = self.setUp.run_monthly_summaries(params)
+        results = self.setUp.run_monthly_summary(params)
         try:
             self.assertNotEqual(results[0], [])
         except AssertionError as err:
@@ -729,7 +729,7 @@ class Test_monthly_summaries(unittest.TestCase):
             params['start_date'] = '2010'
             params['end_date'] = '2005'
             logger.info(str(params) + '\n')
-            results = self.setUp.run_monthly_summaries(params)
+            results = self.setUp.run_monthly_summary(params)
             try:
                 self.assertNotEqual(results[0], [])
             except AssertionError as err:
@@ -747,7 +747,7 @@ class Test_monthly_summaries(unittest.TestCase):
             params['start_year'] = '1945'
             params['end_year'] = '1950'
             logger.info(str(params) + '\n')
-            results = self.setUp.run_monthly_summaries(params)
+            results = self.setUp.run_monthly_summary(params)
             try:
                 self.assertNotEqual(results[0], [])
             except AssertionError as err:
@@ -759,7 +759,7 @@ class Test_monthly_summaries(unittest.TestCase):
         params = copy.deepcopy(self.params)
         params['units'] = 'metric'
         logger.info(str(params) + '\n')
-        results = self.setUp.run_monthly_summaries(params)
+        results = self.setUp.run_monthly_summary(params)
         try:
             self.assertNotEqual(results[0], [])
         except AssertionError as err:
@@ -773,7 +773,7 @@ class Test_monthly_summaries(unittest.TestCase):
         params['start_year'] = '1998'
         params['end_year'] = '2003'
         logger.info(str(params) + '\n')
-        results = self.setUp.run_monthly_summaries(params)
+        results = self.setUp.run_monthly_summary(params)
         try:
             self.assertNotEqual(results[0], [])
         except AssertionError as err:

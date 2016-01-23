@@ -1588,7 +1588,7 @@ def format_station_temporal_summary(req,form):
     return resultsdict
 
 ################################
-# INTERANNUAL/INTRAANNUAL DATA MODULES
+# YEARLY_SUMMARY/INTRAANNUAL DATA MODULES
 ############################
 def compute_running_mean(data,num):
     '''
@@ -1976,9 +1976,9 @@ def get_single_intraannual_data(form):
     #================================
     return year_txt_data, year_graph_data, climoData, percentileData
 
-def get_single_interannaul_data(form):
+def get_single_yearly_summary_data(form):
     '''
-    Interannual data
+    Yearly Summary data
     Args: cleaned form field entries
     Returns: yearly summarized values and highcarts data
     '''
@@ -2127,9 +2127,9 @@ def get_single_interannaul_data(form):
 ################################
 # HIGHCARTS DATA EXTRACTION
 ############################
-def extract_highcarts_data_monthly_summaries(data,form):
+def extract_highcarts_data_monthly_summary(data,form):
     '''
-    Format monthly_summaries data for highcarts plotting
+    Format monthly_summary data for highcarts plotting
     Args:
         data: data list containing data for all elements
         el_idx: index of element data in data
@@ -2367,7 +2367,7 @@ def set_display_keys(app_name, form):
     if app_name == 'intraannual':
         header_keys = [form['area_type'],'element','start_year',\
             'end_year','start_month', 'start_day']
-    if app_name == 'interannual':
+    if app_name == 'yearly_summary':
          header_keys = [form['area_type'],'temporal_summary', 'element',\
         'start_year', 'end_year','window']
     if app_name == 'spatial_summary':
@@ -2402,7 +2402,7 @@ def form_to_display_list(key_order_list, form):
             display_list.append([WRCCData.DISPLAY_PARAMS[key]])
         except:
             display_list.append([''])
-    #Special case window for interannual
+    #Special case window for yearly_summary
     if 'window' in keys:
         idx = keys.index(str(key))
         window = 'From ' + WRCCData.NUMBER_TO_MONTH_NAME[str(form['start_month'])] + '-' + str(form['start_day'])
@@ -2412,7 +2412,10 @@ def form_to_display_list(key_order_list, form):
         if str(key) not in keys:
             continue
         idx = keys.index(str(key))
-        if key in ['station_id','station_ids']:
+        if key == 'area_type':
+            if form[key] in form.keys():
+                display_list[idx] = [WRCCData.DISPLAY_PARAMS[form[key]], form[form[key]]]
+        elif key in ['station_id','station_ids']:
             in_list = form[key].strip().split(',')
             ids_string, names = find_ids_and_names(in_list,'/www/apps/csc/dj-projects/my_acis/media/json/US_station_id.json')
             ids_list = ids_string.split(',')
@@ -2525,6 +2528,59 @@ def metadict_to_display_list(metadata, key_order_list,form):
     if 'units' in form.keys():
         meta.append(['Units', form['units']])
     return meta
+
+def set_point_name_and_id(form,meta):
+    '''
+    Finds point ID and name form meta data
+    returned by data request.
+    If data_type == station, it finds the station ID and name
+    If data type == grid, it finds lat, lon, elev of the point
+    Args:
+        meta: either a metadata dictionary or display list
+    Returns:
+        p_id: point ID
+        p_name: point Name
+    '''
+    p_id = ''; p_name = ''
+    sep_id = ',';sep_name = ' '
+    if isinstance(meta,dict):
+        if 'sids' in meta.keys():
+            #p_id = meta['sids'][0].split(' ')[0]
+            for sid in meta['sids']:
+                p_id+=sid.split(' ')[0] + sep_id
+                '''
+                if sid.split(' ')[1] == '2':
+                    p_id = sid.split(' ')[0]
+                    break
+                '''
+            p_id = p_od[0:-1]
+        if 'name' in meta.keys():
+            p_name = meta['name'].replace(' ',sep_name)
+        if 'll' in meta.keys() and 'sids' not in meta.keys():
+            if isinstance(val,list):p_name = sep_name.join(val)
+            else:p_name = val.replace('[','').replace(']','')
+    elif isinstance(meta,list):
+        for key_val in meta:
+            key = key_val[0];val = key_val[1]
+            if key == 'Station ID/Network List':
+                sids = []
+                id_net = val.replace(', ',',').split(',')
+                #p_id = id_net[0].split('/')[0]
+                for s in id_net:
+                    p_id+= s.split('/')[0] + sep_id
+                    '''
+                    if s.split('/')[1] == 'COOP':
+                        p_id = s.split('/')[0]
+                        break
+                    '''
+                p_id=p_id[0:-1]
+            if key == 'Station Name':p_name =  val.replace(' ',sep_name)
+            if key == 'Longitude, Latitude':
+                if 'data_type' in form.keys() and form['data_type'] == 'grid':
+                    if isinstance(val,list):p_name = sep_name.join(val)
+                    else:p_name = val.replace('[','').replace(']','')
+    return p_id, p_name
+
 
 #######################
 # LINKS AN URL PARAMS

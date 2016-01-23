@@ -349,6 +349,8 @@ class CsvWriter(object):
 
     def write_header(self):
         header_keys = WRCCData.CSV_HEADER_KEYS[self.form['app_name']]
+        if 'data_type' in self.form.keys() and self.form['data_type'] == 'grid':
+            header_keys.insert(1,'grid')
         header = WRCCUtils.form_to_display_list(header_keys, self.form)
         for key_val in header:
             row = ['*' + key_val[0].replace(' ',''),key_val[1]]
@@ -383,7 +385,7 @@ class CsvWriter(object):
                         self.writer.writerow(row)
             #Write data
             if 'app_name' in self.form.keys() and self.form['app_name'] in  ['intraannual']:
-                h = ['*' + 'Year: ', p_data[0][0][0:4]]
+                h = ['*Year: ', p_data[0][0][0:4]]
                 self.writer.writerow(h)
             else:
                 self.writer.writerow(['*'])
@@ -473,6 +475,8 @@ class CsvWriterNew(object):
 
     def write_header(self):
         header_keys = WRCCData.CSV_HEADER_KEYS[self.form['app_name']]
+        if 'data_type' in self.form.keys() and self.form['data_type'] == 'grid':
+            header_keys.insert(1,'grid')
         header = WRCCUtils.form_to_display_list(header_keys, self.form)
         for key_val in header:
             row = ['*' + key_val[0].replace(' ',''),key_val[1]]
@@ -494,7 +498,7 @@ class CsvWriterNew(object):
         #Override data headers
         h = ['*'] + self.data[0][0]
         if self.form['app_name'] in  ['intraannual']:
-            h = ['*' + 'Year: ', self.data[0][0][0][0:4]]
+            h = ['*Year: ', self.data[0][0][0][0:4]]
         else:
             if 'data_type' in self.form.keys() and self.form['data_type'] == 'station':
                 h = ['*Name (IDs)'] + self.data[0][0]
@@ -576,6 +580,8 @@ class ExcelWriterNew(object):
 
     def write_header(self,ws):
         header_keys = WRCCData.CSV_HEADER_KEYS[self.form['app_name']]
+        if 'data_type' in self.form.keys() and self.form['data_type'] == 'grid':
+            header_keys.insert(1,'grid')
         header = WRCCUtils.form_to_display_list(header_keys, self.form)
         for k_idx, key_val in enumerate(header):
             ws.write(0,k_idx,key_val[0].replace(' ',''))
@@ -687,6 +693,8 @@ class ExcelWriter(object):
 
     def write_header(self,ws):
         header_keys = WRCCData.CSV_HEADER_KEYS[self.form['app_name']]
+        if 'data_type' in self.form.keys() and self.form['data_type'] == 'grid':
+            header_keys.insert(1,'grid')
         header = WRCCUtils.form_to_display_list(header_keys, self.form)
         for k_idx, key_val in enumerate(header):
             ws.write(0,k_idx,key_val[0].replace(' ',''))

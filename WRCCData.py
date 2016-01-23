@@ -1261,7 +1261,7 @@ CSV_HEADER_KEYS = {
     'single_lister':['area_type','data_summary','start_date','end_date'],
     'monthly_summary':['area_type','element','start_year','end_year'],
     'yearly_summary':['element','start_month','start_day'],
-    'intraannual':['element','start_month','start_day','end_month', 'end_day','temporal_summary'],
+    'intraannual':['element','start_month','start_day'],
     'data_comparison':['area_type','start_date','end_date'],
     'climatology':['area_type','element','start_year','end_year'],
     'multi_lister':['data_type','area_type','data_summary','start_date','end_date'],

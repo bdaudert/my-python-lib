@@ -2398,10 +2398,13 @@ def form_to_display_list(key_order_list, form):
         keys = [k for k in key_order_list]
     display_list = []
     for key in keys:
+        display_list.append([WRCCData.DISPLAY_PARAMS[key]])
+        '''
         try:
             display_list.append([WRCCData.DISPLAY_PARAMS[key]])
         except:
             display_list.append([''])
+        '''
     #Special case window for yearly_summary
     if 'window' in keys:
         idx = keys.index(str(key))

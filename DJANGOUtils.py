@@ -16,6 +16,8 @@ def create_kml_file(area_type, overlay_state):
     kml_file_name = overlay_state + '_' + area_type + '.kml'
     kml_file_path = settings.TMP_URL +  kml_file_name
     status = WRCCUtils.generate_kml_file(area_type, overlay_state, kml_file_name, settings.TEMP_DIR)
+    if status != 'Success':
+        return 'ERROR: ' + status
     return kml_file_path
 
 def set_GET(request):
@@ -235,14 +237,14 @@ def set_initial(request,app_name):
     elif app_name in ['yearly_summary', 'intraannual']:
         initial['start_year'] = Get('start_year','POR')
         initial['end_year'] = Get('end_year','POR')
-        initial['start_month']  = Get('start_month', '01')
-        initial['start_day']  = Get('start_day', '01')
+        initial['start_month']  = Get('start_month', '1')
+        initial['start_day']  = Get('start_day', '1')
         initial['min_year_fut'] = sd_fut[0:4]
         initial['max_year_fut'] = ed_fut[0:4]
         if app_name == 'yearly_summary':
             initial['min_year'] = Get('min_year',sd[0:4])
             initial['max_year'] = Get('max_year', ed[0:4])
-            initial['end_month']  = Get('end_month', '01')
+            initial['end_month']  = Get('end_month', '1')
             initial['end_day']  = Get('end_day', '31')
         if app_name in ['intraannual']:
             if initial['start_year'].lower() != 'por':
@@ -273,7 +275,7 @@ def set_initial(request,app_name):
     if 'start_date' in initial.keys() and 'end_date' in initial.keys():
         if initial['start_date'] and initial['end_date']:
             sw, ew = WRCCUtils.set_start_end_window(initial['start_date'],initial['end_date'])
-    if app_name in ['single_lister', 'multi_lister']:
+    if app_name in ['single_lister', 'multi_lister','map_overlay']:
         initial['start_window'] = Get('start_window', sw)
         initial['end_window'] = Get('end_window',ew)
         initial['temporal_resolution'] = Get('temporal_resolution','dly')
@@ -285,21 +287,20 @@ def set_initial(request,app_name):
     #data summaries
     if app_name in  ['temporal_summary', 'yearly_summary']:
         initial['data_summary'] = Get('data_summary', 'temporal_summary')
-    elif app_name in ['spatial_summary','multi_lister']:
+    elif app_name in ['spatial_summary','multi_lister','map_overlay']:
         initial['data_summary'] = Get('data_summary', 'spatial_summary')
     else:
         initial['data_summary'] = Get('data_summary', 'none')
-    if initial['data_summary'] == 'temporal_summary':
-        if app_name in ['temporal_summary', 'yearly_summary', 'sf_download']:
-            if 'element' in initial.keys() and initial['element'] in ['pcpn','snow','evap','pet']:
-                initial['temporal_summary'] = Get('temporal_summary', 'sum')
-            else:
-                initial['temporal_summary'] = Get('temporal_summary', 'mean')
+
+    if app_name in ['temporal_summary', 'yearly_summary', 'sf_download']:
+        if 'element' in initial.keys() and initial['element'] in ['pcpn','snow','evap','pet']:
+            initial['temporal_summary'] = Get('temporal_summary', 'sum')
         else:
             initial['temporal_summary'] = Get('temporal_summary', 'mean')
-    if initial['data_summary'] == 'spatial_summary':
-        if app_name in ['single_lister', 'multi_lister','spatial_summary','sf_download']:
-            initial['spatial_summary'] = Get('spatial_summary', 'mean')
+    else:
+        initial['temporal_summary'] = Get('temporal_summary', 'mean')
+    if app_name in ['single_lister', 'multi_lister','spatial_summary','sf_download','map_overlay']:
+        initial['spatial_summary'] = Get('spatial_summary', 'mean')
 
     #download options
     if app_name in ['single_lister','multi_lister']:
@@ -316,7 +317,7 @@ def set_initial(request,app_name):
         initial['feature_id'] = 1
     if app_name in ['monthly_summary','climatology','sf_link']:
         initial['max_missing_days']  = Get('max_missing_days', '5')
-    if app_name == 'station_finder':
+    if app_name in ['station_finder','map_overlay','sf_download']:
         initial['elements_constraints'] = Get('elements_constraints', 'all')
         initial['dates_constraints']  = Get('dates_constraints', 'all')
     if app_name in  ['monthly_summary','sf_link']:
@@ -352,10 +353,9 @@ def set_initial(request,app_name):
             else:
                 shown_indices = '0'
             initial['chart_indices_string'] = Get('chart_indices_string',shown_indices)
-            index_list = initial['chart_indices_string'].replace(' ','').split(',')
             if app_name in ['spatial_summary']:
                 #Keep track of elements
-                initial['chart_elements'] = [initial['elements'][int(idx)] for idx in index_list]
+                initial['chart_elements'] = [str(e) for e in initial['elements']]
         initial['chart_type'] = Get('chart_type','spline')
         initial['show_running_mean'] = Get('show_running_mean','F')
         if app_name in ['monthly_summary', 'yearly_summary']:

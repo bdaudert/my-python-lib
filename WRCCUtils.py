@@ -140,6 +140,8 @@ def check_request_size(form):
             'meta':'valid_daterange'
         }
         meta_data = AcisWS.StnMeta(meta_params)
+        if meta_data is None:
+            return 0,0
         if 'meta' in meta_data.keys() and isinstance(meta_data['meta'], list):
             num_points = len(meta_data['meta'])
             return num_points, num_days
@@ -909,7 +911,7 @@ def grid_data_trim_and_summary(req,form):
     #Check that metadata and data are there
     data_key = 'data'
     #LOCAFIX ME LOCA NO ELEVS
-    meta_keys = ['lat','lon','elev']
+    #meta_keys = ['lat','lon','elev']
     meta_keys = ['lat','lon']
     results_dict = {}
     error = check_request_for_data(req,meta_keys,data_key)
@@ -2183,7 +2185,9 @@ def extract_highcarts_data_spatial_summary(data,el_idx, element, form):
         try:
             val = round(float(row_data[el_idx + 1]),4)
             #deal with ACIS non-data
-            if abs(val + 999.0) < 0.0001:
+            if abs(val + 999.0) < 0.0001 or abs(val -999.0) < 0.0001:
+                val = None
+            if abs(val + 9999.0) < 0.0001  or abs(val -9999.0) < 0.0001:
                 val = None
         except:
             val = None
@@ -2560,7 +2564,7 @@ def set_point_name_and_id(form,meta):
         if 'name' in meta.keys():
             p_name = meta['name'].replace(' ',sep_name)
         if 'll' in meta.keys() and 'sids' not in meta.keys():
-            if isinstance(val,list):p_name = sep_name.join(val)
+            if isinstance(val,list):p_name = sep_id.join(val)
             else:p_name = val.replace('[','').replace(']','')
     elif isinstance(meta,list):
         for key_val in meta:
@@ -3325,23 +3329,21 @@ def generate_kml_file(area_type, state, kml_file_name, dir_location):
         return 'Need absolute path of directory. You entered: %s' %str(dir_location)
     else:
         dr = str(dir_location)
-    '''
+
     #Check if kml file already exists in dir_loc
+    file_size = 1;
     try:
-        with open(dr + kml_file_name):
-            pass
-        os.remove(dr + kml_file_name)
+        with open(dr + kml_file_name, 'r') as f:
+            file_size = os.stat(f).st_size
     except:
         pass
-    '''
+
+    if file_size != 0:
+        return 'Success'
     try:
-        with open(dr + kml_file_name):
-            if os.stat(dr + kml_file_name).st_size==0:
-                os.remove(dr + kml_file_name)
-            else:
-                return 'Success'
-    except IOError:
-        pass
+        os.remove(dr + kml_file_name)
+    except:
+        return 'Can not delete file: ' + str(dr+kml_file_name)
     #Make General call to get the geojson for the input params
     req = AcisWS.make_gen_call_by_state(WRCCData.SEARCH_AREA_FORM_TO_ACIS[str(area_type)], str(state))
     #Sanity Check:

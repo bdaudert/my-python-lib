@@ -353,8 +353,11 @@ class CsvWriter(object):
             header_keys.insert(1,'grid')
         header = WRCCUtils.form_to_display_list(header_keys, self.form)
         for key_val in header:
-            row = ['*' + key_val[0].replace(' ',''),key_val[1]]
-            self.writer.writerow(row)
+            try:
+                row = ['*' + key_val[0].replace(' ',''),key_val[1]]
+                self.writer.writerow(row)
+            except:
+                pass
 
         if self.data_type == 'station' and not self.smry:
             if 'app_name' in self.form.keys() and self.form['app_name'] in  ['yearly_summary','intraannual']:
@@ -465,12 +468,14 @@ class CsvWriterNew(object):
 
     def set_writer(self):
         import csv
-        qc = ' '
-        #qc = "\'"
+        #qc = ' '
+        qc = "\'"
         if self.f is not None:
             self.csvfile = open(self.f, 'w+')
+            #self.writer = csv.writer(self.csvfile, delimiter=self.delim, quotechar=qc, quoting=csv.QUOTE_NONNUMERIC)
             self.writer = csv.writer(self.csvfile, delimiter=self.delim, quotechar=qc, quoting=csv.QUOTE_MINIMAL )
         if self.response is not None:
+            #self.writer = csv.writer(self.response, delimiter=self.delim, quotechar=qc, quoting=csv.QUOTE_NONNUMERIC)
             self.writer = csv.writer(self.response, delimiter=self.delim, quotechar=qc, quoting=csv.QUOTE_MINIMAL)
 
     def write_header(self):
@@ -479,8 +484,11 @@ class CsvWriterNew(object):
             header_keys.insert(1,'grid')
         header = WRCCUtils.form_to_display_list(header_keys, self.form)
         for key_val in header:
-            row = ['*' + key_val[0].replace(' ',''),key_val[1]]
-            self.writer.writerow(row)
+            try:
+                row = ['*' + key_val[0].replace(' ',''),key_val[1]]
+                self.writer.writerow(row)
+            except:
+                pass
 
         if self.data_type == 'station' and not self.smry:
             if self.form['app_name'] not in ['interannual','intraannual']:
@@ -501,9 +509,9 @@ class CsvWriterNew(object):
             h = ['*Year: ', self.data[0][0][0][0:4]]
         else:
             if 'data_type' in self.form.keys() and self.form['data_type'] == 'station':
-                h = ['*Name (IDs)'] + self.data[0][0]
+                h = ['*Name(IDs)'] + [str(d).replace(' ','') for d in self.data[0][0]]
             if 'data_type' in self.form.keys() and self.form['data_type'] == 'grid':
-                h = ['*Lon, Lat'] + self.data[0][0]
+                h = ['*Lon,Lat'] + [str(d).replace(' ','') for d in self.data[0][0]]
         self.writer.writerow(h)
         #Loop over data points
         for p_idx, p_data in enumerate(self.data):
@@ -585,7 +593,10 @@ class ExcelWriterNew(object):
         header = WRCCUtils.form_to_display_list(header_keys, self.form)
         for k_idx, key_val in enumerate(header):
             ws.write(0,k_idx,key_val[0].replace(' ',''))
-            ws.write(1,k_idx,key_val[1])
+            try:
+                ws.write(1,k_idx,key_val[1])
+            except:
+                pass
 
     def write_data(self):
         #Loop over data points
@@ -698,8 +709,10 @@ class ExcelWriter(object):
         header = WRCCUtils.form_to_display_list(header_keys, self.form)
         for k_idx, key_val in enumerate(header):
             ws.write(0,k_idx,key_val[0].replace(' ',''))
-            ws.write(1,k_idx,key_val[1])
-
+            try:
+                ws.write(1,k_idx,key_val[1])
+            except:
+                pass
     def write_data(self):
         #Loop over data points
         for p_idx, p_data in enumerate(self.data):

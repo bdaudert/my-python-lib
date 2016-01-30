@@ -44,7 +44,8 @@ def make_request(url,params) :
 
 def DataCall(acis_call, params):
     req = {}
-    for url in settings.ACIS_SERVERS:
+    servers = settings.ACIS_SERVERS
+    for url in servers:
         try:
             req = make_request(url + acis_call,params)
             if req and not 'error' in req.keys():

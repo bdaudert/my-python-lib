@@ -2555,9 +2555,10 @@ def Sodsumm(**kwargs):
                     #keep track of which years to use for ann,sp,su,au,wi calculations
                     current_year = int(start_year) -1
                     for yr in range(num_yrs):
-                        if x_miss[cat_idx][el][yr] > max_missing_days:
-                            continue
                         current_year+=1
+                        #if x_miss[cat_idx][el][yr] > max_missing_days:
+                        if x_miss[cat_idx][el][yr] > max_missing_days and cat_idx !=12:
+                            continue
                         idx_start = time_cats_lens[cat_idx] * yr
                         #Feb, if not leap year, omit feb 29
                         if cat_idx == 1 and not WRCCUtils.is_leap_year(current_year):
@@ -2571,19 +2572,23 @@ def Sodsumm(**kwargs):
                         data_list.extend(el_data[el][idx_start:idx_end])
                         dates_list.extend(el_dates[el][idx_start:idx_end])
                         #Delete Feb 29 if not leap year from annual
+                        '''
                         if cat_idx == 12 and not WRCCUtils.is_leap_year(current_year):
                             del data_list[-306]
-                            del dates_list[-306]
+                        '''
                     #Statistics
                     sm = 0
                     cnt = 0
                     for idx, dat in enumerate(data_list):
                         if abs(dat + 9999.0) < 0.05:
                             continue
-                        if el == 'maxt' and (dat > max_max or abs(dat - max_max)< 0.001):
+                        #BUG FIX: take first coccurrence, not last
+                        #if el == 'maxt' and (dat > max_max or abs(dat - max_max)< 0.001):
+                        if el == 'maxt' and dat > max_max:
                             max_max = dat
                             date_max = dates_list[idx]
-                        if el == 'mint' and (dat < min_min or abs(dat - min_min)< 0.001):
+                        #if el == 'mint' and (dat < min_min or abs(dat - min_min)< 0.001):
+                        if el == 'mint' and dat < min_min:
                             min_min = dat
                             date_min = dates_list[idx]
                         sm+=dat
@@ -2616,7 +2621,11 @@ def Sodsumm(**kwargs):
                         s_ave = round(s_ave / len(m_idx),1)
                         #s_ave = s_ave/ len(m_idx)
                         val_list.append('%.1f' % ucv(el, s_ave))
-                val_list.append(int(round(ucv('maxt',max_max),0)))
+
+                if max_max == '-9999' or max_max == '9999':
+                    val_list.append('-9999')
+                else:
+                    val_list.append(int(round(ucv('maxt',max_max),0)))
                 if cat_idx >=12:
                     if date_max == '99999999':
                         val_list.append('-9999')

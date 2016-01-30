@@ -16,6 +16,7 @@ to a list and pass this list pack to the perl script
 import sys
 import WRCCUtils, AcisWS, WRCCDataApps, WRCCClasses, WRCCData
 import logging
+import numpy
 
 ########################################
 # SET UP LOGGER
@@ -334,6 +335,11 @@ def sodxtrmts_wrapper(argv, offline = False):
             args['start_year'] = valid_daterange[0][0:4]
         if args['end_year'].upper() == 'POR':
             args['end_year'] = valid_daterange[1][0:4]
+    '''
+    if args['start_month'] != '01' and args['end_year'].upper() != 'POR':
+        if args['end_year'] != today_year:
+            args['end_year'] = str(int(args['end_year']) + 1)
+    '''
     err = check_year_range(args['start_year'], args['end_year'])
     #Sanity check on year range
     if err:
@@ -1459,40 +1465,64 @@ def format_sodxtrmts_results_web(results, data, data_params, app_params, wrapper
                     yrs = str(yr_data[0]); w='CENTER'
                     if s_month != 1:
                         w = 'LEFT'
-                        if yr_idx < len(results[0]) - 6:
+                        if yr_idx < len(results[0]) - 7:
                             yrs = yrs + '/' + str(results[0][yr_idx+1][0][2:4])
-                        elif yr_idx == len(results[0]) - 6:
+                        elif yr_idx == len(results[0]) - 7:
                             yrs = yrs + '/' + str(int(yrs) + 1)[2:4]
                         else:
                             pass
 
                     row = '<TR><TD ALIGN=' + w + ' WIDTH=8%>' + yrs + '</TD>'
-                    for idx,val in enumerate(yr_data[2*s_month - 1 :25] + yr_data[1:2*s_month - 1]):
+                    year_data = yr_data[2*s_month - 1 :25]
+                    if yr_idx < len(results[0]) - 7:
+                        year_data+= results[0][yr_idx+1][1:2*s_month - 1]
+                    #Last year
+                    if yr_idx == len(results[0]) - 7:
+                        for d in yr_data[1:s_month]:
+                            year_data+=['-----','z']
+                    #Other stats
+                    if yr_idx > len(results[0]) - 7:
+                        year_data+= yr_data[1:2*s_month - 1]
+                    summ = 0
+                    summs = 0
+                    a_max = -9999
+                    a_min = 9999
+                    for idx,val in enumerate(year_data):
                         if str(val) == '-9999.00':v = '-9999'
                         elif  str(val) == '9999.00':v = '9999'
                         else:v = str(val)
-
+                        #Sum annual value
+                        if v != '9999' and v != '-9999':
+                            try:
+                                val =round(float(v),2)
+                            except:
+                                val = None
+                            if val is not None:
+                                summ+=val
+                                summs+=val*val
+                                if val > a_max:a_max = val
+                                if val < a_min:a_min = val
                         if idx % 2 == 0:row+='<TD ALIGN=RIGHT WIDTH=6%>'
                         else:row+='<TD ALIGN=LEFT WIDTH=1%>'
                         row+=v + '</TD>'
-                    '''
-                    #If start month not Jan, get rest of data
-                    for idx,val in enumerate(yr_data[1:2*s_month - 1]):
-                        if str(val) == '-9999.00':v = '-9999'
-                        elif  str(val) == '9999.00':v = '9999'
-                        else:v = str(val)
-
-                        if idx % 2 == 0:row+='<TD ALIGN=RIGHT WIDTH=6%>'
-                        else:row+='<TD ALIGN=LEFT WIDTH=1%>'
-                        row+=v + '</TD>'
-                    '''
                     #Annual value
-                    ann_val = yr_data[-2]
+                    if app_params['statistic'] == 'mave':
+                        ann_val = round(summ / 12.0,2)
+                    elif app_params['statistic'] == 'mmin':
+                        ann_val = a_min
+                    elif app_params['statistic'] == 'mmax':
+                        ann_val = a_max
+                    elif app_params['statistic'] == 'rmon':
+                        ann_val == a_max - a_min
+                    elif app_params['statistic'] == 'sd':
+                        ann_val = round(float(numpy.sqrt((summs-(summ*summ)/12)/(11 - 1))),2)
+                    else:
+                        ann_val = summ
                     if str(ann_val) == '-9999.00':v = '-9999'
                     elif str(ann_val) == '9999.00':v = '9999'
                     else:v = str(ann_val)
                     row+='<TD ALIGN=RIGHT WIDTH=6%>' + v + '</TD>'
-                    row+='<TD ALIGN=LEFT WIDTH=1%>' + yr_data[-1] + '</TD></TR>'
+                    #row+='<TD ALIGN=LEFT WIDTH=1%>' + yr_data[-1] + '</TD></TR>'
                     print row
                 print '</TABLE>'
                 print '</CENTER>'

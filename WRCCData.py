@@ -1000,6 +1000,12 @@ DATA_FORMAT = {
     'html':'HTML'
 }
 
+DATA_FORMAT_DOWNLOAD = {
+    'dlm':'Delimited .dat',
+    'clm':'Columnar .txt',
+    'xl':'Excel .xls'
+}
+
 
 DATE_FORMAT = {
     'none':'',
@@ -1588,10 +1594,13 @@ STATE_TUPLE = (
 ###################################
 ###################################
 SCENIC_FORM_OPTIONS = {
-    'map_overlay':{
+    'map_overlay':{#needs to have all multi_lister/spatial_summary/station_finder options
         'state':copy.deepcopy(STATE_TUPLE),
         'area_type':copy.deepcopy(STATION_FINDER_AREA_TUPLE),
+        'data_type':copy.deepcopy(DATA_TYPE_TUPLE),
+        'grid':copy.deepcopy(GRID_CHOICES_TUPLE),
         'elements':copy.deepcopy(ACIS_ELEMENTS_TUPLE),
+        'units':copy.deepcopy(UNIT_TUPLE),
         'add_degree_days':copy.deepcopy(BOOLEAN_TUPLE),
         'elements_constraints':(
             ('all','All of the elements'),
@@ -1601,9 +1610,12 @@ SCENIC_FORM_OPTIONS = {
             ('all','All of the dates'),
             ('any','Any of the dates')
         ),
-        'temporal_summary':copy.deepcopy(STATISTIC),
-        'spatial_summary':copy.deepcopy(STATISTIC),
+        'show_flags':copy.deepcopy(BOOLEAN_TUPLE),
+        'show_observation_time':copy.deepcopy(BOOLEAN_TUPLE),
         'data_format':copy.deepcopy(DATA_FORMAT_CHOICES),
+        'data_summary':copy.deepcopy(DATA_SUMMARY_TUPLE),
+        'spatial_summary':copy.deepcopy(STATISTIC),
+        'temporal_summary':copy.deepcopy(STATISTIC),
         'delimiter':copy.deepcopy(DELIMITER_TUPLE)
     },
     'sf_download':{
@@ -1622,7 +1634,7 @@ SCENIC_FORM_OPTIONS = {
         'data_summary':copy.deepcopy(DATA_SUMMARY_TUPLE),
         'temporal_summary':copy.deepcopy(STATISTIC),
         'spatial_summary':copy.deepcopy(STATISTIC),
-        'data_format':copy.deepcopy(DATA_FORMAT_CHOICES),
+        'data_format':copy.deepcopy(DATA_FORMAT_DOWNLOAD),
         'delimiter':copy.deepcopy(DELIMITER_TUPLE)
     },
     'station_finder': {
@@ -1707,8 +1719,6 @@ SCENIC_FORM_OPTIONS = {
         'end_month':copy.deepcopy(MONTH_TUPLE),
         'end_day':copy.deepcopy(DAY_TUPLE),
         'temporal_summary':copy.deepcopy(STATISTIC),
-        'start_year':'1980',
-        'end_year':'2000',
         'data_format':copy.deepcopy(DATA_FORMAT_CHOICES),
         'delimiter':copy.deepcopy(DELIMITER_TUPLE)
     },

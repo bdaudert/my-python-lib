@@ -3331,7 +3331,7 @@ def generate_kml_file(area_type, state, kml_file_name, dir_location):
         dr = str(dir_location)
 
     #Check if kml file already exists in dir_loc
-    file_size = 1;
+    file_size = 0;
     try:
         with open(dr + kml_file_name, 'r') as f:
             file_size = os.stat(f).st_size
@@ -3340,10 +3340,13 @@ def generate_kml_file(area_type, state, kml_file_name, dir_location):
 
     if file_size != 0:
         return 'Success'
+    '''
     try:
         os.remove(dr + kml_file_name)
     except:
-        return 'Can not delete file: ' + str(dr+kml_file_name)
+        pass
+        #return 'Can not delete file: ' + str(dr+kml_file_name)
+    '''
     #Make General call to get the geojson for the input params
     req = AcisWS.make_gen_call_by_state(WRCCData.SEARCH_AREA_FORM_TO_ACIS[str(area_type)], str(state))
     #Sanity Check:

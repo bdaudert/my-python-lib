@@ -1299,22 +1299,22 @@ SXTR_ELEMENT_CHOICES = (
 SXTR_ELEMENT_LIST = ['pcpn','snow','snwd','maxt','mint','avgt','dtr','hdd', 'cdd','gdd','evap','wdmv','pet']
 
 SXTR_ANALYSIS_CHOICES = (
-    ('mmax', 'Monthly Maximum'),
-    ('mmin', 'Monthly Minimum'),
-    ('mave', 'Monthly Average'),
+    ('mmax', 'Maximum'),
+    ('mmin', 'Minimum'),
+    ('mave', 'Average'),
     ('sd', 'Standard Deviation'),
     ('ndays', 'Number of Days'),
-    ('rmon', 'Range during Month'),
-    ('msum', 'Monthly Sum'),
+    ('rmon', 'Range'),
+    ('msum', 'Sum'),
 )
 SXTR_ANALYSIS_CHOICES_DICT = {
-    'mmax': 'Monthly Maximum',
-    'mmin': 'Monthly Minimum',
-    'mave': 'Monthly Average',
+    'mmax': 'Maximum',
+    'mmin': 'Minimum',
+    'mave': 'Average',
     'sd': 'Standard Deviation',
     'ndays': 'Number of Days',
-    'rmon': 'Range during Month',
-    'msum': 'Monthly Sum',
+    'rmon': 'Range',
+    'msum': 'Sum',
 }
 
 
@@ -1528,6 +1528,13 @@ CALCULATION_TUPLE = (
     ('values','Values')
 )
 
+CHART_TYPE = (
+    ('line','Line Plot'),
+    ('spline','Spline Plot'),
+    ('scatter','Scatter Plot'),
+    ('column','Bar Chart'),
+    ('area','Stacked Area Plot'),
+)
 
 STATE_TUPLE = (
     ('al','Alabama'),
@@ -1595,13 +1602,13 @@ STATE_TUPLE = (
 ###################################
 SCENIC_FORM_OPTIONS = {
     'map_overlay':{#needs to have all multi_lister/spatial_summary/station_finder options
-        'state':copy.deepcopy(STATE_TUPLE),
-        'area_type':copy.deepcopy(STATION_FINDER_AREA_TUPLE),
-        'data_type':copy.deepcopy(DATA_TYPE_TUPLE),
-        'grid':copy.deepcopy(GRID_CHOICES_TUPLE),
-        'elements':copy.deepcopy(ACIS_ELEMENTS_TUPLE),
-        'units':copy.deepcopy(UNIT_TUPLE),
-        'add_degree_days':copy.deepcopy(BOOLEAN_TUPLE),
+        'state':STATE_TUPLE,
+        'area_type':STATION_FINDER_AREA_TUPLE,
+        'data_type':DATA_TYPE_TUPLE,
+        'grid':GRID_CHOICES_TUPLE,
+        'elements':ACIS_ELEMENTS_TUPLE,
+        'units':UNIT_TUPLE,
+        'add_degree_days':BOOLEAN_TUPLE,
         'elements_constraints':(
             ('all','All of the elements'),
             ('any','Any of the elements')
@@ -1610,18 +1617,19 @@ SCENIC_FORM_OPTIONS = {
             ('all','All of the dates'),
             ('any','Any of the dates')
         ),
-        'show_flags':copy.deepcopy(BOOLEAN_TUPLE),
-        'show_observation_time':copy.deepcopy(BOOLEAN_TUPLE),
-        'data_format':copy.deepcopy(DATA_FORMAT_CHOICES),
-        'data_summary':copy.deepcopy(DATA_SUMMARY_TUPLE),
-        'spatial_summary':copy.deepcopy(STATISTIC),
-        'temporal_summary':copy.deepcopy(STATISTIC),
-        'delimiter':copy.deepcopy(DELIMITER_TUPLE)
+        'show_flags':BOOLEAN_TUPLE,
+        'show_observation_time':BOOLEAN_TUPLE,
+        'data_format':DATA_FORMAT_CHOICES,
+        'data_summary':DATA_SUMMARY_TUPLE,
+        'spatial_summary':STATISTIC,
+        'temporal_summary':STATISTIC,
+        'delimiter':DELIMITER_TUPLE,
+        'chart_type':CHART_TYPE
     },
     'sf_download':{
-        'state':copy.deepcopy(STATE_TUPLE),
-        'area_type':copy.deepcopy(STATION_FINDER_AREA_TUPLE),
-        'elements':copy.deepcopy(ACIS_ELEMENTS_TUPLE),
+        'state':STATE_TUPLE,
+        'area_type':STATION_FINDER_AREA_TUPLE,
+        'elements':ACIS_ELEMENTS_TUPLE,
         'elements_constraints':(
             ('all','All of the elements'),
             ('any','Any of the elements')
@@ -1630,17 +1638,17 @@ SCENIC_FORM_OPTIONS = {
             ('all','All of the dates'),
             ('any','Any of the dates')
         ),
-        'units':copy.deepcopy(UNIT_TUPLE),
-        'data_summary':copy.deepcopy(DATA_SUMMARY_TUPLE),
-        'temporal_summary':copy.deepcopy(STATISTIC),
-        'spatial_summary':copy.deepcopy(STATISTIC),
-        'data_format':copy.deepcopy(DATA_FORMAT_DOWNLOAD),
-        'delimiter':copy.deepcopy(DELIMITER_TUPLE)
+        'units':UNIT_TUPLE,
+        'data_summary':DATA_SUMMARY_TUPLE,
+        'temporal_summary':STATISTIC,
+        'spatial_summary':STATISTIC,
+        'data_format':DATA_FORMAT_DOWNLOAD,
+        'delimiter':DELIMITER_TUPLE
     },
     'station_finder': {
-        'state':copy.deepcopy(STATE_TUPLE),
-        'area_type':copy.deepcopy(STATION_FINDER_AREA_TUPLE),
-        'elements':copy.deepcopy(ACIS_ELEMENTS_TUPLE),
+        'state':STATE_TUPLE,
+        'area_type':STATION_FINDER_AREA_TUPLE,
+        'elements':ACIS_ELEMENTS_TUPLE,
         'elements_constraints':(
             ('all','All of the elements'),
             ('any','Any of the elements')
@@ -1649,54 +1657,54 @@ SCENIC_FORM_OPTIONS = {
             ('all','All of the dates'),
             ('any','Any of the dates')
         ),
-        'units':copy.deepcopy(UNIT_TUPLE),
-        'data_summary':copy.deepcopy(DATA_SUMMARY_TUPLE),
-        'temporal_summary':copy.deepcopy(STATISTIC),
-        'spatial_summary':copy.deepcopy(STATISTIC),
-        'data_format':copy.deepcopy(DATA_FORMAT_CHOICES),
-        'delimiter':copy.deepcopy(DELIMITER_TUPLE)
+        'units':UNIT_TUPLE,
+        'data_summary':DATA_SUMMARY_TUPLE,
+        'temporal_summary':STATISTIC,
+        'spatial_summary':STATISTIC,
+        'data_format':DATA_FORMAT_CHOICES,
+        'delimiter':DELIMITER_TUPLE
     },
     'single_lister':{
-        'area_type':copy.deepcopy(SINGLE_AREA_TUPLE),
-        'grid':copy.deepcopy(GRID_CHOICES_TUPLE),
-        'temporal_resolution':copy.deepcopy(TEMPORAL_RESOLUTION_TUPLE),
-        'elements':copy.deepcopy(ACIS_ELEMENTS_TUPLE),
-        'add_degree_days':copy.deepcopy(BOOLEAN_TUPLE),
-        'units':copy.deepcopy(UNIT_TUPLE),
-        'data_summary':copy.deepcopy(DATA_SUMMARY_TUPLE),
-        'show_flags':copy.deepcopy(BOOLEAN_TUPLE),
-        'show_observation_time':copy.deepcopy(BOOLEAN_TUPLE),
-        'temporal_summary':copy.deepcopy(STATISTIC),
-        'spatial_summary':copy.deepcopy(STATISTIC),
-        'data_format':copy.deepcopy(DATA_FORMAT_CHOICES),
-        'delimiter':copy.deepcopy(DELIMITER_TUPLE)
+        'area_type':SINGLE_AREA_TUPLE,
+        'grid':GRID_CHOICES_TUPLE,
+        'temporal_resolution':TEMPORAL_RESOLUTION_TUPLE,
+        'elements':ACIS_ELEMENTS_TUPLE,
+        'add_degree_days':BOOLEAN_TUPLE,
+        'units':UNIT_TUPLE,
+        'data_summary':DATA_SUMMARY_TUPLE,
+        'show_flags':BOOLEAN_TUPLE,
+        'show_observation_time':BOOLEAN_TUPLE,
+        'temporal_summary':STATISTIC,
+        'spatial_summary':STATISTIC,
+        'data_format':DATA_FORMAT_CHOICES,
+        'delimiter':DELIMITER_TUPLE
     },
     'multi_lister':{
-        'state':copy.deepcopy(STATE_TUPLE),
-        'area_type':copy.deepcopy(MULTI_AREA_TUPLE),
-        'data_type':copy.deepcopy(DATA_TYPE_TUPLE),
-        'grid':copy.deepcopy(GRID_CHOICES_TUPLE),
-        'temporal_resolution':copy.deepcopy(TEMPORAL_RESOLUTION_TUPLE),
-        'elements':copy.deepcopy(ACIS_ELEMENTS_TUPLE),
-        'add_degree_days':copy.deepcopy(BOOLEAN_TUPLE),
-        'units':copy.deepcopy(UNIT_TUPLE),
-        'data_summary':copy.deepcopy(DATA_SUMMARY_TUPLE),
-        'temporal_summary':copy.deepcopy(STATISTIC),
-        'spatial_summary':copy.deepcopy(STATISTIC),
-        'show_flags':copy.deepcopy(BOOLEAN_TUPLE),
-        'show_observation_time':copy.deepcopy(BOOLEAN_TUPLE),
-        'data_format':copy.deepcopy(DATA_FORMAT_CHOICES),
-        'delimiter':copy.deepcopy(DELIMITER_TUPLE)
+        'state':STATE_TUPLE,
+        'area_type':MULTI_AREA_TUPLE,
+        'data_type':DATA_TYPE_TUPLE,
+        'grid':GRID_CHOICES_TUPLE,
+        'temporal_resolution':TEMPORAL_RESOLUTION_TUPLE,
+        'elements':ACIS_ELEMENTS_TUPLE,
+        'add_degree_days':BOOLEAN_TUPLE,
+        'units':UNIT_TUPLE,
+        'data_summary':DATA_SUMMARY_TUPLE,
+        'temporal_summary':STATISTIC,
+        'spatial_summary':STATISTIC,
+        'show_flags':BOOLEAN_TUPLE,
+        'show_observation_time':BOOLEAN_TUPLE,
+        'data_format':DATA_FORMAT_CHOICES,
+        'delimiter':DELIMITER_TUPLE
     },
     'monthly_summary':{
-        'area_type':copy.deepcopy(SINGLE_AREA_TUPLE),
-        'grid':copy.deepcopy(GRID_CHOICES_TUPLE),
-        'element':copy.deepcopy(ACIS_ELEMENTS_TUPLE),
-        'statistic':copy.deepcopy(SXTR_ANALYSIS_CHOICES),
-        'units':copy.deepcopy(UNIT_TUPLE),
-        'start_month':copy.deepcopy(MONTH_TUPLE),
-        'departures_from_averages':copy.deepcopy(BOOLEAN_TUPLE),
-        'frequency_analysis':copy.deepcopy(BOOLEAN_TUPLE),
+        'area_type':SINGLE_AREA_TUPLE,
+        'grid':GRID_CHOICES_TUPLE,
+        'element':ACIS_ELEMENTS_TUPLE,
+        'statistic':SXTR_ANALYSIS_CHOICES,
+        'units':UNIT_TUPLE,
+        'start_month':MONTH_TUPLE,
+        'departures_from_averages':BOOLEAN_TUPLE,
+        'frequency_analysis':BOOLEAN_TUPLE,
         'less_greater_or_between':(
             ('l','Less Than'),
             ('g','Greater Than'),
@@ -1706,47 +1714,45 @@ SCENIC_FORM_OPTIONS = {
             ('monthly','Monthly'),
             ('weekly','Weekly')
         ),
-        'data_format':copy.deepcopy(DATA_FORMAT_CHOICES),
-        'delimiter':copy.deepcopy(DELIMITER_TUPLE)
+        'data_format':DATA_FORMAT_CHOICES,
+        'delimiter':DELIMITER_TUPLE
     },
     'yearly_summary':{
-        'area_type':copy.deepcopy(SINGLE_AREA_TUPLE),
-        'grid':copy.deepcopy(GRID_CHOICES_TUPLE),
-        'element':copy.deepcopy(ACIS_ELEMENTS_TUPLE),
-        'units':copy.deepcopy(UNIT_TUPLE),
-        'start_month':copy.deepcopy(MONTH_TUPLE),
-        'start_day':copy.deepcopy(DAY_TUPLE),
-        'end_month':copy.deepcopy(MONTH_TUPLE),
-        'end_day':copy.deepcopy(DAY_TUPLE),
-        'temporal_summary':copy.deepcopy(STATISTIC),
-        'data_format':copy.deepcopy(DATA_FORMAT_CHOICES),
-        'delimiter':copy.deepcopy(DELIMITER_TUPLE)
+        'area_type':SINGLE_AREA_TUPLE,
+        'grid':GRID_CHOICES_TUPLE,
+        'element':ACIS_ELEMENTS_TUPLE,
+        'units':UNIT_TUPLE,
+        'start_month':MONTH_TUPLE,
+        'start_day':DAY_TUPLE,
+        'end_month':MONTH_TUPLE,
+        'end_day':DAY_TUPLE,
+        'temporal_summary':STATISTIC,
+        'data_format':DATA_FORMAT_CHOICES,
+        'delimiter':DELIMITER_TUPLE
     },
     'intraannual':{
-        'area_type':copy.deepcopy(SINGLE_AREA_TUPLE),
-        'grid':copy.deepcopy(GRID_CHOICES_TUPLE),
-        'element':copy.deepcopy(ACIS_ELEMENTS_TUPLE),
-        'calculation':copy.deepcopy(CALCULATION_TUPLE),
-        'units':copy.deepcopy(UNIT_TUPLE),
-        'start_month':copy.deepcopy(MONTH_TUPLE),
-        'start_day':copy.deepcopy(DAY_TUPLE),
-        'data_format':copy.deepcopy(DATA_FORMAT_CHOICES),
-        'delimiter':copy.deepcopy(DELIMITER_TUPLE)
+        'area_type':SINGLE_AREA_TUPLE,
+        'grid':GRID_CHOICES_TUPLE,
+        'element':ACIS_ELEMENTS_TUPLE,
+        'calculation':CALCULATION_TUPLE,
+        'units':UNIT_TUPLE,
+        'start_month':MONTH_TUPLE,
+        'start_day':DAY_TUPLE,
+        'data_format':DATA_FORMAT_CHOICES,
+        'delimiter':DELIMITER_TUPLE
     },
     'data_comparison':{
-        'grid':copy.deepcopy(GRID_CHOICES_TUPLE),
-        'element':copy.deepcopy(ACIS_ELEMENTS_TUPLE),
-        'data_format':copy.deepcopy(DATA_FORMAT_CHOICES),
-        'delimiter':copy.deepcopy(DELIMITER_TUPLE)
+        'grid':GRID_CHOICES_TUPLE,
+        'element':ACIS_ELEMENTS_TUPLE,
+        'data_format':DATA_FORMAT_CHOICES,
+        'delimiter':DELIMITER_TUPLE
     },
     'climatology':{
-        'area_type':copy.deepcopy(SINGLE_AREA_TUPLE),
-        'grid':copy.deepcopy(GRID_CHOICES_TUPLE),
-        'summary_type':'',
-        'units':copy.deepcopy(UNIT_TUPLE),
-        'max_missing_days':'',
-        'data_format':copy.deepcopy(DATA_FORMAT_CHOICES),
-        'delimiter':copy.deepcopy(DELIMITER_TUPLE),
+        'area_type':SINGLE_AREA_TUPLE,
+        'grid':GRID_CHOICES_TUPLE,
+        'units':UNIT_TUPLE,
+        'data_format':DATA_FORMAT_CHOICES,
+        'delimiter':DELIMITER_TUPLE,
         'summary_type':(
             ('all','All of those below'),
             ('temp','Temperature'),
@@ -1757,25 +1763,26 @@ SCENIC_FORM_OPTIONS = {
         )
     },
     'spatial_summary':{
-        'state':copy.deepcopy(STATE_TUPLE),
-        'area_type':copy.deepcopy(MULTI_AREA_TUPLE),
-        'grid':copy.deepcopy(GRID_CHOICES_TUPLE),
-        'elements':copy.deepcopy(ACIS_ELEMENTS_TUPLE),
-        'add_degree_days':copy.deepcopy(BOOLEAN_TUPLE),
-        'units':copy.deepcopy(UNIT_TUPLE),
-        'spatial_summary':copy.deepcopy(STATISTIC),
-        'data_format':copy.deepcopy(DATA_FORMAT_CHOICES),
-        'delimiter':copy.deepcopy(DELIMITER_TUPLE),
-        'data_type':copy.deepcopy(DATA_TYPE_TUPLE)
+        'state':STATE_TUPLE,
+        'area_type':MULTI_AREA_TUPLE,
+        'grid':GRID_CHOICES_TUPLE,
+        'elements':ACIS_ELEMENTS_TUPLE,
+        'add_degree_days':BOOLEAN_TUPLE,
+        'units':UNIT_TUPLE,
+        'spatial_summary':STATISTIC,
+        'data_format':DATA_FORMAT_CHOICES,
+        'delimiter':DELIMITER_TUPLE,
+        'data_type':DATA_TYPE_TUPLE,
+        'chart_type':CHART_TYPE
     },
     'temporal_summary':{
-        'state':copy.deepcopy(STATE_TUPLE),
-        'area_type':copy.deepcopy(TEMPORAL_SUMMARY_AREA_TUPLE),
-        'elements':copy.deepcopy(ACIS_ELEMENTS_TUPLE),
-        'add_degree_days':copy.deepcopy(BOOLEAN_TUPLE),
-        'units':copy.deepcopy(UNIT_TUPLE),
-        'temporal_summary':copy.deepcopy(STATISTIC),
-        'grid':copy.deepcopy(GRID_CHOICES_TUPLE),
+        'state':STATE_TUPLE,
+        'area_type':TEMPORAL_SUMMARY_AREA_TUPLE,
+        'elements':ACIS_ELEMENTS_TUPLE,
+        'add_degree_days':BOOLEAN_TUPLE,
+        'units':UNIT_TUPLE,
+        'temporal_summary':STATISTIC,
+        'grid':GRID_CHOICES_TUPLE,
         'map_overlay':(
             ('state','State'),
             ('county','County')
@@ -1789,9 +1796,9 @@ SCENIC_FORM_OPTIONS = {
             ('medium','Medium'),
             ('large','Large')
         ),
-        'cmap':copy.deepcopy(CMAP_TUPLE),
-        'data_format':copy.deepcopy(DATA_FORMAT_CHOICES),
-        'delimiter':copy.deepcopy(DELIMITER_TUPLE)
+        'cmap':CMAP_TUPLE,
+        'data_format':DATA_FORMAT_CHOICES,
+        'delimiter':DELIMITER_TUPLE
     },
     'climate_engine':{}
 }

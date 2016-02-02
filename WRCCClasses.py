@@ -813,7 +813,8 @@ class DataComparer(object):
         self.degree_days = None
         if 'degree_days' in form.keys():
             self.degree_days = form['degree_days']
-        self.units = form['units']
+        #self.units = form['units']
+        self.units = 'english'
 
     def hms_to_seconds(self,date_string):
         #Convert python date string to javascript milliseconds

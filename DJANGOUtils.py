@@ -82,7 +82,7 @@ def set_min_max_dates(initial):
     sd_fut =  sd;ed_fut = ed
     if len(WRCCData.GRID_CHOICES[initial['grid']][3]) == 2:
         sd_fut = WRCCData.GRID_CHOICES[initial['grid']][3][1][0]
-        ed_fut = WRCCData.GRID_CHOICES[initial['grid']][3][1][0]
+        ed_fut = WRCCData.GRID_CHOICES[initial['grid']][3][1][1]
     return sd, ed, sd_fut, ed_fut
 
 def set_initial(request,app_name):
@@ -343,19 +343,23 @@ def set_initial(request,app_name):
         initial['summary_type'] = Get('summary_type', 'all')
     if app_name == 'temporal_summary':
         initial['show_plot_opts'] = Get('show_plot_opts','T')
+        initial['image_size'] = Get('image_size', 'medium')
+        initial['level_number'] = Get('level_number', '5')
+        initial['cmap'] = Get('cmap', 'rainbow')
+        initial['cmaps'] = WRCCData.CMAPS
+        initial['map_ol'] = Get('map_ol', 'state')
+        initial['interpolation'] = Get('interpolation', 'cspline')
+        initial['projection'] = Get('projection', 'lcc')
     #Ploting options for all pages that have charts
-    if app_name in ['monthly_summary', 'spatial_summary','yearly_summary', 'intraannual','data_comparison']:
-        if app_name in ['spatial_summary','monthly_summary','intraannual']:
-            if app_name == 'spatial_summary':
+    if app_name in ['monthly_summary', 'spatial_summary','yearly_summary', 'intraannual','data_comparison','map_overlay']:
+        if app_name in ['spatial_summary','monthly_summary','intraannual','map_overlay']:
+            if app_name in ['spatial_summary','map_overlay']:
                 shown_indices = ','.join([str(idx) for idx in range(len(initial['elements']))])
             elif app_name == 'intraannual':
                 shown_indices = str(int(initial['target_year']) - int(initial['min_year']))
             else:
                 shown_indices = '0'
             initial['chart_indices_string'] = Get('chart_indices_string',shown_indices)
-            if app_name in ['spatial_summary']:
-                #Keep track of elements
-                initial['chart_elements'] = [str(e) for e in initial['elements']]
         initial['chart_type'] = Get('chart_type','spline')
         initial['show_running_mean'] = Get('show_running_mean','F')
         if app_name in ['monthly_summary', 'yearly_summary']:

@@ -312,6 +312,10 @@ def station_meta_to_json(by_type, val, el_list=None, time_range=None, constraint
         stn_json['error'] = 'Metadata request failed. Please check your parameters!'
         WRCCUtils.load_data_to_json_file(f_dir + f_name, stn_json)
         return stn_json, f_name
+    if request is None:
+        stn_json['error'] = 'No metadata found.'
+        WRCCUtils.load_data_to_json_file(f_dir + f_name, stn_json)
+        return stn_json, f_name
     if not 'meta' in request.keys() or not request['meta'] or 'error' in request.keys():
         stn_json['error'] = 'No metadata found.'
         WRCCUtils.load_data_to_json_file(f_dir + f_name, stn_json)

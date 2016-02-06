@@ -3139,6 +3139,8 @@ def find_valid_daterange(sid, start_date='por', end_date='por', el_list=None, ma
         request = AcisWS.StnMeta(meta_params)
     except:
         return ['', '']
+    if request is None:
+        return ['','']
     if 'error' in request.keys() or not 'meta' in request.keys():
         return ['', '']
 

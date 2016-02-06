@@ -777,7 +777,8 @@ def Sodpiii(**kwargs):
                     results[i][tbl_idx][iretrn].append('VALUE = %.2f ' % round(value,2))
     return results_0, results, averages, stdevs, skews
 
-def Sodxtrmts(**kwargs):
+
+def SodxtrmtsSCENIC(**kwargs):
     '''
     THIS PROGRAM PRODUCES MONTHLY AND ANNUAL TIME SERIES FOR A
     LARGE NUMBER OF PROPERTIES DERIVED FROM THE SOD DAILY DATA SET.
@@ -1264,6 +1265,674 @@ def Sodxtrmts(**kwargs):
                     results[i][yr].append('%s' % outchr[p_idx])
             #End p_idx loop
         #End of year loop
+    return results
+
+def Sodxtrmts(**kwargs):
+    '''
+    THIS PROGRAM PRODUCES MONTHLY AND ANNUAL TIME SERIES FOR A
+    LARGE NUMBER OF PROPERTIES DERIVED FROM THE SOD DAILY DATA SET.
+    '''
+    units = 'english'
+    if 'units' in kwargs.keys():units = kwargs['units']
+    mon_lens = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+    results = defaultdict(list)
+    fa_results = defaultdict(list)
+    dates = kwargs['dates']
+    if not dates:
+        return results, fa_results
+    ucv = getattr(WRCCUtils, 'convert_nothing')
+    if units == 'metric':
+        ucv = getattr(WRCCUtils, 'convert_to_metric')
+    start_year = int(dates[0][0:4])
+    end_year = int(dates[-1][0:4])
+    #Initialize analysis parameters
+    mischr = [' ','a','b','c','d','e','f','g','h','i','j',\
+            'k','l','m','n','o','p','q','r','s','t','u','v',\
+            'w','x','y','z','=','*']
+    #pnlist contains the list of numpn nonexceedance probabilities
+    pnlist = [.0001, .0002, .0003, .0004, .0005, .0010, .0020,\
+            .0025, .0033, .0040, .0050, .0100, .0200, .0250,\
+            .0333, .0400, .0500, .1000, .2000, .2500, .3000,\
+            .3333, .4000, .5000, .6000, .7000, .7500, .8000,\
+            .8333, .8750, .9000, .9500, .9600, .9666, .9750,\
+            .9800, .9900, .9950, .9960, .9966, .9975, .9980,\
+            .9990, .9995, .9996, .9998, .9999]
+    #ppiii contains the list of nonexceedance probabilities read in from
+    #the file containing the values
+    piiili = [.0001, .0005, .0010, .0050, .0100, .0200, .0250,\
+            .0400, .0500, .1000, .2000, .3000, .4000, .5000,\
+            .6000, .7000, .8000, .9000, .9500, .9600, .9750,\
+            .9800, .9900, .9950, .9990, .9995, .9999]
+    probs = [0.001, 0.002, 0.005, 0.01, 0.02, 0.04, 0.050, 0.1, \
+            0.2, 0.3, 0.5, 0.7, 0.8, 0.9, 0.95, 0.96, 0.9666, \
+            0.975, 0.98, 0.99, 0.995, 0.996, 0.998, 0.999]
+    probss = probs
+    #Read in piii table:
+    piii = {}
+    count = 0
+    for line in fileinput.input([settings.LIB_PREFIX + 'piii.dat.2']):
+        count+=1
+        if count > 11 and count < 193:
+            skew = line[1:4].lstrip()
+            if skew[0] == '-':
+                if skew[1] == '0' and skew[2] != '0':
+                    skew = '-%s' % skew[2]
+                elif skew[1] == '0' and skew[2] == '0':
+                    skew = 0
+            else:
+                if skew == '00':
+                    skew = 0
+                else:
+                    skew.lstrip('0')
+            skew = int(skew)
+            piii[skew] = []
+            for k in range(1,15):
+                piii[skew].append(int(line[5*k:5*k+5]))
+        if count > 194:
+            skew = line[1:4].lstrip()
+            if skew[0] == '-':
+                if skew[1] == '0':
+                    skew = '-%s' % skew[2]
+            else:
+                skew.lstrip('0')
+            skew = int(skew)
+            for k in range(1,14):
+                piii[skew].append(int(line[5*k:5*k+5]))
+    #Loop over stations or locations
+    l=[]
+    if 'location_list' in kwargs.keys():l = kwargs['location_list']
+    if 'station_ids' in kwargs.keys():l = kwargs['station_ids']
+    #STATION/LOCATION loop
+    for i, stn in enumerate(l):
+        elements = kwargs['elements']
+        element = kwargs['elements'][0] # maxt, mint, avgt, dtr (daily temp range)
+        el_data = kwargs['data'][i]
+        num_yrs = len(el_data)
+        #el_data[el_idx][yr] ;
+        #if element_type is hdd, cdd, dtr or gdd: el_data[0] = maxt, el_data[1]=mint
+
+        #Check for empty data and initialize results directory
+        if not any(el_data[j] for j in range(len(el_data))):
+            results[i] = []
+            fa_results[i] = []
+            continue
+        results[i] = [[] for k in range(num_yrs + 6)]
+        #Initialize frequency analysis result arrays:
+        proutp = [[0 for k in range(13)] for l in range(len(probs))]
+        proutg = [[0 for k in range(13)] for l in range(len(probs))]
+        proutb = [[0 for k in range(13)] for l in range(len(probs))]
+        proutc = [[0 for k in range(13)] for l in range(len(probs))]
+        if 'frequency_analysis_type' in kwargs.keys():
+            fa_results[i] = [['%s %s' % (str(kwargs['frequency_analysis_type']), probss[k])] for k in range(len(probss))]
+        for yr in range(num_yrs):
+            today = datetime.date.today()
+            if yr == num_yrs -1 and int(today.year)==int(start_year) + yr:
+                if int(kwargs['start_month'].lstrip('0')) != 1 and int(today.month) < int(kwargs['start_month'].lstrip('0')):
+                    break
+            year = start_year + yr
+            if kwargs['start_month'] != '01':
+                results[i][yr] = [str(year)+ '-'+str(year+1)[2:4]]
+            else:
+                results[i][yr] = [str(year)]
+        results[i][num_yrs] = ['MEAN'];results[i][num_yrs+1]=['S.D.']
+        results[i][num_yrs+2] = ['SKEW'];results[i][num_yrs+3]=['MAX']
+        results[i][num_yrs+4] = ['MIN'];results[i][num_yrs+5]=['YRS']
+        #Read in Pearson III lookup tables/to be done
+        #PIII = []
+        table_1 = [[-9999.0 for mon in range(13)] for yr in range(num_yrs)]
+        table_2 = [[31 for mon in range(13)] for yr in range(num_yrs)]
+        annsav = [[' ' for mon in range(13)] for yr in range(num_yrs)]
+        #out = [[0.0 for k in range(13)] for l in range(7)]
+        mean_out = [0.0 for k in range(13)]
+        outchr = [0 for k in range(13)]
+        xmiss = -9999.0
+        #Year loop
+        for yr in range(num_yrs):
+            annmin =  9999.0
+            annmax = -9999.0
+            annflg = [' ' for k in range(13)]
+            icount = 0
+            #Month loop
+            for monind in range(12):
+                nyeart = yr
+                mon =  monind + int(kwargs['start_month'].lstrip('0')) - 1
+                if mon > 11:
+                    mon-=12
+                    nyeart+=1
+                if nyeart == num_yrs:
+                    continue
+                #Check for leap year
+                if mon == 1 and not WRCCUtils.is_leap_year(start_year + nyeart):
+                    mon_len = 28
+                else:
+                    mon_len = mon_lens[mon]
+                flag = ' '
+                sumda = 0
+                summ = 0
+                summ2 = 0
+                xmin = 9999.0
+                xmax = -9999.0
+                #Day loop
+                for nda in range(mon_len):
+                    #Find day of year
+                    doy = WRCCUtils.compute_doy_leap(str(mon + 1),str(nda + 1))
+                    if element in ['maxt', 'mint', 'obst','wdmv']:
+                        dat = el_data[nyeart][0][doy-1]
+                        val, flag = WRCCUtils.strip_data(dat)
+                        if flag == 'M':
+                            value = xmiss
+                        else:
+                            try:
+                                value = float(val)
+                                if abs(float(val) + 999.0)<0.001:
+                                    value = xmiss
+                            except:
+                                value = xmiss
+                    elif element in ['pcpn', 'snow', 'snwd', 'evap']:
+                        dat = el_data[nyeart][0][doy-1]
+                        val, flag = WRCCUtils.strip_data(dat)
+                        if flag == 'M':
+                            value = xmiss
+                        elif flag == 'T':
+                            value = 0.001
+                        elif flag == 'S':
+                            value = 245.0
+                        elif flag == 'A':
+                            try:
+                                value = float(val)
+                                value = value +100
+                                if abs(float(val) + 999.0)<0.001:
+                                    value = xmiss
+                            except:
+                                value = xmiss
+                        else:
+                            try:
+                                value = float(val)
+                                if abs(float(val) + 999.0)<0.001:
+                                    value = xmiss
+                            except:
+                                value = xmiss
+                    else:
+                        #We have to compute values from maxt, mint
+                        dat_x = el_data[nyeart][0][doy-1]
+                        dat_n = el_data[nyeart][1][doy-1]
+                        val_x, flag_x = WRCCUtils.strip_data(dat_x)
+                        val_n, flag_n = WRCCUtils.strip_data(dat_n)
+                        if flag_x == 'M' or flag_n == 'M':
+                            value = xmiss
+                        else:
+                            try:
+                                nval_x = int(val_x)
+                                nval_n = int(val_n)
+                                if abs(float(nval_n) + 999.0)<0.001 or abs(float(nval_x) + 999.0)<0.001:
+                                    value = xmiss
+                                else:
+                                    if element == 'dtr':
+                                        value = nval_x - nval_n
+                                    elif element == 'avgt':
+                                        value = (nval_x + nval_n)/2.0
+                                    elif element == 'pet':
+                                        #Maybe needs to be doy -1
+                                        if len(kwargs['lls'][i]) == 2:
+                                            lat = kwargs['lls'][i][0]
+                                            lon = kwargs['lls'][i][1]
+                                        else:
+                                            lat = kwargs['lls'][i][0].split(',')[1]
+                                            lon = kwargs['lls'][i][0].split(',')[0]
+                                        value = round(WRCCUtils.compute_pet(lat,lon,nval_x,nval_n,doy,'english'),2)
+                                    elif element in ['hdd','cdd', 'gdd']:
+                                        ave = (nval_x + nval_n)/2.0
+                                        if element == 'hdd':
+                                            value = float(kwargs['base_temperature']) - ave
+                                        else:
+                                            value = ave - float(kwargs['base_temperature'])
+                                        if value < 0:
+                                            value = i
+                            except:
+                                value = xmiss
+                    if kwargs['statistic'] in ['mmax', 'mmin']:
+                        if value > -9998.0:
+                            sumda+=1
+                            if element in ['snow', 'pcpn', 'evap'] and abs(value - 245.0) < 0.01: #S flag
+                                value = 0.0
+                            elif element in ['snow', 'pcpn', 'evap'] and value > 99.99 and value < 240.0: #A flag
+                                value -=100.0
+                            if kwargs['statistic'] == 'mmax' and value > xmax:
+                                xmax = value
+                                #annflg[mon] = 'A'
+                            if kwargs['statistic'] == 'mmin' and value < xmin:
+                                xmin = value
+                        #if kwargs['statistic'] == 'mmax' and value > xmax:xmax = value
+                        #if kwargs['statistic'] == 'mmin' and value < xmin:xmin = value
+
+                        if nda  == mon_len -1:
+                            if kwargs['statistic'] == 'mmax':table_1[yr][mon] = xmax
+                            if kwargs['statistic'] == 'mmin':table_1[yr][mon] = xmin
+                            table_2[yr][mon] = mon_len - sumda
+
+                    elif kwargs['statistic'] == 'mave':
+                        if element in ['snow', 'pcpn', 'evap'] and abs(value - 245.0) < 0.01: #S flag
+                            value = 0.0
+                        elif element in ['snow', 'pcpn', 'evap'] and value > 99.99 and value < 240.0: #A flag
+                            value-=100.0
+
+                        if value > -9998.0:
+                            summ+=value
+                            sumda+=1
+                        if nda  == mon_len -1:
+                            if sumda >= 0.5:
+                                table_1[yr][mon] =float(summ)/sumda
+                                table_2[yr][mon] = mon_len - sumda
+
+                    elif kwargs['statistic'] == 'sd':
+                        if element in ['snow', 'pcpn', 'evap'] and abs(value - 245.0) < 0.01: #S flag
+                            value = 0
+                        elif element in ['snow', 'pcpn','evap'] and value > 99.99 and value < 240.0: #A flag
+                            value-=100.0
+                            annfl[mon] = 'A'
+
+                        if value > -9998.0:
+                            summ+=value
+                            summ2+=value * value
+                            sumda+=1
+
+                        if nda  == mon_len -1:
+                            if sumda >1.5:
+                                try:
+                                    table_1[yr][mon] = numpy.sqrt((summ2 - summ*summ/sumda)/(sumda -1.0))
+                                except:
+                                    pass
+                                table_2[yr][mon] = mon_len - sumda
+
+                    elif kwargs['statistic'] == 'ndays':
+                        flag = ' '
+                        if element in ['snow', 'pcpn', 'evap'] and abs(value - 245.0) < 0.01: #S flag
+                            value = 0
+                        elif element in ['snow', 'pcpn', 'evap'] and value > 99.99 and value < 240.0: #A flag
+                            value-=100
+                            flag = 'A'
+
+                        if value > -9998.0:
+                            sumda+=1
+                            if kwargs['less_greater_or_between'] == 'l' and ucv(element,value) < float(kwargs['threshold_for_less_or_greater']):
+                                summ+=1
+                            elif kwargs['less_greater_or_between'] == 'g' and ucv(element,value) > float(kwargs['threshold_for_less_or_greater']):
+                                summ+=1
+                                if flag != ' ':annflg[mon] = flag
+                            elif kwargs['less_greater_or_between'] == 'b' and ucv(element, value) > float(kwargs['threshold_low_for_between']) and ucv(element, value) <= float(kwargs['threshold_high_for_between']):
+                                summ+=1
+                                if flag != ' ':annflg[mon] = flag
+
+                        if nda  == mon_len -1:
+                            table_1[yr][mon] = summ
+                            table_2[yr][mon] = mon_len - sumda
+
+                    elif kwargs['statistic'] == 'rmon':
+                        if element in ['snow', 'pcpn', 'evap'] and abs(value - 245.0) < 0.01: #S flag
+                            value = 0
+                        elif element in ['snow', 'pcpn', 'evap'] and value > 99.99 and value < 240.0: #A flag
+                            value-=100
+                            flag = 'A'
+
+                        if value > -9998.0:
+                            sumda+=1
+                            if value > xmax:xmax = value
+                            if value < xmin:xmin = value
+                            if value > annmax:annmax = value
+                            if value < annmin:annmin = value
+
+                        if nda  == mon_len - 1:
+                            table_1[yr][mon] = xmax - xmin
+                            table_2[yr][mon] = mon_len - sumda
+                            annran = annmax - annmin
+
+                    elif kwargs['statistic'] == 'msum':
+                        flag = ' '
+                        if element in ['snow', 'pcpn', 'evap'] and abs(value - 245.0) < 0.01: #S flag
+                            value = 0.0
+                            if nda == mon_len -1:flag = 'S'
+                        elif element in ['snow', 'pcpn', 'evap'] and value > 99.99 and value < 240.0: #A flag
+                            value-=100
+
+                        if value > -9998.0:
+                            summ+=round(value,2)
+                            sumda+=1
+                        #Estimate missing sum for degree days, using the mean of the other days
+                        nummsg = mon_len - sumda
+                        if nda  == mon_len -1:
+                            if element in ['hdd', 'cdd', 'gdd']:
+                                if nummsg != 0 and nummsg <= kwargs['max_missing_days'] and sumda > 0.5:
+                                    summ = float(summ)/sumda * float(mon_len -1)
+
+                        if nda  == mon_len -1:
+                            table_1[yr][mon] = summ
+                            table_2[yr][mon] = mon_len - sumda
+                            if flag != ' ':annflg[mon] = flag
+                    #End of day loop
+
+                #Need annual values later on
+                annsav[yr][mon] = annflg[mon]
+                #End of monind loop
+            #Compute annual values
+            count = 0
+            annmax = -9999.0
+            annmin = 9999.0
+            annminh = 9999.001
+            sumann = 0.0
+            for mon in range(12):
+                if element in ['snow', 'pcpn', 'snwd', 'evap']:
+                    valmon = round(table_1[yr][mon],2)
+                else:
+                    valmon = table_1[yr][mon]
+                #valmon = table_1[yr][mon]
+                summon = table_2[yr][mon]
+                if kwargs['statistic'] == 'mmax':
+                    if element in ['snow', 'pcpn', 'evap']:
+                        if valmon > 99.99 and valmon <= 240.0:
+                            continue
+                        else:
+                            if valmon > annmax and annflg[mon] != 'A':annmax = valmon
+                    else:
+                        if valmon > annmax:annmax = valmon
+                    sumann+=summon
+
+                elif kwargs['statistic'] == 'mmin':
+                    if valmon < annmin:annmin= valmon
+                    sumann+=summon
+
+                elif kwargs['statistic'] in ['mave', 'ndays', 'msum']:
+                    if int(summon) <= int(kwargs['max_missing_days']):
+                        sumann+=valmon
+                        count+=1
+                elif kwargs['statistic'] == 'sd':
+                    sumann = 0
+
+                elif kwargs['statistic'] == 'rmon':
+                    if valmon > annmax:annmax = valmon
+                    if valmon < annmin:annmin= valmon
+                    sumann+=summon
+            #End mon loop
+            #Populate table 1 and 2 with annual values
+            if kwargs['statistic'] in ['mmax', 'mmin']:
+                if kwargs['statistic'] == 'mmax':table_1[yr][12] = annmax
+                if kwargs['statistic'] == 'mmin':table_1[yr][12] = annmin
+                table_2[yr][12] = sumann
+            elif kwargs['statistic'] == 'mave':
+                if count > 0.5:
+                    table_1[yr][12] = float(sumann)/float(count)
+                    table_2[yr][12] = 12 - count
+            elif kwargs['statistic'] == 'sd':
+                table_1[yr][12] = 0.0
+                table_2[yr][12] = 12.0
+            elif kwargs['statistic'] in ['ndays', 'msum']:
+                table_1[yr][12] = float(sumann)
+                table_2[yr][12] = 12.0 - count
+            elif kwargs['statistic'] == 'rmon':
+                if element != 'dtr':
+                    table_1[yr][12] = annmax - annmin
+                table_2[yr][12] = sumann
+        #End of Year loop! Phew...
+        for monind in range(13):
+            if monind <= 11:
+                mon = monind + int(kwargs['start_month'].lstrip('0')) - 1
+                if mon > 11:mon-=12
+            else:
+                mon = monind
+
+            xmax = -9999.0
+            xmin = 9999.0
+            summ = 0.0
+            summ2 = 0.0
+            summ3 = 0.0
+            count = 0.0
+
+            for yr in range(num_yrs):
+                if  mon == 12 and element in ['snow', 'pcpn', 'snwd', 'evap']:
+                    value = round(table_1[yr][mon],2)
+                else:
+                    value = table_1[yr][mon]
+                #value = table_1[yr][mon]
+                missng = table_2[yr][mon]
+
+                #Treat monthly totals and annual totals differently
+                #For annual totals, ignore years with at least one
+                #Month that does not meet the missing day criterium
+                if kwargs['statistic']  in ['mave', 'ndays', 'msum'] and mon >11:
+                    ncheck = 0
+                elif mon >11 and kwargs['statistic'] not in ['mave', 'ndays', 'msum']:
+                    ncheck = int(kwargs['max_missing_days']) - 1
+                else:
+                    ncheck = int(kwargs['max_missing_days'])
+                if int(missng) <= int(ncheck):
+                    summ+=value
+                    summ2+= value*value
+                    summ3+=value*value*value
+                    count+=1
+                    if value > xmax:xmax=value
+                    if value < xmin:xmin=value
+            #End year loop
+            if count > 0.5:
+                mean_out[monind] = round(summ/count,2)
+                if kwargs['statistic'] == 'ndays':
+                    results[i][num_yrs].append('%d' % int(round(mean_out[monind])))
+                else:
+                    results[i][num_yrs].append('%.2f' % round(ucv(element, mean_out[monind]),2))
+                #New
+                results[i][num_yrs].append(' ')
+            else:
+                if kwargs['statistic'] == 'ndays':
+                    results[i][num_yrs].append(0)
+                else:
+                    results[i][num_yrs].append(0.00)
+                #New
+                results[i][num_yrs].append(' ')
+            sk = 0.0
+            if count > 1.5:
+                try:
+                    if kwargs['statistic'] == 'ndays':
+                        results[i][num_yrs+1].append('%d' % int(round(numpy.sqrt((summ2 - summ**2/count)/(count -1)))))
+                    else:
+                        results[i][num_yrs+1].append('%.2f' % round(ucv(element, numpy.sqrt((summ2 - summ**2/count)/(count -1))),2))
+                    #New
+                    results[i][num_yrs+1].append(' ')
+                except:
+                    pass
+                h1 = float(ucv(element,summ))/float(count)
+                h2 = float(ucv(element, summ2))/float(count)
+                h3 = float(ucv(element, summ3))/float(count)
+                xm2 = h2 - h1*h1
+                xm3 = h3 - 3.0*h1*h2 + 2.0*h1*h1*h1
+                if abs(xm2) > 0.00001:
+                    try:
+                        sk = xm3 / (xm2*numpy.sqrt(abs(xm2)))
+                    except:
+                        sk = 0.0
+            else:
+                if kwargs['statistic'] == 'ndays':
+                    results[i][num_yrs+1].append(0)
+                    #space for flags
+                    results[i][num_yrs+1].append(' ')
+                else:
+                    results[i][num_yrs+1].append(0.00)
+                    #space for flags
+                    results[i][num_yrs+1].append(' ')
+
+            if kwargs['statistic'] == 'ndays':
+                results[i][num_yrs+2].append('%.1f' % round(sk,1))
+            else:
+                results[i][num_yrs+2].append('%.2f' %round(sk,2))
+            #New
+            results[i][num_yrs+2].append(' ')
+            if kwargs['statistic'] == 'ndays':
+                results[i][num_yrs+3].append('%d' % int(round(xmax)))
+            else:
+                results[i][num_yrs+3].append('%.2f' % ucv(element, xmax))
+            #New
+            results[i][num_yrs+3].append(' ')
+            if kwargs['statistic'] == 'ndays':
+                results[i][num_yrs+4].append('%d' % int(round(xmin)))
+            else:
+                results[i][num_yrs+4].append('%.2f' % round(ucv(element, xmin),2))
+            #New
+            results[i][num_yrs+4].append(' ')
+            if kwargs['statistic'] == 'ndays':
+                results[i][num_yrs+5].append('%d' % int(round(count)))
+            else:
+                results[i][num_yrs+5].append('%.2f' % round(count,2))
+            #New
+            results[i][num_yrs+5].append(' ')
+        #End month loop
+        #Record results for each year
+        for yr in range(num_yrs):
+            #Omit last year if it will only give empty results
+            today = datetime.date.today()
+            if yr == num_yrs -1 and int(today.year)==int(start_year) + yr:
+                if int(kwargs['start_month'].lstrip('0')) != 1 and int(today.month) < int(kwargs['start_month'].lstrip('0')):
+                    break
+            for monind in range(13):
+                if monind < 12:
+                    mon = monind + int(kwargs['start_month'].lstrip('0')) - 1
+                    if mon > 11:
+                        mon-=12
+                else:
+                    mon = monind
+                intgr = int(table_2[yr][mon])
+                if intgr > 26:intgr = 26
+                #Special for accumulations or subsequents
+                outchr[monind] = mischr[intgr]
+                if annsav[yr][mon] != ' ':
+                    outchr[monind] = annsav[yr][mon]
+                if (abs(table_1[yr][mon] -  9999) < 0.001 or abs(table_1[yr][mon] + 9999.0) <0.001 or outchr[monind] =='z'):
+                    if kwargs['statistic'] == 'msum' and element == 'hdd' and table_1[yr][mon]> 9998.5:
+                        continue
+                    else:
+                        results[i][yr].append('-----')
+                        results[i][yr].append('z')
+                        continue
+                if kwargs['departures_from_averages']  == 'F':
+                    #results[i][yr].append('%.2f%s' % (ucv(element, table_1[yr][mon]), outchr[monind]))
+                    if kwargs['statistic'] == 'ndays':
+                        results[i][yr].append('%d' % int(table_1[yr][mon]))
+                    else:
+                        results[i][yr].append('%.2f' % ucv(element, table_1[yr][mon]))
+                    results[i][yr].append('%s' % outchr[monind])
+                else:
+                    #results[i][yr].append('%.2f%s' % (ucv(element, (table_1[yr][mon] - mean_out[monind])), outchr[monind]))
+                    results[i][yr].append('%.2f' % (ucv(element, (table_1[yr][mon] - mean_out[monind]))))
+                    results[i][yr].append('%s' % outchr[monind])
+            #End month loop
+        #End of year loop
+        #Start for frequency analysis
+        xdata = {}
+        xx = {}
+        if kwargs['frequency_analysis'] == 'T':
+            fa_type = kwargs['frequency_analysis_type']
+            #fa types: p = PearsonIII, g = Generalized Extreme values
+            #b =  Beta-P, c = Cnesored Gamma
+        else:
+            fa_type = None
+
+        for monind in range(13):
+            if monind <= 11:
+                nmo = monind + int(kwargs['start_month'].lstrip('0')) - 1
+                if nmo > 11:
+                    nmo-=12
+            else:
+                nmo =monind
+
+            numdat = 0
+            numnz = 0
+            last_year = num_yrs
+            if int(kwargs['start_month'].lstrip('0')) !=1:
+                last_year-=1
+            for nyear in range(last_year):
+                dat = table_1[nyear][nmo]
+                misng = table_2[nyear][nmo]
+                if abs(dat) < 9998.5:
+                    if int(misng) <= kwargs['max_missing_days']:
+                        numdat+=1
+                        xdata[numdat-1] = dat
+                        if dat > 0.005:numnz+=1
+                        xx[numdat-1] = dat
+                        #Note that xmax, xmin were re-determinde in capiii
+                #End year loop
+            if numdat < 5:
+                fa_results[i].append('Not enough data to perfom frequency analysis')
+                break
+
+            #Set some bouns for certain types of analyses to avoid obvious
+            #problems like negative precip or threshold excedances.
+            #Also don't perform certain analyses for some element/analysis combinations.
+            if element in ['maxt', 'mint', 'avgt']:
+                vmin = -999.9
+                vmax = 999.0
+            elif element == 'dtr':
+                vmin = 0.0
+                vmax = 999.0
+            else:
+                vmin = 0.0
+                vmax = 99999.0
+
+            if kwargs['statistic'] == 'ndays':
+                vmin = 0.0
+                if nmo <= 11:
+                    vmax = float(mon_lens[nmo])
+                else:
+                    vmax = 365.24
+
+            xdata_list = [val for key, val in xdata.iteritems()]
+            xx_list = [val for key, val in xx.iteritems()]
+            #Frequency Analysis routines
+            if fa_type == 'p': #Pearson III
+                #(psd, ave, stdev, sk, cv, xmax, xmin) = WRCCUtils.Capiii(xdata, numdat, piii, piiili,len(piiili), pnlist,len(pnlist))
+                shape, loc, scale = stats.gamma.fit(xdata_list)
+                for k in range(len(probss)): #len(probss) = 24
+                    proutp[k][monind] = stats.gamma.ppf(probs[k],shape,loc=loc,scale=scale)
+                    if proutp[k][monind] < vmin:proutp[k][monind] = vmin
+                    if proutp[k][monind] > vmax:proutp[k][monind] = vmax
+                    '''
+                    for j in range(len(pnlist)):  #len(pnlist) = 47
+                        if (pnlist[j] - probss[k]) < 0.00001:
+                            proutp[k][monind] = ave + stdev*psd[j]
+                            if proutp[k][monind] < vmin:proutp[k][monind] = vmin
+                            if proutp[k][monind] > vmax:proutp[k][monind] = vmax
+                    '''
+                    fa_results[i][k].append('%.2f' % proutp[k][monind])
+
+            elif fa_type == 'g':
+                #para = WRCCUtils.Gev(xx, numdat)
+                shape, loc, scale = stats.genextreme.fit(xx_list)
+                #Compute Quantiles:
+                #rsultsg = WRCCUtils.Quantgev(para, probs, len(probs))
+                for k in range(len(probs)):
+                    proutg[k][monind] = stats.genextreme.ppf(probs[k],shape,loc=loc,scale=scale)
+                    #proutg[k][monind] = rsultsg[k]
+                    if proutg[k][monind] < vmin:proutg[k][monind] = vmin
+                    if proutg[k][monind] > vmax:proutg[k][monind] = vmax
+                    fa_results[i][k].append('%.2f' % proutg[k][monind])
+            elif fa_type == 'b':
+                #rsultb = WRCCUtils.Cabetap(xdata, numdat, probss,len(probss))
+                shape_a, shape_b, loc, scale = stats.beta.fit(xdata_list)
+                for k in range(len(probss)):
+                    #proutb[k][monind] = rsultb[k]
+                    proutb[k][monind] = stats.beta.ppf(probs[k],shape_a, shape_b, loc=loc, scale=scale )
+                    if proutb[k][monind] < vmin:proutb[k][monind] = vmin
+                    if proutb[k][monind] > vmax:proutb[k][monind] = vmax
+                    fa_results[i][k].append('%.2f' % proutg[k][monind])
+            elif fa_type == 'c':
+                if numnz >= 1:
+                    rsultc = WRCCUtils.Cagamma(xdata, numdat, probss, len(probss))
+                    for k in range(len(probss)):
+                        proutc[k][monind] = rsultsc[k]
+                        if proutc[k][monind] < vmin:proutc[k][monind] = vmin
+                        if proutc[k][monind] > vmax:proutc[k][monind] = vmax
+                        fa_results[i][k].append('%.2f' % proutc[k][monind])
+                else:
+                    for k in range(len(probbs)):
+                        proutc[k][monind] = 0.0
+                        fa_results[i][k].append('%.2f' % proutc[k][monind])
+            #End monind loop
+    #return results, fa_results
     return results
 
 def Sodthr(**kwargs):
@@ -2343,6 +3012,7 @@ def Sodmonline(**kwargs):
         results[i]=stn_data
     return results
 
+
 def Sodsumm(**kwargs):
     '''
     THIS PROGRAM SUMMARIZES VARIOUS CLIMATIC DATA IN A FORMAT IDENTICAL WITH
@@ -2450,8 +3120,8 @@ def Sodsumm(**kwargs):
                 idx_start = 0
                 idx_end = 366
             elif cat_idx == 13: #Winter
-                idx_start = 336
-                idx_end = 61
+                idx_start = 335
+                idx_end = 60
             elif cat_idx == 14: #Spring
                 idx_start = 61
                 idx_end = 153
@@ -2480,7 +3150,7 @@ def Sodsumm(**kwargs):
                         if yr < num_yrs - 1:
                             for idx in range(0,idx_end):
                                 el_data[element].append(kwargs['data'][i][yr+1][el_idx][idx])
-                                date_idx  = yr+1 * 366 + idx
+                                date_idx  = (yr+1) * 366 + idx
                                 el_dates[element].append(kwargs['dates'][date_idx])
                         mon_l = [11,0,1]
                         for ct in mon_l:
@@ -2556,8 +3226,8 @@ def Sodsumm(**kwargs):
                     current_year = int(start_year) -1
                     for yr in range(num_yrs):
                         current_year+=1
-                        #if x_miss[cat_idx][el][yr] > max_missing_days:
-                        if x_miss[cat_idx][el][yr] > max_missing_days and cat_idx !=12:
+
+                        if x_miss[cat_idx][el][yr] > max_missing_days and cat_idx != 12:
                             continue
                         idx_start = time_cats_lens[cat_idx] * yr
                         #Feb, if not leap year, omit feb 29
@@ -2575,6 +3245,12 @@ def Sodsumm(**kwargs):
                         '''
                         if cat_idx == 12 and not WRCCUtils.is_leap_year(current_year):
                             del data_list[-306]
+                        '''
+                        '''
+                        if cat_idx == 13 and kwargs['el_type'] == 'temp' and el=='maxt' and yr == 75:
+                            print el_dates[el][idx_start:idx_end]
+                            print 'YEAR: ' + str(yr)
+                            print idx_start, idx_end
                         '''
                     #Statistics
                     sm = 0

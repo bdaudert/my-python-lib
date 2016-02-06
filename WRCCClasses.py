@@ -1264,6 +1264,7 @@ class SODDataJob(object):
             'Sodrun':{'vX':None},
             'Sodrunr':{'vX':None},
             'Sodxtrmts':{'vX':None,'interval':'dly','duration':'dly','groupby':'year'},
+            'SodxtrmtsSCENIC':{'vX':None,'interval':'dly','duration':'dly','groupby':'year'},
             'Sodpct':{'vX':None,'interval':'dly','duration':'dly','groupby':'year'},
             'Sodthr':{'vX':None,'interval':'dly','duration':'dly','groupby':'year'},
             'Sodpiii':{'vX':None,'interval':'dly','duration':'dly','groupby':'year'},
@@ -1502,7 +1503,7 @@ class SODDataJob(object):
         s_date, e_date = self.set_start_end_date()
         if s_date and e_date and len(s_date) == 8 and len(e_date) == 8:
             #Some apps need date changes
-            l = ['Soddyrec', 'Soddynorm', 'Soddd', 'Sodpad', 'Sodsumm', 'Sodpct', 'Sodthr', 'Sodxtrmts', 'Sodpiii']
+            l = ['Soddyrec', 'Soddynorm', 'Soddd', 'Sodpad', 'Sodsumm', 'Sodpct', 'Sodthr', 'Sodxtrmts','SodxtrmtsSCENIC', 'Sodpiii']
             if self.app_name in l:
                 #Data is grouped by year so we need to change start and end_dates
                 #To match whole year
@@ -1539,7 +1540,7 @@ class SODDataJob(object):
                 el_list = self.el_type_element_dict[self.params['element']]
         elif self.app_name == 'Soddynorm':
              el_list = self.el_type_element_dict['tmp']
-        elif self.app_name == 'Sodxtrmts' and self.params[el_type] in ['hdd','cdd', 'gdd','dtr']:
+        elif self.app_name in ['Sodxtrmts','SodxtrmtsSCENIC'] and self.params[el_type] in ['hdd','cdd', 'gdd','dtr']:
             el_list = self.el_type_element_dict['dd_raw']
         else:
             el_list = self.el_type_element_dict[self.params[el_type]]
@@ -1733,7 +1734,7 @@ class SODDataJob(object):
                     'lls':meta_dict['lls']
         }
         #Override el for sodxtrmts, otherwise avgt,dtr don't work
-        if self.app_name == 'Sodxtrmts':
+        if self.app_name in ['Sodxtrmts','SodxtrmtsSCENIC']:
             resultsdict['elements'] = [self.params['element']]
         #Make data request
         data_params = self.set_request_params()
@@ -1757,7 +1758,7 @@ class SODDataJob(object):
                     'location_list':locations_list,
                     'lls':meta_dict['lls']
         }
-        if self.app_name == 'Sodxtrmts':
+        if self.app_name in ['Sodxtrmts','SodxtrmtsSCENIC']:
             resultsdict['elements'] = [self.params['element']]
         #Make data request
         #Each location requires separate request

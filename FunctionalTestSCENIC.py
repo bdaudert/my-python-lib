@@ -340,7 +340,7 @@ class setUp(object):
             return results, err
         #Run application
         try:
-            App = WRCCClasses.SODApplication('Sodxtrmts', data, app_specific_params=app_params)
+            App = WRCCClasses.SODApplication('SodxtrmtsSCENIC', data, app_specific_params=app_params)
             results = App.run_app()
         except Exception, e:
             err = 'FAIL: WRCCClasses.SODApplication.run_app Error: ' + str(err)
@@ -678,7 +678,7 @@ class Test_intraannual(unittest.TestCase):
         self.setUp = setUp('intraannual')
 
     def test_default(self):
-        msg = 'Testing Sodxtrmts with default values'
+        msg = 'Testing Intraannual with default values'
         logger.info(msg + '\n')
         params = copy.deepcopy(self.params)
         logger.info(str(params) + '\n')

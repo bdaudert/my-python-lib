@@ -178,6 +178,7 @@ def set_initial(request,app_name):
     #Set element(s)--> always as list if multiple
     if app_name == 'map_overlay':
         initial['elements'] = Get('elements','maxt,mint,pcpn').split(',')
+        initial['elements_str'] = ','.join(initial['elements'])
     elif app_name in ['monthly_summary','data_comparison', 'yearly_summary','intraannual']:
             initial['element'] = Get('element',None)
             if initial['element'] is not None and len(initial['element'].split(',')) > 1:
@@ -200,7 +201,7 @@ def set_initial(request,app_name):
         elif isinstance(els, basestring):
             els = els.replace(' ','').split(',')
         initial['elements'] = [str(el) for el in els]
-
+        initial['elements_str'] = ','.join(initial['elements'])
     #Set units
     initial['units'] = Get('units','english')
 

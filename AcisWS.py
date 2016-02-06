@@ -343,7 +343,6 @@ def station_meta_to_json(by_type, val, el_list=None, time_range=None, constraint
             #Check if station is valid, if not, proceed to next station
             flag_invalid_station = station_invalid(el_list, vX_list, time_range, stn, constraints)
             if flag_invalid_station:continue
-
         stn_sids = []
         stn_networks = []
         stn_network_codes = []
@@ -367,6 +366,7 @@ def station_meta_to_json(by_type, val, el_list=None, time_range=None, constraint
                     stn_networks.append('Misc')
                     marker_icons.append(WRCCData.NETWORK_ICONS['11'])
         #Sanity check : Some Acis records are incomplete, leading to key error
+        print stn.keys()
         if 'll' in stn.keys():
             lat = str(stn['ll'][1])
             lon = str(stn['ll'][0])

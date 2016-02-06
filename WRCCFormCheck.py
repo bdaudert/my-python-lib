@@ -251,13 +251,15 @@ def check_start_date(form):
     data_type = WRCCUtils.get_data_type(form)
     unreasonable = False
     if data_type == 'station':
+        '''
         #Limit multi station requests to 30 years
         if not 'station_id' in form.keys() and (ed - sd).days > 30 * 366:
             err = 'Request for more than one station are limited to thirty years or less! ' +\
             'Please adjust your dates accordingly.'
             return err
+        '''
         unreasonable = False
-        if s_date.lower() !='por' and int(s_date[0:4]) <= 1900:
+        if s_date.lower() !='por' and int(s_date[0:4]) <= 1850:
             unreasonable = True
         if unreasonable:
             meta_params = {
@@ -265,13 +267,11 @@ def check_start_date(form):
                 'elems':','.join(form['elements']),
                 'meta':'valid_daterange'
             }
-            meta_data = AcisWS.StnMeta(meta_params)
-            '''
+            #meta_data = AcisWS.StnMeta(meta_params)
             try:
                 meta_data = AcisWS.StnMeta(meta_params)
             except:
-                meta_data = {}
-            '''
+                meta_data = {'meta':[]}
             start_dts = [];end_dts = []
             if 'meta' in meta_data.keys():
                 for stn_meta in meta_data['meta']:
@@ -393,12 +393,13 @@ def check_end_date(form):
     #for station data requests
     data_type = WRCCUtils.get_data_type(form)
     unreasonable = False
-    if data_type == 'station':
+    '''
+    if data_type == 'station' and form['app_name'] == 'multi_lister':
         #Limit multi station requests to 30 years
         if not 'station_id' in form.keys() and (ed - sd).days > 30 * 366:
             err = 'Request for more than one station are limited to thirty years or less! ' +\
             'Please adjust your dates accordingly.'
-
+    '''
     #Check that station data end date is today or earlier
     if 'station_id' in form.keys() or ('data_type' in form.keys() and form['data_type'] == 'station'):
         if e_date.lower() != 'por':
@@ -749,6 +750,10 @@ def check_user_email(form):
     err = None
     from email.utils import parseaddr
     if len(form['user_email'].split(',')) > 2:
+        return 'Not a valid email address: %s' %str(form['user_email'])
+    if len(form['user_email'].split('/')) > 1:
+        return 'Not a valid email address: %s' %str(form['user_email'])
+    if len(form['user_email'].split('\\')) > 1:
         return 'Not a valid email address: %s' %str(form['user_email'])
     if len(form['user_email'].split('@')) != 2:
         return 'Not a valid email address: %s' %str(form['user_email'])

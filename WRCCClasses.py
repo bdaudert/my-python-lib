@@ -7,7 +7,7 @@ Defines classes used in the my_acis project
 ##############################################################################
 # import modules required by Acis
 #import  pprint, time
-import time, datetime, re, os
+import time, datetime, re, os, sys
 import numpy as np
 import scipy
 import json
@@ -44,6 +44,8 @@ except:
 
 #WRCC modules
 import AcisWS, WRCCDataApps, WRCCUtils, WRCCData
+
+thismodule =  sys.modules[__name__]
 
 class GraphDictWriter(object):
     '''
@@ -2414,15 +2416,16 @@ class LargeDataRequest(object):
 
     def write_to_file(self,data_chunk,path_to_file):
         error = None
+        #Set Writer
         if self.form['data_format'] in ['clm','dlm']:
             try:
-                Writer = CsvWriter(data_chunk, f = path_to_file)
+                Writer = CsvWriterNew(data_chunk, f = path_to_file)
             except Exception, e:
                 self.logger.error('ERROR in write_to_file. Cannot initialize writer: ' + str(e))
                 return str(e)
         if self.form['data_format'] == 'xl':
             try:
-                Writer = ExcelWriter(data_chunk,f = path_to_file)
+                Writer = ExcelWriterNew(data_chunk,f = path_to_file)
             except Exception, e:
                 self.logger.error('ERROR in write_to_file. Cannot initialize writer: ' + str(e))
                 return str(e)

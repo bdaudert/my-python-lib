@@ -3154,7 +3154,14 @@ def Sodsumm(**kwargs):
                                 el_dates[element].append(kwargs['dates'][date_idx])
                         mon_l = [11,0,1]
                         for ct in mon_l:
-                            if x_miss[ct][element][yr] > max_missing_days:
+                            if ct == 11:
+                                xm = x_miss[ct][element][yr]
+                            else:
+                                try:
+                                    xm = x_miss[ct][element][yr+1]
+                                except:
+                                    xm = 0
+                            if xm > max_missing_days:
                                 flag = True
                                 break
                         if flag:

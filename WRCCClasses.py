@@ -611,16 +611,20 @@ class ExcelWriterNew(object):
             ws.write(3,3,'S=Subsequent')
             ws.write(3,4,'A=Accumulated')
         #Data header
+        col_plus = 2
         if self.form['app_name'] in  ['intraannual']:
             ws.write(5,0,'Year')
             ws.write(5,1,'Value')
         else:
-            if 'data_type' in self.form.keys() and self.form['data_type'] == 'station':
-                ws.write(5,0,'Name (IDs)')
+            if 'data_type' in self.form.keys() and self.form['data_type'] != 'grid':
+                ws.write(5,0,'Name')
+                ws.write(5,1, 'IDs')
             if 'data_type' in self.form.keys() and self.form['data_type'] == 'grid':
                 ws.write(5,0,'Lon, Lat')
+                col_plus = 1
+            #Element header
             for d_idx, d in enumerate(self.data[0][0]):
-                ws.write(5, d_idx+1,d)
+                ws.write(5, d_idx+col_plus,d)
         row_idx = 6
         for p_idx, p_data in enumerate(self.data):
             if 'meta' in self.req.keys():
@@ -629,9 +633,12 @@ class ExcelWriterNew(object):
             for date_idx, data in enumerate(p_data[1:]):
                 row_idx+=1
                 name_ids = p_name
-                if p_id:name_ids+=' (' + p_id+ ')'
+                #if p_id:name_ids+=' (' + p_id+ ')'
                 ws.write(row_idx,0,name_ids)
                 col_idx = 1
+                if p_id:
+                    ws.write(row_idx,1,p_id)
+                    col_idx = 2
                 for data_idx in range(len(data)):
                     try:
                         ws.write(row_idx, data_idx + col_idx, float(data[data_idx]))

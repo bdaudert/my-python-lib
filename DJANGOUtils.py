@@ -138,10 +138,10 @@ def set_initial(request,app_name):
     initial['area_type_value'] = initial[str(initial['area_type'])]
 
     #Set data type and map parameters
-    if initial['area_type'] in ['station_id']:
+    if initial['area_type'] in ['station_id','station_ids']:
         initial['autofill_list'] = 'US_' + initial['area_type']
         initial['data_type'] = 'station'
-    elif initial['area_type'] in ['location']:
+    elif initial['area_type'] in ['location','locations']:
         initial['data_type'] = 'grid'
     elif initial['area_type'] in ['basin','county_warning_area','county','climate_division','state','shape']:
         initial['autofill_list'] = 'US_' + initial['area_type']

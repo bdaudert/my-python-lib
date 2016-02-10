@@ -602,7 +602,8 @@ class ExcelWriterNew(object):
 
     def write_data(self):
         #Loop over data points
-        ws = self.wb.add_sheet('Data')
+        ws_count = 1
+        ws = self.wb.add_sheet('Data' + str(ws_count))
         self.write_header(ws)
         if self.data_type =='station':
             ws.write(3,0,'DataFlags')
@@ -632,6 +633,12 @@ class ExcelWriterNew(object):
             #Write data omitting header line
             for date_idx, data in enumerate(p_data[1:]):
                 row_idx+=1
+                #check for limit on excel rows
+                if row_idx > 65534:
+                    ws_count+=1
+                    ws = self.wb.add_sheet('Data' + str(ws_count))
+                    #reset row index
+                    row_idx = 1
                 name_ids = p_name
                 #if p_id:name_ids+=' (' + p_id+ ')'
                 ws.write(row_idx,0,name_ids)

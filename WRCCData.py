@@ -1715,7 +1715,8 @@ SCENIC_FORM_OPTIONS = {
             ('weekly','Weekly')
         ),
         'data_format':DATA_FORMAT_CHOICES,
-        'delimiter':DELIMITER_TUPLE
+        'delimiter':DELIMITER_TUPLE,
+        'chart_type':CHART_TYPE
     },
     'yearly_summary':{
         'area_type':SINGLE_AREA_TUPLE,

@@ -1264,6 +1264,7 @@ COLUMN_HEADERS = {
 
 CSV_HEADER_KEYS = {
     'station_finder':[],
+    'sf_download':[],
     'single_lister':['area_type','data_summary','start_date','end_date'],
     'monthly_summary':['area_type','element','start_year','end_year'],
     'yearly_summary':['element','start_month','start_day'],

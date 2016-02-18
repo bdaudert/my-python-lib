@@ -2560,7 +2560,7 @@ def set_point_name_and_id(form,meta):
                     p_id = sid.split(' ')[0]
                     break
                 '''
-            p_id = p_od[0:-1]
+            p_id = p_id[0:-1]
         if 'name' in meta.keys():
             p_name = meta['name'].replace(' ',sep_name)
         if 'll' in meta.keys() and 'sids' not in meta.keys():
@@ -3352,6 +3352,8 @@ def generate_kml_file(area_type, state, kml_file_name, dir_location):
     #Make General call to get the geojson for the input params
     req = AcisWS.make_gen_call_by_state(WRCCData.SEARCH_AREA_FORM_TO_ACIS[str(area_type)], str(state))
     #Sanity Check:
+    if req is None or not req:
+        return 'No meta data found for search area %s and state %s' %(str(area_type), str(state))
     if 'error' in req.keys():
         return str(req['error'])
     else:

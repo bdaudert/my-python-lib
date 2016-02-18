@@ -11,7 +11,6 @@ import sys, os, datetime
 import fileinput
 from scipy import stats
 from math import ceil
-import sets
 
 #Local modules
 import WRCCUtils, AcisWS, WRCCData
@@ -160,112 +159,6 @@ def state_aves_grid(state, month, elements):
                     state_aves[k]['moving_ave'][yr] = numpy.mean(mov_ave_list)
     return year_list, state_aves
 
-
-def monthly_aves(request, form):
-    '''
-    CSC hsitoric station data app
-    computes monthly aves over multiple years for multiple elements chosen by user
-
-    Keyword arguments:
-    request  -- data request object containing data
-    el_list  -- List of climate elements
-    '''
-    #request['data'] = [[year1, [el1(366entries)], [el2(366entries)], ...],
-    #                   [year2, [el1(366entries)], [el2(366entries)], ...],...
-    #                   [lastyear, [el1(366entries)], [el2(366entries)], ...]]
-    if isinstance(form['elements'], list):
-        el_list = form['elements']
-    else:
-        el_list = form['elements'].replace(' ','').split(',')
-    months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-    mon_lens = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
-    results = defaultdict(list)
-    #Loop over elements
-    for el in el_list:
-        results[el] = []
-
-    #Loop over months and compute monthly stats
-    for mon_idx, mon in enumerate(months):
-        #Find indices for each time category
-        if mon_idx == 0:
-            idx_start = 0
-            idx_end = 31
-        else:
-            idx_start = sum(mon_lens[idx] for idx in range(mon_idx))
-            idx_end = idx_start + mon_lens[mon_idx]
-        #Loop over years and elements
-        for el_idx, el in enumerate(el_list):
-            yr_aves = []
-            for yr in range(len(request['data'])):
-                data = request['data'][yr][el_idx+1][idx_start:idx_end]
-                #Sanity check for missing data
-                if len(sets.Set(data)) == 1 and str(data[0]) == 'M':
-                #if all(str(val) == 'M' for val in data):
-                    continue
-                #deal with flags
-                new_data = ['M' for k in range(len(data))]
-                s_count = 0
-                for idx, dat in enumerate(data):
-                    val, flag = WRCCUtils.strip_data(str(dat))
-                    if flag == 'M':
-                        pass
-                    elif flag == 'S':
-                        new_data[idx] = 0.00
-                        s_count+=1
-                    elif flag == 'A':
-                        s_count+=1
-                        new_val = float(val) / s_count
-                        for k in range (idx,idx-s_count,-1):
-                            new_data[k] = new_val
-                        s_count = 0
-
-                    elif flag == 'T':
-                        new_data[idx] = 0.0
-                    else:
-                        try:
-                            new_data[idx] = float(val)
-                        except:
-                            pass
-
-                #Sanity check for missing data
-                #if all(str(val) == 'M' for val in new_data):
-                if len(sets.Set(new_data)) == 1 and str(new_data[0]) == 'M':
-                    continue
-                if el in ['pcpn', 'snow']: #want total monthly values
-                    summ = 0.0
-                    #count number of data values
-                    count = 0
-                    for dat in new_data:
-                        try:
-                            summ+=float(dat)
-                        except:
-                            count+=1
-                    if count == len(new_data):
-                        yr_aves = []
-                    else:
-                        yr_aves.append(summ)
-                else: #want averages of averages
-                    aves = []
-                    for dat in new_data:
-                        try:
-                            aves.append(float(dat))
-                        except:
-                            pass
-                    if aves:
-                        yr_aves.append(numpy.mean(aves))
-                    else:
-                        pass
-            if yr_aves:
-                #results[el].append(numpy.mean(yr_aves))
-                mean = round(numpy.mean(yr_aves),2)
-                if 'units' in form.keys() and form['units'] == 'metric':
-                    el_strip, base_temp = WRCCUtils.get_el_and_base_temp(el)
-                    results[el].append(WRCCUtils.convert_to_metric(el_strip, mean))
-                else:
-                    results[el].append(mean)
-            else:
-                results[el].append(None)
-    return dict(results)
 
 #####################################################
 #KELLY's DATA APPLICATION
@@ -2617,7 +2510,7 @@ def Sodrun(**kwargs):
     verbose = kwargs['verbose']
     #Loop over stations
     for i, stn in enumerate(station_ids):
-        print "STATION:" + station_ids[i]
+        #print "STATION:" + station_ids[i]
         results[i] = []
         stn_data = kwargs['data'][i]
         #first format data to include dates

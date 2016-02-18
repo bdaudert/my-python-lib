@@ -592,10 +592,13 @@ def get_station_list(by_type, val):
     else:
         pass
     request=StnMeta(params)
-
     if not request:
         request = {'error':'Bad request, check parameters.'}
-
+    if 'meta' not in request.keys():
+        request = {'error':'No metadata found.'}
+    for i, stn_meta in enumerate(request['meta']):
+        stn_list.append(stn_meta['sids'][0].split(' ')[0])
+    '''
     try:
         request['meta']
         for i, stn in enumerate(request['meta']):
@@ -606,6 +609,7 @@ def get_station_list(by_type, val):
                     stn_list.append(str(sid_split[0]))
     except:
         pass
+    '''
 
     return stn_list
 
@@ -662,7 +666,7 @@ def get_sod_data(form_input, program):
     else:
         station_ids =[]
     #sort station id in ascending order
-    station_ids = WRCCUtils.strip_n_sort(station_ids)
+    #station_ids = WRCCUtils.strip_n_sort(station_ids)
     station_names=['No Name found' for i in range(len(station_ids))]
     #Since Acis may not return results for some stations, we need to initialize output dictionary
     datadict = defaultdict(list)
@@ -713,15 +717,49 @@ def get_sod_data(form_input, program):
             return datadict, dates, elements, station_ids, station_names
 
     for stn, stn_data in enumerate(request['data']):
+        if not 'meta' in stn_data.keys():continue
+        sids = stn_data['meta']['sids']
+        index = None
+        for sid in sids:
+            sid_split = sid.split(' ')
+            station_id = str(sid_split[0])
+            try:
+                index = station_ids.index(str(station_id))
+                break
+            except:
+                continue
+        if index is None:continue
+        station_names[index] = str(stn_data['meta']['name'])
+        if program == 'Soddyrec':
+            try:
+                stn_data['smry']
+                datadict[index] = stn_data['smry']
+            except:
+                datadict[index] = []
+        #sort data by element
+        elif program in ['Soddynorm', 'Soddd', 'Sodpct']:
+            try:
+                stn_data['data']
+                for yr, el_data in enumerate(stn_data['data']):
+                    for el_idx, dat in enumerate(el_data):
+                        datadict[index][el_idx].append(dat)
+            except:
+                pass
+        else:
+            try:
+                stn_data['data']
+                datadict[index] = stn_data['data']
+            except:
+                datadict[index] = []
+        '''
         try:
             stn_data['meta']
             #find station_id, Note: MultiStnData call may not return the stations in order
             sids = stn_data['meta']['sids']
             for sid in sids:
                 sid_split = sid.split(' ')
+                station_id = str(sid_split[0])
                 if sid_split[1] == '2':
-                    #station_id = str(stn_data['meta']['sids'][1].split()[0])
-                    station_id = str(sid_split[0])
                     try:
                         index = station_ids.index(str(station_id))
                         break
@@ -755,9 +793,9 @@ def get_sod_data(form_input, program):
 
             except ValueError:
                 continue
-
         except:
             pass
+        '''
     '''
     if program == 'Soddyrec':
         #need to get averages separately; add: date, mcnt fails if we ask for mean, max together

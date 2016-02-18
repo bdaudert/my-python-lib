@@ -1014,6 +1014,11 @@ DATE_FORMAT = {
     'slash': '/'
 }
 
+OUTPUT_FORMAT_TUPLE = (
+    ('verbose','Verbose (with metadata)'),
+    ('short','Short')
+)
+
 #width, height in pixels
 IMAGE_SIZES = {
     'small':[510, 290],
@@ -1621,6 +1626,7 @@ SCENIC_FORM_OPTIONS = {
         'show_flags':BOOLEAN_TUPLE,
         'show_observation_time':BOOLEAN_TUPLE,
         'data_format':DATA_FORMAT_CHOICES,
+        'output_format':OUTPUT_FORMAT_TUPLE,
         'data_summary':DATA_SUMMARY_TUPLE,
         'spatial_summary':STATISTIC,
         'temporal_summary':STATISTIC,
@@ -1644,6 +1650,7 @@ SCENIC_FORM_OPTIONS = {
         'temporal_summary':STATISTIC,
         'spatial_summary':STATISTIC,
         'data_format':DATA_FORMAT_DOWNLOAD,
+        'output_format':OUTPUT_FORMAT_TUPLE,
         'delimiter':DELIMITER_TUPLE
     },
     'station_finder': {
@@ -1663,6 +1670,7 @@ SCENIC_FORM_OPTIONS = {
         'temporal_summary':STATISTIC,
         'spatial_summary':STATISTIC,
         'data_format':DATA_FORMAT_CHOICES,
+        'output_format':OUTPUT_FORMAT_TUPLE,
         'delimiter':DELIMITER_TUPLE
     },
     'single_lister':{
@@ -1678,6 +1686,7 @@ SCENIC_FORM_OPTIONS = {
         'temporal_summary':STATISTIC,
         'spatial_summary':STATISTIC,
         'data_format':DATA_FORMAT_CHOICES,
+        'output_format':OUTPUT_FORMAT_TUPLE,
         'delimiter':DELIMITER_TUPLE
     },
     'multi_lister':{
@@ -1695,6 +1704,7 @@ SCENIC_FORM_OPTIONS = {
         'show_flags':BOOLEAN_TUPLE,
         'show_observation_time':BOOLEAN_TUPLE,
         'data_format':DATA_FORMAT_CHOICES,
+        'output_format':OUTPUT_FORMAT_TUPLE,
         'delimiter':DELIMITER_TUPLE
     },
     'monthly_summary':{

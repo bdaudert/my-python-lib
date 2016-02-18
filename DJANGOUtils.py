@@ -308,6 +308,10 @@ def set_initial(request,app_name):
         initial['data_format'] = Get('data_format', 'html')
     else:
         initial['data_format'] = Get('data_format', 'clm')
+
+
+    if app_name in ['single_lister','multi_lister','station_finder','sf_download','map_overlay']:
+        initial['output_format'] = Get('output_format', 'verbose')
     initial['delimiter'] = Get('delimiter', 'space')
     initial['output_file_name'] = Get('output_file_name', 'Output')
     initial['user_name'] = Get('user_name', 'Your Name')

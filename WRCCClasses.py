@@ -385,7 +385,7 @@ class CsvWriter(object):
                     meta_display_params = self.req['meta'][p_idx]
                     for key_val in meta_display_params:
                         key = key_val[0].replace(' ','')
-                        val = key_val[1].replace(' ','')
+                        val = str(key_val[1]).replace(' ','')
                         row = ['*' + key,val]
                         self.writer.writerow(row)
             #Write data
@@ -2433,13 +2433,19 @@ class LargeDataRequest(object):
         #Set Writer
         if self.form['data_format'] in ['clm','dlm']:
             try:
-                Writer = CsvWriterNew(data_chunk, f = path_to_file)
+                if self.form['output_format'] == 'verbose':
+                    Writer = CsvWriter(data_chunk, f = path_to_file)
+                else:
+                    Writer = CsvWriterNew(data_chunk, f = path_to_file)
             except Exception, e:
                 self.logger.error('ERROR in write_to_file. Cannot initialize writer: ' + str(e))
                 return str(e)
         if self.form['data_format'] == 'xl':
             try:
-                Writer = ExcelWriterNew(data_chunk,f = path_to_file)
+                if self.form['output_format'] == 'verbose':
+                    Writer = ExcelWriter(data_chunk,f = path_to_file)
+                else:
+                    Writer = ExcelWriterNew(data_chunk,f = path_to_file)
             except Exception, e:
                 self.logger.error('ERROR in write_to_file. Cannot initialize writer: ' + str(e))
                 return str(e)

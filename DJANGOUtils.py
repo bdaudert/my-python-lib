@@ -148,6 +148,8 @@ def set_initial(request,app_name):
         initial['data_type'] = Get('data_type','station')
     if app_name == 'temporal_summary':
         initial['data_type'] = 'grid'
+    if app_name in ['station_finder','sf_download']:
+        initial['data_type'] = 'station'
     #Grid
     if app_name not in ['station_finder', 'sf_download']:
         initial['grid'] = Get('grid','1')

@@ -597,7 +597,10 @@ def get_station_list(by_type, val):
     if 'meta' not in request.keys():
         request = {'error':'No metadata found.'}
     for i, stn_meta in enumerate(request['meta']):
-        stn_list.append(stn_meta['sids'][0].split(' ')[0])
+        try:
+            stn_list.append(stn_meta['sids'][0].split(' ')[0])
+        except:
+            continue
     '''
     try:
         request['meta']

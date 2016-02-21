@@ -1480,7 +1480,6 @@ def format_sodxtrmts_results_web(results, data, data_params, app_params, wrapper
                         if idx % 2 == 0:row+='<TD ALIGN=RIGHT WIDTH=6%>'
                         else:row+='<TD ALIGN=LEFT WIDTH=1%>'
                         row+=v + '</TD>'
-                    row+='<TD ALIGN=RIGHT WIDTH=6%>' + v + '</TD>'
                     row+='</TR>'
                     print row
                 print '</TABLE>'

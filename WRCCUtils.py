@@ -613,7 +613,6 @@ def request_and_format_data(form):
     large_request = False
     params = set_acis_params(form, large_request)
     #Make data request
-    #req = request_data(params)
     try:
         req = request_data(params)
     except Exception, e:
@@ -722,7 +721,7 @@ def format_data_single_lister(req,form):
                 val = remove_flag_from_val(val, flag)
             date_data.append(val)
             #Attach Obs time
-            if obs_time:
+            if obs_time is not None:
                 date_data.append(obs_time)
         #check if all data is missing
         if all(v==-9999  for v in date_data) and flag_missing:
@@ -1424,6 +1423,7 @@ def format_station_no_summary(req,form):
                 #If user asked for flags/obstime
                 #data el_data is a list and we need to pick the correct value
                 obs_time = None
+                if stn_idx == 0:print el_data
                 if isinstance(el_data, list):
                     val = el_data[0]
                     if len(el_data) >1:
@@ -1441,7 +1441,7 @@ def format_station_no_summary(req,form):
                 else:
                     val = remove_flag_from_val(val, flag)
                 d_data.append(val)
-                if obs_time:
+                if obs_time is not None:
                     d_data.append(obs_time)
             new_data[-1].append(d_data)
     resultsdict = {

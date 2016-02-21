@@ -1584,7 +1584,7 @@ STATE_TUPLE = (
     ('ok','Oklahoma'),
     ('or','Oregon'),
     ('pa','Pennsylvania'),
-    ('ri','Rhode Islan'),
+    ('ri','Rhode Island'),
     ('sc','South Carolina'),
     ('sd','South Dakota'),
     ('tn','Tennessee'),

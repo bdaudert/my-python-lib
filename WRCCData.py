@@ -250,7 +250,7 @@ FIPS_STATE_KEYS = {'al':'01','az':'02','ca':'04','co':'05','ct':'06','hi':'51', 
 STATE_CHOICES = ['AK', 'AL', 'AR', 'AS','AZ', 'CA', 'CO', 'CT', 'DC', 'DE', 'FL', 'GA', 'GU',\
                 'HI', 'IA', 'ID', 'IL', 'IN', 'KS', 'KY', 'LA', 'MA', 'MD', 'ME', \
                 'MI', 'MN', 'MO', 'MS', 'MT', 'NC', 'ND', 'NE', 'NH', 'NJ', 'NM', 'NV', \
-                'NY', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC', 'SD', 'TN', 'TX', 'UT', \
+                'NY', 'OH', 'OK', 'OR', 'PA', 'PR','RI', 'SC', 'SD', 'TN', 'TX', 'UT', \
                 'VA', 'VT', 'WA', 'WI', 'WV', 'WY','AS']
 
 
@@ -1554,7 +1554,7 @@ STATE_TUPLE = (
     ('de','Delaware'),
     ('dc','District of Columbia'),
     ('fl','Florida'),
-    ('ga','Gorgia'),
+    ('ga','Georgia'),
     ('gu','Guam'),
     ('hi','Hawaii'),
     ('id','Idaho'),
@@ -1584,6 +1584,7 @@ STATE_TUPLE = (
     ('ok','Oklahoma'),
     ('or','Oregon'),
     ('pa','Pennsylvania'),
+    ('pr','Puerto Rico'),
     ('ri','Rhode Island'),
     ('sc','South Carolina'),
     ('sd','South Dakota'),

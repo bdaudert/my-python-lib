@@ -309,7 +309,7 @@ def set_initial(request,app_name):
     if app_name in ['single_lister','multi_lister']:
         initial['data_format'] = Get('data_format', 'html')
     else:
-        initial['data_format'] = Get('data_format', 'clm')
+        initial['data_format'] = Get('data_format', 'xl')
 
 
     if app_name in ['single_lister','multi_lister','station_finder','sf_download','map_overlay']:

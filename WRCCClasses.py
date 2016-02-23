@@ -2432,23 +2432,30 @@ class LargeDataRequest(object):
         error = None
         #Set Writer
         if self.form['data_format'] in ['clm','dlm']:
-            try:
-                if self.form['output_format'] == 'verbose':
-                    Writer = CsvWriter(data_chunk, f = path_to_file)
-                else:
-                    Writer = CsvWriterNew(data_chunk, f = path_to_file)
-            except Exception, e:
-                self.logger.error('ERROR in write_to_file. Cannot initialize writer: ' + str(e))
-                return str(e)
+            if 'output_format' in self.form.keys():
+                try:
+                    if self.form['output_format'] == 'verbose':
+                        Writer = CsvWriter(data_chunk, f = path_to_file)
+                    else:
+                        Writer = CsvWriterNew(data_chunk, f = path_to_file)
+                except Exception, e:
+                    self.logger.error('ERROR in write_to_file. Cannot initialize writer: ' + str(e))
+                    return str(e)
+            else:
+                Writer = CsvWriter(data_chunk, f = path_to_file)
+
         if self.form['data_format'] == 'xl':
-            try:
-                if self.form['output_format'] == 'verbose':
-                    Writer = ExcelWriter(data_chunk,f = path_to_file)
-                else:
-                    Writer = ExcelWriterNew(data_chunk,f = path_to_file)
-            except Exception, e:
-                self.logger.error('ERROR in write_to_file. Cannot initialize writer: ' + str(e))
-                return str(e)
+            if 'output_format' in self.form.keys():
+                try:
+                    if self.form['output_format'] == 'verbose':
+                        Writer = ExcelWriter(data_chunk,f = path_to_file)
+                    else:
+                        Writer = ExcelWriterNew(data_chunk,f = path_to_file)
+                except Exception, e:
+                    self.logger.error('ERROR in write_to_file. Cannot initialize writer: ' + str(e))
+                    return str(e)
+            else:
+                Writer = ExcelWriter(data_chunk,f = path_to_file)
         self.logger.info('Writing data to file.')
         Writer.write_to_file()
         '''

@@ -364,14 +364,17 @@ def station_meta_to_json(by_type, val, el_list=None, time_range=None, constraint
                     marker_icons.append(WRCCData.NETWORK_ICONS[str(sid_split[1])])
                 else:
                     stn_networks.append('Misc')
-                    marker_icons.append(WRCCData.NETWORK_ICONS['11'])
+                    marker_icons.append('red')
         #Sanity check : Some Acis records are incomplete, leading to key error
         if 'll' in stn.keys():
             lat = str(stn['ll'][1])
             lon = str(stn['ll'][0])
         else:
             continue
-        name = str(stn['name']).replace("\'"," ").replace('#','') if 'name' in stn.keys() else 'Name not listed'
+        try:
+            name = str(stn['name']).replace("\'"," ").replace('#','') if 'name' in stn.keys() else 'Name not listed'
+        except:
+            name = 'Name not listed'
         uid = str(stn['uid']) if 'uid' in stn.keys() else 'Uid not listed'
         elev = str(stn['elev']) if 'elev' in stn.keys() else 'Elevation not listed'
         state_key = str(stn['state']).lower() if 'state' in stn.keys() else 'State not listed'

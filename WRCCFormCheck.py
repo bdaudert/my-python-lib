@@ -332,8 +332,9 @@ def check_end_date(form):
     ml = WRCCData.MONTH_LENGTHS[int(e_date[4:6]) - 1]
     if int(e_date[6:8]) > ml:
         if str(e_date[4:6]) == '02' or str(e_date[4:6]) == '2':
-            if WRCCUtils.is_leap_year(e_date[0:4]):
-                return '%s only has %s days. You entered: %s' %(WRCCData.NUMBER_TO_MONTH_NAME[str(e_date[4:6])],'29',str(e_date[6:8]))
+            if int(e_date[6:8]) == 29 and  WRCCUtils.is_leap_year(e_date[0:4]):
+                return None
+                #return '%s only has %s days. You entered: %s' %(WRCCData.NUMBER_TO_MONTH_NAME[str(e_date[4:6])],'29',str(e_date[6:8]))
             else:
                 return '%s only has %s days. You entered: %s' %(WRCCData.NUMBER_TO_MONTH_NAME[str(e_date[4:6])],str(ml),str(e_date[6:8]))
         else:

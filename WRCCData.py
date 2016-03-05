@@ -57,6 +57,10 @@ DISPLAY_PARAMS = {
     #metadata
     'uid':'Unique Station Identifier',
     'coop_id': 'COOP Identifier',
+    'id':'ID',
+    'ids':'IDs',
+    'network':'Network',
+    'networks':'Networks',
     'sids': 'Station ID/Network List',
     'll':'Longitude, Latitude',
     'elev':'Elevation',
@@ -1019,6 +1023,21 @@ OUTPUT_FORMAT_TUPLE = (
     ('short','Short')
 )
 
+DISPLAY_TUPLE = (
+    ('map','Map'),
+    ('table','Table')
+)
+
+STATION_META_TUPLE = (
+    ('name','Name'),
+    ('state','State'),
+    ('ids','IDs'),
+    ('networks','Networks'),
+    ('ll', 'Lon, Lat'),
+    ('elev','Elevation'),
+    ('valid_daterange','Valid Daterange')
+)
+
 #width, height in pixels
 IMAGE_SIZES = {
     'small':[510, 290],
@@ -1628,6 +1647,8 @@ SCENIC_FORM_OPTIONS = {
         'show_observation_time':BOOLEAN_TUPLE,
         'data_format':DATA_FORMAT_CHOICES,
         'output_format':OUTPUT_FORMAT_TUPLE,
+        'display':DISPLAY_TUPLE,
+        'metadata_keys':STATION_META_TUPLE,
         'data_summary':DATA_SUMMARY_TUPLE,
         'spatial_summary':STATISTIC,
         'temporal_summary':STATISTIC,
@@ -1652,6 +1673,8 @@ SCENIC_FORM_OPTIONS = {
         'spatial_summary':STATISTIC,
         'data_format':DATA_FORMAT_DOWNLOAD,
         'output_format':OUTPUT_FORMAT_TUPLE,
+        'display':DISPLAY_TUPLE,
+        'metadata_keys':STATION_META_TUPLE,
         'delimiter':DELIMITER_TUPLE
     },
     'station_finder': {
@@ -1672,6 +1695,8 @@ SCENIC_FORM_OPTIONS = {
         'spatial_summary':STATISTIC,
         'data_format':DATA_FORMAT_CHOICES,
         'output_format':OUTPUT_FORMAT_TUPLE,
+        'display':DISPLAY_TUPLE,
+        'metadata_keys':STATION_META_TUPLE,
         'delimiter':DELIMITER_TUPLE
     },
     'single_lister':{

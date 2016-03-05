@@ -59,30 +59,36 @@ def set_GET_list(request):
 
 def set_min_max_dates(initial):
     sd = '9999-99-99';ed = '9999-99-99'
+    sd_fut = sd; ed_fut = ed
     if 'station_id' in initial.keys():
         stn_json = settings.MEDIA_DIR + '/json/US_station_id.json'
         stn_id, stn_name = WRCCUtils.find_id_and_name(initial['station_id'],stn_json)
         els = []
         if 'element' in initial.keys():
             els = [initial['element']]
-            if initial['element'] == 'dtr':els = ['maxt','mint']
+            if initial['element'] in ['dtr','pet']:els = ['maxt','mint']
         if 'elements' in initial.keys():
-            els = ['maxt','mint','pcpn']
             els = initial['elements']
             if 'dtr' in els and 'maxt' not in els:
                 els.append('maxt')
             if 'dtr' in els and 'mint' not in els:
                 els.append('mint')
+            if 'dtr' in els and 'maxt' not in els:
+                els.append('maxt')
+            if 'dtr' in els and 'mint' not in els:
+                els.append('mint')
+
         vd = WRCCUtils.find_valid_daterange(stn_id,el_list=els,max_or_min='min')
-        if vd and len(vd) >=1:sd = vd[0]
-        if vd and len(vd) >1:ed = vd[1]
+        if vd and len(vd[0]) >=1:sd = vd[0]
+        if vd and len(vd[1]) >1:ed = vd[1]
+        sd_fut =  sd;ed_fut = ed
     if 'location' in initial.keys():
         sd = WRCCData.GRID_CHOICES[str(initial['grid'])][3][0][0]
         ed = WRCCData.GRID_CHOICES[str(initial['grid'])][3][0][1]
-    sd_fut =  sd;ed_fut = ed
-    if len(WRCCData.GRID_CHOICES[initial['grid']][3]) == 2:
-        sd_fut = WRCCData.GRID_CHOICES[initial['grid']][3][1][0]
-        ed_fut = WRCCData.GRID_CHOICES[initial['grid']][3][1][1]
+        sd_fut =  sd;ed_fut = ed
+        if len(WRCCData.GRID_CHOICES[initial['grid']][3]) == 2:
+            sd_fut = WRCCData.GRID_CHOICES[initial['grid']][3][1][0]
+            ed_fut = WRCCData.GRID_CHOICES[initial['grid']][3][1][1]
     return sd, ed, sd_fut, ed_fut
 
 def set_initial(request,app_name):
@@ -216,8 +222,8 @@ def set_initial(request,app_name):
             initial['degree_days'] = Get('degree_days', 'gdd55,hdd70').replace(', ',',')
 
     #Set dates
-    if 'grid' in initial.keys():
-        sd, ed, sd_fut, ed_fut = set_min_max_dates(initial)
+    #if 'grid' in initial.keys():
+    sd, ed, sd_fut, ed_fut = set_min_max_dates(initial)
     if app_name in ['monthly_summary','climatology']:
         initial['start_year'] = Get('start_year', None)
         if initial['start_year'] is None:
@@ -327,6 +333,11 @@ def set_initial(request,app_name):
     if app_name in ['station_finder','map_overlay','sf_download']:
         initial['elements_constraints'] = Get('elements_constraints', 'all')
         initial['dates_constraints']  = Get('dates_constraints', 'all')
+        initial['display'] = Get('display', 'map')
+        all_meta = ['name','state','ll','elev','sids','networks']
+        initial['metadata_keys'] = Getlist('metadata_keys',all_meta)
+        initial['metadata_keys_str'] = ','.join(initial['metadata_keys'])
+        initial['metadata_names'] = [WRCCData.DISPLAY_PARAMS[meta] for meta in initial['metadata_keys']]
     if app_name in  ['monthly_summary','sf_link']:
         initial['start_month'] = Get('start_month','01')
         if initial['element'] in ['pcpn','snow','evap','pet']:
@@ -432,6 +443,8 @@ def set_form(request, clean=True):
             #form['elements'] = WRCCUtils.convert_elements_to_list(request.POST['elements'])
             els = request.POST.getlist('elements',request.POST.get('elements','').split(','))
             form['elements'] = [str(el) for el in els]
+        if 'metadata_keys' in request.POST.keys():
+            form['metadata_keys'] = request.POST.getlist('metadata_keys',request.POST.get('metadata_keys','').split(','))
     elif req_method == 'GET':
         #form = dict((str(x),str(y)) for x,y in request.GET.items())
         for key, val in request.GET.items():
@@ -442,11 +455,8 @@ def set_form(request, clean=True):
         if 'elements' in request.GET.keys():
             #form['elements'] = WRCCUtils.convert_elements_to_list(request.GET['elements'])
             form['elements'] = request.GET.get('elements','').split(',')
-
-            '''
-            els = request.GET.getlist('elements',request.GET.get('elements','').split(','))
-            form['elements'] = [str(el) for el in els]
-            '''
+        if 'metadata_keys' in request.GET.keys():
+            form['metadata_keys'] = request.GET.getlist('metadata_keys',request.GET.get('metadata_keys','').split(','))
     else:
         form = {}
 
@@ -465,6 +475,8 @@ def set_form(request, clean=True):
         del form['csrfmiddlewaretoken']
     if 'formData' in form.keys():
         del form['formData']
+    if 'form_options' in form.keys():
+        del form['form_options']
 
     if not clean:
         return form

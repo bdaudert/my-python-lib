@@ -44,7 +44,11 @@ def make_request(url,params) :
 
 def DataCall(acis_call, params):
     req = {}
-    servers = settings.ACIS_SERVERS
+    #need special call for grids 22 - 41
+    if 'grid' in params.keys() and int(params['grid']) in range(22,42):
+        servers =  ['http://grid.rcc-acis.org/']
+    else:
+        servers = settings.ACIS_SERVERS
     for url in servers:
         try:
             req = make_request(url + acis_call,params)

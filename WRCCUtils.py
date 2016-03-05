@@ -271,8 +271,8 @@ def set_acis_meta(data_type):
         return 'name,state,sids,ll,elev,uid,valid_daterange'
     if data_type == 'grid':
         #LOCAFIX ME LOCA NO ELEVS
-        #return 'll,elev'
-        return 'll'
+        #return 'll'
+        return 'll,elev'
 
 def set_acis_els(form):
     '''
@@ -619,6 +619,7 @@ def request_and_format_data(form):
         error = 'Data request failed with error: %s.' %str(e)
         resultsdict['error'].append( error)
         return resultsdict
+
     #Sanity checks
     if req is None:
         error = 'No data found for these parameters.'
@@ -869,7 +870,7 @@ def station_data_trim_and_summary(req,form):
                     row.append(compute_statistic(smry_data[el_idx],form['temporal_summary']))
                 new_smry.append(row)
     #Compute spatial summary
-    if form['data_summary'] == 'spatial':
+    if form['data_summary'] == 'spatial_summary':
         for date_idx in range(len(dates)):
             for el_idx in range(len(form['elements'])):
                 new_smry[date_idx].append(compute_statistic(smry_data[date_idx][el_idx],form['spatial_summary']))
@@ -910,8 +911,8 @@ def grid_data_trim_and_summary(req,form):
     #Check that metadata and data are there
     data_key = 'data'
     #LOCAFIX ME LOCA NO ELEVS
-    #meta_keys = ['lat','lon','elev']
-    meta_keys = ['lat','lon']
+    meta_keys = ['lat','lon','elev']
+    #meta_keys = ['lat','lon']
     results_dict = {}
     error = check_request_for_data(req,meta_keys,data_key)
     if error is not None:
@@ -958,8 +959,8 @@ def grid_data_trim_and_summary(req,form):
                 continue
             #points is in shape, add tp data and compute summary
             #LOCAFIX ME LOCA NO ELEVS
-            #elev = unit_convert('elev',req['meta']['elev'][grid_idx][lon_idx])
-            elev = '-9999'
+            elev = unit_convert('elev',req['meta']['elev'][grid_idx][lon_idx])
+            #elev = '-9999'
             meta_dict = write_grid_metadict(lat,lon,elev)
             meta_display_list = metadict_to_display_list(meta_dict, meta_dict.keys(),form)
             new_meta.append(meta_display_list)
@@ -1029,8 +1030,8 @@ def format_grid_spatial_summary(req,form):
     #Check that metadata and data are there
     data_key = 'data'
     #LOCAFIX ME LOCA NO ELEVS
-    #meta_keys = ['lat','lon','elev']
-    meta_keys = ['lat','lon']
+    meta_keys = ['lat','lon','elev']
+    #meta_keys = ['lat','lon']
     results_dict = {}
     error = check_request_for_data(req,meta_keys,data_key)
     if error is not None:
@@ -1102,8 +1103,8 @@ def format_grid_no_summary(req,form):
     #Check that metadata and data are there
     data_key = 'data'
     #LOCAFIX ME LOCA NO ELEVS
-    #meta_keys = ['lat','lon','elev']
-    meta_keys = ['lat','lon']
+    meta_keys = ['lat','lon','elev']
+    #meta_keys = ['lat','lon']
     results_dict = {}
     error = check_request_for_data(req,meta_keys,data_key)
     if error is not None:
@@ -1132,8 +1133,8 @@ def format_grid_no_summary(req,form):
         for lon_idx in xrange(len(req['meta']['lon'][grid_idx])):
             lon = req['meta']['lon'][grid_idx][lon_idx]
             #LOCAFIX ME LOCA NO ELEVS
-            #elev = unit_convert('elev',req['meta']['elev'][grid_idx][lon_idx])
-            elev = '-9999'
+            elev = unit_convert('elev',req['meta']['elev'][grid_idx][lon_idx])
+            #elev = '-9999'
             meta_dict = write_grid_metadict(lat,lon,elev)
             meta_display_list = metadict_to_display_list(meta_dict, meta_dict.keys(),form)
             new_meta.append(meta_display_list)
@@ -1172,8 +1173,8 @@ def format_grid_windowed_data(req,form):
     #Check that metadata and data are there
     data_key = 'data'
     #LOCAFIX ME LOCA NO ELEVS
-    #meta_keys = ['lat','lon','elev']
-    meta_keys = ['lat','lon']
+    meta_keys = ['lat','lon','elev']
+    #meta_keys = ['lat','lon']
     results_dict = {}
     error = check_request_for_data(req,meta_keys,data_key)
     if error is not None:
@@ -1202,8 +1203,8 @@ def format_grid_windowed_data(req,form):
         for lon_idx in xrange(len(req['meta']['lon'][grid_idx])):
             lon = req['meta']['lon'][grid_idx][lon_idx]
             #LOCAFIX ME LOCA NO ELEVS
-            #elev = unit_convert('elev',req['meta']['elev'][grid_idx][lon_idx])
-            elev = '-9999'
+            elev = unit_convert('elev',req['meta']['elev'][grid_idx][lon_idx])
+            #elev = '-9999'
             meta_dict = write_grid_metadict(lat,lon,elev)
             meta_display_list = metadict_to_display_list(meta_dict, meta_dict.keys(),form)
             new_meta.append(meta_display_list)
@@ -1250,8 +1251,8 @@ def format_grid_temporal_summary(req,form):
     #Check that metadata and data are there
     data_key = 'smry'
     #LOCAFIX ME LOCA NO ELEVS
-    #meta_keys = ['lat','lon','elev']
-    meta_keys = ['lat','lon']
+    meta_keys = ['lat','lon','elev']
+    #meta_keys = ['lat','lon']
     results_dict = {}
     error = check_request_for_data(req,meta_keys,data_key)
     if error is not None:
@@ -1279,8 +1280,8 @@ def format_grid_temporal_summary(req,form):
         for lon_idx in xrange(len(req['meta']['lon'][grid_idx])):
             lon = req['meta']['lon'][grid_idx][lon_idx]
             #LOCAFIX ME LOCA NO ELEVS
-            #elev = unit_convert('elev',req['meta']['elev'][grid_idx][lon_idx])
-            elev = '-9999'
+            elev = unit_convert('elev',req['meta']['elev'][grid_idx][lon_idx])
+            #elev = '-9999'
             meta_dict = write_grid_metadict(lat,lon,elev)
             meta_display_list = metadict_to_display_list(meta_dict, meta_dict.keys(),form)
             new_meta.append(meta_display_list)
@@ -1319,7 +1320,6 @@ def format_station_spatial_summary(req,form):
         meta -- [{stn1_meta},{stn2_meta}, ...]
         form -- user form input dictionary
     '''
-
     data_key = 'data'
     error = check_request_for_data(req,[],data_key)
     if error is not None:
@@ -3129,7 +3129,15 @@ def find_valid_daterange(sid, start_date='por', end_date='por', el_list=None, ma
     else:
         el_tuple =''
         for idx, el in enumerate(el_list):
-            el_tuple+=str(WRCCData.ACIS_ELEMENTS_DICT[el]['vX'])
+            if el in ['pet','dtr']:
+                if 'maxt' not in el_list and 'mint' not in el_list:
+                    el_tuple+='maxt,mint'
+                if 'maxt' not in el_list and 'mint' in el_list:
+                    el_tuple+='maxt'
+                if 'maxt' in el_list and 'mint' not in el_list:
+                    el_tuple+='mint'
+            else:
+                el_tuple+=str(WRCCData.ACIS_ELEMENTS_DICT[el]['vX'])
             if idx < len(el_list) - 1:
                 el_tuple+=','
 
@@ -3646,6 +3654,32 @@ def haversine_distance(lon1, lat1, lon2, lat2):
     c = 2*math.asin(math.sqrt(a))
     return round(R * c,4)
 
+def orient_poly_ccw(polygon_array):
+    sum1 = 0; sum2 = 0
+    for i in range(len(polygon_array[0:len(polygon_array) - 1])):
+        sum1+=polygon_array[i][0]*polygon_array[i+1][1]
+        sum2+=polygon_array[i+1][0]*polygon_array[i][1]
+    sum1+=polygon_array[len(polygon_array) - 1][0]*polygon_array[0][1]
+    sum2+=polygon_array[0][0]*polygon_array[len(polygon_array) - 1][1]
+    A = sum1 - sum2
+    #Already ccw
+    if A >0:return polygon_array
+    #cw, need to reverse the coords
+    if A < 0:return list(reversed(polygon_array))
+
+def orient_poly_cw(polygon_array):
+    sum1 = 0; sum2 = 0
+    for i in range(len(polygon_array[0:len(polygon_array) - 1])):
+        sum1+=polygon_array[i][0]*polygon_array[i+1][1]
+        sum2+=polygon_array[i+1][0]*polygon_array[i][1]
+    sum1+=polygon_array[len(polygon_array) - 1][0]*polygon_array[0][1]
+    sum2+=polygon_array[0][0]*polygon_array[len(polygon_array) - 1][1]
+    A = sum1 - sum2
+    #Already cw
+    if A < 0:return polygon_array
+    #ccw, need to reverse the coords
+    if A > 0:return list(reversed(polygon_array))
+
 def point_in_circle(x,y,circle):
     '''
     Determine if a point is inside a given cicle
@@ -3671,6 +3705,64 @@ def point_in_circle(x,y,circle):
             return False
     except:
         return False
+
+def point_on_boundary(x, y, poly):
+    n = len(poly)
+    for i in range(n):
+        p1x, p1y = poly[i]
+        p2x, p2y = poly[(i + 1) % n]
+        v1x = p2x - p1x
+        v1y = p2y - p1y #vector for the edge between p1 and p2
+        v2x = x - p1x
+        v2y = y - p1y #vector from p1 to the point in question
+        if(v1x * v2y - v1y * v2x == 0): #if vectors are parallel
+            if(v2x / v1x > 0): #if vectors are pointing in the same direction
+                if(v1x * v1x + v1y * v1y >= v2x * v2x + v2y * v2y): #if v2 is shorter than v1
+                    return True
+    return False
+
+def point_on_vertex(x,y,p1x,p1y,p2x,p2y):
+    v1x = p2x - p1x
+    v1y = p2y - p1y #vector for the edge between p1 and p2
+    v2x = x - p1x
+    v2y = y - p1y #vector from p1 to the point in question
+    if(v1x * v2y - v1y * v2x == 0): #if vectors are parallel
+        if(v2x / v1x > 0): #if vectors are pointing in the same direction
+            if(v1x * v1x + v1y * v1y >= v2x * v2x + v2y * v2y): #if v2 is shorter than v1
+                return True
+    return False
+
+def point_in_or_on_poly(x,y,poly):
+    '''
+    Determine if a point is inside a given polygon or not
+    Polygon is a list of (x,y) or [x,y] pairs.
+    Points lying on the boundary are included.
+    This function returns True or False. The algorithm is called
+    the "Ray Casting Method".
+    '''
+    n = len(poly)
+    inside = False
+    try:
+        p1x,p1y = poly[0]
+        for i in range(n+1):
+            p2x,p2y = poly[i % n]
+            #Check if point is on boundary
+            try:
+                if point_on_vertex(x,y,p1x,p1y,p2x,p2y):
+                    return True
+            except:pass
+            #Check if point is inside
+            if y > min(p1y,p2y):
+                if y <= max(p1y,p2y):
+                    if x <= max(p1x,p2x):
+                        if p1y != p2y:
+                            xints = (y-p1y)*(p2x-p1x)/(p2y-p1y)+p1x
+                        if p1x == p2x or x <= xints:
+                            inside = not inside
+            p1x,p1y = p2x,p2y
+    except:
+        pass
+    return inside
 
 def point_in_poly(x,y,poly):
     '''
@@ -3712,10 +3804,19 @@ def set_poly_and_PointIn(prms):
             PointIn = getattr(thismodule,'point_in_circle')
         elif len(shape)== 4:#bbox
             poly = [(shape[0],shape[1]),(shape[0],shape[3]),(shape[2],shape[3]),(shape[2],shape[1])]
-            PointIn = getattr(thismodule,'point_in_poly')
+            #Close poly
+            poly.append((shape[0],shape[1]))
+            #Orient poly ccw
+            poly = orient_poly_ccw(poly)
+            #PointIn = getattr(thismodule,'point_in_poly')
+            PointIn = getattr(thismodule,'point_in_or_on_poly')
         else:
             poly = [(shape[2*idx],shape[2*idx+1]) for idx in range(len(shape)/2)]
-            PointIn = getattr(thismodule,'point_in_poly')
+            #close poly
+            poly.append((shape[0],shape[1]))
+            poly = orient_poly_ccw(poly)
+            #PointIn = getattr(thismodule,'point_in_poly')
+            PointIn = getattr(thismodule,'point_in_or_on_poly')
     else:
         if 'basin' in prms.keys():
             sh = AcisWS.find_geojson_of_area('basin', prms['basin'])

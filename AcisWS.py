@@ -392,20 +392,40 @@ def station_meta_to_json(by_type, val, el_list=None, time_range=None, constraint
             stn_networks_sorted.append('COOP')
         #Generate one entry per network that the station belongs to
         for j, sid in enumerate(stn_networks_sorted):
-            stn_dict = {"name":name,"uid":uid,"sid":stn_sids[j],"sids":stn_sids,"elevation":elev,"lat":lat,"lon":lon,\
-            "state":state_key, "marker_icon":marker_icons[j], "marker_category":stn_networks[j],\
-            "stn_networks":stn_networks,"stn_network":','.join(stn_networks),"stn_network_codes": stn_network_codes}
+            stn_dict = {
+                'name':name,
+                'uid':uid,
+                'sid':stn_sids[j],
+                'sids':stn_sids,
+                'sids_str':','.join(stn_sids),
+                'elevation':elev,
+                'lat':lat,
+                'lon':lon,
+                'll':str(lon) + ', ' + str(lat),
+                'state':state_key,
+                'marker_icon':marker_icons[j],
+                'marker_category':stn_networks[j],
+                'stn_networks':stn_networks,
+                'stn_network':','.join(stn_networks),
+                'stn_network_codes': stn_network_codes
+            }
             #check which elements are available at the stations[valid_daterange is not empty]
             valid_date_range_list = stn['valid_daterange']
             available_elements = []
+            available_elements_str = ''
             for j,rnge in enumerate(valid_date_range_list):
-                if rnge:
-                    available_elements.append([WRCCData.ACIS_ELEMENTS[vX_list[j]]['name_long'], [str(rnge[0]), str(rnge[1])]])
-                    #append growing degree days
+                if rnge and len(rnge) >=2:
+                    vd = [str(rnge[0]), str(rnge[1])]
+                    vd_str = ' - '.join(vd)
                     if WRCCData.ACIS_ELEMENTS[vX_list[j]]['name'] == 'cdd':
-                        available_elements.append([WRCCData.ACIS_ELEMENTS['-44']['name_long'], [str(rnge[0]), str(rnge[1])]])
+                        el_name = WRCCData.ACIS_ELEMENTS['-44']['name_long']
+                    else:
+                        el_name = WRCCData.ACIS_ELEMENTS[vX_list[j]]['name_long']
+                    available_elements.append([el_name,vd])
+                    available_elements_str+=el_name + ': ' + vd_str + ', '
             if available_elements:
                 stn_dict['available_elements'] = available_elements
+                stn_dict['available_elements_str'] = available_elements_str[0:-2]
             #find index in alphabetically ordered list of station names
             sorted_list.append(name.split(' ')[0])
             try:
@@ -419,7 +439,7 @@ def station_meta_to_json(by_type, val, el_list=None, time_range=None, constraint
             else:
                 stn_meta_list.insert(stn_idx, stn_dict)
 
-    stn_json["stations"] = stn_meta_list
+    stn_json['stations'] = stn_meta_list
     WRCCUtils.load_data_to_json_file(f_dir + f_name, stn_json)
     return stn_json, f_name
 

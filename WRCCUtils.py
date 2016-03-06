@@ -62,8 +62,9 @@ today_day = today[6:8]
 begin_10yr = set_back_date(3660)
 yesterday = set_back_date(1)
 fourtnight = set_back_date(14)
+
 ###################################
-#DATA  LSITER MODULES
+#DATA  LISTER MODULES
 ###################################
 def get_data_type(form):
     '''
@@ -2402,13 +2403,10 @@ def form_to_display_list(key_order_list, form):
         keys = [k for k in key_order_list]
     display_list = []
     for key in keys:
-        display_list.append([WRCCData.DISPLAY_PARAMS[key]])
-        '''
         try:
             display_list.append([WRCCData.DISPLAY_PARAMS[key]])
         except:
             display_list.append([''])
-        '''
     #Special case window for yearly_summary
     if 'window' in keys:
         idx = keys.index(str(key))
@@ -2589,6 +2587,35 @@ def set_point_name_and_id(form,meta):
     return p_id, p_name
 
 
+def write_station_list_table(header_keys,stn_json):
+    '''
+    Writes station finder reseults to a table that can be saved to csv or excel
+    Args:
+        metadata_keys: all or some of
+                       name, state, ll, elev, sids,networks,valid_daterange
+        stn_json: dict returned by station finder request (AcisWS.station_meta_to_json)
+    Returns:
+        table_data: [[header_row],[data_row1],[data_row2],...]
+    '''
+    table_data = []
+    #Sanity checks
+    if not 'stations' in stn_json.keys() or not stn_json['stations']:
+        return table_data
+    #Set header
+    table_data.append([WRCCData.DISPLAY_PARAMS[key] for key in header_keys])
+    #Loop over stations
+    for stn_data in stn_json['stations']:
+        data = []
+        for key in header_keys:
+            try:
+                #Find the corresponding key in stn_json
+                data_key = WRCCData.STATION_LIST_META_KEYS_TO_STN_JSON_KEYS[key]
+                #Get that data value
+                val = stn_data[data_key]
+            except:val = ''
+            data.append(val)
+        table_data.append(data)
+    return table_data
 #######################
 # LINKS AN URL PARAMS
 #######################

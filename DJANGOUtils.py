@@ -334,9 +334,9 @@ def set_initial(request,app_name):
         initial['elements_constraints'] = Get('elements_constraints', 'all')
         initial['dates_constraints']  = Get('dates_constraints', 'all')
         initial['display'] = Get('display', 'map')
-        all_meta = ['name','state','ll','elev','sids','networks']
+        #all_meta = WRCCData.STATION_LIST_META_KEYS_DEFAULT
+        all_meta = ['name','state','ll','elev','networks']
         initial['metadata_keys'] = Getlist('metadata_keys',all_meta)
-        initial['metadata_keys_str'] = ','.join(initial['metadata_keys'])
         initial['metadata_names'] = [WRCCData.DISPLAY_PARAMS[meta] for meta in initial['metadata_keys']]
     if app_name in  ['monthly_summary','sf_link']:
         initial['start_month'] = Get('start_month','01')

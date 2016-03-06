@@ -761,6 +761,21 @@ GRID_DATA_FORMATTER = {
 #FORM CHOICES/FORM related stuff
 ###################################
 ###################################
+STATION_LIST_META_KEYS_DEFAULT =['name','state','ll','elev','ids','networks']
+
+'''
+Relates keys in STATION_LIST_META_KEYS_DEFAULT
+to kesy coming out of AcisWS>station_meta_to_json
+'''
+STATION_LIST_META_KEYS_TO_STN_JSON_KEYS = {
+    'name':'name',
+    'state':'state',
+    'll':'ll',
+    'elev':'elevation',
+    'networks':'stn_network',
+    'ids':'sids_str',
+    'valid_daterange':'available_elements_str'
+}
 #DELETE?
 SEARCH_AREA_FORM_TO_ACIS = {
     'station_id':'stnid',
@@ -1031,10 +1046,10 @@ DISPLAY_TUPLE = (
 STATION_META_TUPLE = (
     ('name','Name'),
     ('state','State'),
-    ('ids','IDs'),
-    ('networks','Networks'),
     ('ll', 'Lon, Lat'),
     ('elev','Elevation'),
+    ('ids','IDs'),
+    ('networks','Networks'),
     ('valid_daterange','Valid Daterange')
 )
 
@@ -1289,6 +1304,7 @@ COLUMN_HEADERS = {
 CSV_HEADER_KEYS = {
     'station_finder':[],
     'sf_download':[],
+    'sf_station_list':['area_type','elements', 'elements_constraints','start_date','end_date', 'dates_constraints'],
     'single_lister':['area_type','data_summary','start_date','end_date'],
     'monthly_summary':['area_type','element','start_year','end_year'],
     'yearly_summary':['element','start_month','start_day'],

@@ -66,7 +66,7 @@ DISPLAY_PARAMS = {
     'elev':'Elevation',
     'name':'Station Name',
     'state':'State',
-    'valid_daterange': 'Valid Date Range (by Element)',
+    'valid_daterange': 'Valid Date Range',
     'select_grid_by':'Grid Data Request',
     'select_stations_by': 'Station Data Request',
     #search areas
@@ -1782,7 +1782,8 @@ SCENIC_FORM_OPTIONS = {
         'end_day':DAY_TUPLE,
         'temporal_summary':STATISTIC,
         'data_format':DATA_FORMAT_CHOICES,
-        'delimiter':DELIMITER_TUPLE
+        'delimiter':DELIMITER_TUPLE,
+        'chart_type':CHART_TYPE
     },
     'intraannual':{
         'area_type':SINGLE_AREA_TUPLE,
@@ -1793,7 +1794,8 @@ SCENIC_FORM_OPTIONS = {
         'start_month':MONTH_TUPLE,
         'start_day':DAY_TUPLE,
         'data_format':DATA_FORMAT_CHOICES,
-        'delimiter':DELIMITER_TUPLE
+        'delimiter':DELIMITER_TUPLE,
+        'chart_type':CHART_TYPE
     },
     'data_comparison':{
         'grid':GRID_CHOICES_TUPLE,

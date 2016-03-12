@@ -2360,24 +2360,7 @@ def sids_to_display(sids):
     return sid_str
 
 def set_display_keys(app_name, form):
-    if app_name == 'single_lister':
-        header_keys = [form['area_type'],'start_date', 'end_date']
-        if form['data_summary'] != 'none':
-            header_keys.insert(1,form['data_summary'])
-    if app_name == 'multi_lister':
-        header_keys = [form['area_type'],'data_summary','start_date', 'end_date']
-    if app_name == 'temporal_summary':
-        header_keys = [form['area_type'],'temporal_summary',\
-            'elements','units','start_date', 'end_date']
-    if app_name == 'intraannual':
-        header_keys = [form['area_type'],'element','start_year',\
-            'end_year','start_month', 'start_day']
-    if app_name == 'yearly_summary':
-         header_keys = [form['area_type'],'temporal_summary', 'element',\
-        'start_year', 'end_year','window']
-    if app_name == 'spatial_summary':
-        header_keys = [form['area_type'],\
-            'spatial_summary','elements','units','start_date', 'end_date']
+    header_keys = WRCCData.PARAMS_HEADER_KEYS[app_name]
     #Add data type
     if 'data_type' in form.keys():
         header_keys.insert(0,'data_type')

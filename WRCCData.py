@@ -117,18 +117,18 @@ DISPLAY_PARAMS = {
     'graph_start_year': 'Graph Start Year',
     'graph_end_year': 'Graph End Year',
     'dates_constraints': 'Date Constraints',
-    'element':'Element',
-    'elements':'Elements',
-    'elems_long':'Elements',
-    'elements_string': 'Elements String',
+    'element':'Variable',
+    'elements':'Variables',
+    'elems_long':'Variables',
+    'elements_string': 'Variables String',
     'add_degree_days':'Add special degree days',
     'degree_days':'Degree Days',
-    'element_selection': 'Element Selection',
-    'el_type':'Climate Element Type',
+    'element_selection': 'Variable Selection',
+    'el_type':'Climate Variable Type',
     'units': 'Units',
     'metric': 'Metric',
     'english': 'English',
-    'elements_constraints':'Element Constraints',
+    'elements_constraints':'Variable Constraints',
     'base_temperature': 'Base Temperature',
     'maxt': 'Maximum Daily Temperature',
     'mly_maxt':'Maximum Monthly Temperature',
@@ -176,10 +176,10 @@ DISPLAY_PARAMS = {
     'min': 'Minimum',
     'none': 'None, just get raw data',
     'constraints': 'Constraints',
-    'all_all': 'All Elements, All Dates',
-    'all_any': 'All Elements, Any Dates',
-    'any_any': 'Any Elements, Any Dates',
-    'any_all': 'Any Elements, All Dates',
+    'all_all': 'All Variables, All Dates',
+    'all_any': 'All Variables, Any Dates',
+    'any_any': 'Any Variables, Any Dates',
+    'any_all': 'Any Variables, All Dates',
     'grid': 'Grid',
     'show_running_mean': 'Show Running Mean',
     'running_mean_years': 'Years used in Running Mean Computation',
@@ -1299,6 +1299,22 @@ COLUMN_HEADERS = {
                   'JUN', 'FLAG', 'JUL', 'FLAG', 'AUG', 'FLAG', 'SEP', 'FLAG', 'OCT', 'FLAG', 'NOV', \
                   'FLAG', 'DEC', 'FLAG', 'ANN', 'FLAG'],
     'Sodsumm':None
+}
+
+PARAMS_HEADER_KEYS = {
+    'station_finder':['area_type','elements', 'elements_constraints','start_date','end_date', 'dates_constraints'],
+    'sf_download':[],
+    'sf_station_list':['area_type','elements', 'elements_constraints','start_date','end_date', 'dates_constraints'],
+    'single_lister':['area_type','data_summary','start_date','end_date'],
+    'monthly_summary':['area_type','element','start_year','end_year'],
+    'yearly_summary':['element','start_month','start_day'],
+    'intraannual':['element','start_month','start_day'],
+    'data_comparison':['area_type','start_date','end_date'],
+    'climatology':['area_type','element','start_year','end_year'],
+    'multi_lister':['data_type','area_type','data_summary','start_date','end_date'],
+    'spatial_summary':['data_type','area_type','spatial_summary','start_date','end_date'],
+    'temporal_summary':['data_type','area_type','temporal_summary','start_date','end_date'],
+    'climate_engine':[]
 }
 
 CSV_HEADER_KEYS = {

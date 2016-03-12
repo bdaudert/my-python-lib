@@ -463,15 +463,10 @@ def check_elements(form):
 
 def check_state(form):
     err = None
+    if not 'state' in form.keys():
+        return err
     if form['state'].upper() not in WRCCData.STATE_CHOICES:
         return '%s is not a valid US state abbreviation.' %form['state']
-    '''
-    if form['state'].upper() in ['AK','HI']:
-        if form['state'].upper() =='AK':
-            return 'We currentlly do not carry data for Alaska.'
-        if form['state'].upper() =='HI':
-            return 'We currentlly do not carry data for Hawaii.'
-    '''
     return err
 
 def check_bounding_box(form):

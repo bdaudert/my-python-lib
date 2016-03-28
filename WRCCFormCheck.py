@@ -16,10 +16,14 @@ stn_earliest_dt = WRCCUtils.date_to_datetime(stn_earliest)
 def check_start_year(form):
     err = None
     yr = form['start_year']
-    e_yr = form['end_year']
+    #Check for valid daterange error
+    if yr == '':
+        return 'No valid start year could be found for this station!'
     if yr.lower() == 'por':
         if 'location' in form.keys():
             return 'POR is not a valid year for gridded data.'
+        return err
+    else:
         return err
     if len(yr)!=4:
         return 'Year should be of form yyyy. You entered %s' %yr
@@ -66,6 +70,9 @@ def check_start_year(form):
 def check_end_year(form):
     err = None
     yr = form['end_year']
+    #Check for valid daterange error
+    if yr == '':
+        return 'No valid start year could be found for this station!'
     s_yr = form['start_year']
     if yr.lower() == 'por':
         if 'location' in form.keys():
@@ -127,11 +134,18 @@ def check_start_window(form):
     if int(mm) < 1 or int(mm) > 12:
         return 'Not a valid month.'
     #Check day
+
     if int(dd) < 1 or int(dd) > 31:
         return 'Not a valid day.'
     ml = WRCCData.MONTH_LENGTHS[int(mm) - 1]
     if int(dd) > ml:
-        return 'Month %s only has %s days. You entered: %s' %(WRCCData.NUMBER_TO_MONTH_NAME[mm],ml,dd)
+        if mm == '02' and dd == '29':
+            if 'start_date' in form.keys() and WRCCUtils.is_leap_year(form['start_date'][0:4]):
+                return err
+            else:
+                return 'Month %s only has %s days. You entered: %s' %(WRCCData.NUMBER_TO_MONTH_NAME[mm],ml,dd)
+        else:
+            return 'Month %s only has %s days. You entered: %s' %(WRCCData.NUMBER_TO_MONTH_NAME[mm],ml,dd)
     return err
 
 def check_end_window(form):
@@ -153,13 +167,36 @@ def check_end_window(form):
         return 'Not a valid day.'
     ml = WRCCData.MONTH_LENGTHS[int(mm) - 1]
     if int(dd) > ml:
-        return 'Month %s only has %s days. You entered: %s' %(WRCCData.NUMBER_TO_MONTH_NAME[mm],ml,dd)
+        if mm == '02' and dd == '29':
+            if 'end_date' in form.keys() and WRCCUtils.is_leap_year(form['end_date'][0:4]):
+                return err
+            else:
+                return 'Month %s only has %s days. You entered: %s' %(WRCCData.NUMBER_TO_MONTH_NAME[mm],ml,dd)
+        else:
+            return 'Month %s only has %s days. You entered: %s' %(WRCCData.NUMBER_TO_MONTH_NAME[mm],ml,dd)
     return err
+
+
+def check_min_year(form):
+    err = None
+    if str(min_year) == '9999':
+        return 'This station has no date record in the database.'
+    return err
+
+def check_max_year(form):
+    err = None
+    if str(max_year) == '9999':
+        return 'This station has no date record in the database.'
+    return err
+
 
 def check_start_date(form):
     err = None
     s_date = WRCCUtils.date_to_eight(form['start_date'])
     e_date = WRCCUtils.date_to_eight(form['end_date'])
+    #Valid daterange check
+    if s_date == '':
+        return 'No valid start date could be found for this station!'
     if s_date.lower() == 'por':
         if 'station_id' in form.keys():
             return err
@@ -184,8 +221,8 @@ def check_start_date(form):
     ml = WRCCData.MONTH_LENGTHS[int(s_date[4:6]) - 1]
     if int(s_date[6:8]) > ml:
         if str(s_date[4:6]) == '02' or str(s_date[4:6]) == '2':
-            if WRCCUtils.is_leap_year(s_date[0:4]):
-                return '%s only has %s days. You entered: %s' %(WRCCData.NUMBER_TO_MONTH_NAME[str(s_date[4:6])],'29',str(s_date[6:8]))
+            if int(s_date[6:8]) == 29 and  WRCCUtils.is_leap_year(s_date[0:4]):
+                return None
             else:
                 return '%s only has %s days. You entered: %s' %(WRCCData.NUMBER_TO_MONTH_NAME[str(s_date[4:6])],str(ml),str(s_date[6:8]))
         else:
@@ -306,6 +343,9 @@ def check_end_date(form):
     err = None
     s_date = form['start_date'].replace('-','').replace('/','').replace(':','')
     e_date = form['end_date'].replace('-','').replace('/','').replace(':','')
+    #Check valid daterange error
+    if e_date == '':
+        return 'No valid end date could be found for this station!'
     if e_date.lower() == 'por':
         if 'station_id' in form.keys():
             return err

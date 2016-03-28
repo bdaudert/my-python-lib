@@ -10,7 +10,7 @@ sodlist, sodsum
 #############################################################################
 #python modules
 import numpy, bisect
-import datetime
+import datetime, re
 import sys
 from collections import defaultdict
 #############################################################################
@@ -354,21 +354,25 @@ def station_meta_to_json(by_type, val, el_list=None, time_range=None, constraint
         marker_icons = []
         for sid in sids:
             sid_split = sid.split(' ')
+            '''
             #put coop id up front (for csc application metagraph  and possibly others)
             if str(sid_split[1]) == '2':
+                #stn_sids.append(re.sub('[^a-zA-Z0-9\n\.]', ' ', str(sid_split[1])))
                 stn_sids.insert(0,str(sid_split[0]).replace("\'"," "))
                 stn_network_codes.insert(0, str(sid_split[1]))
                 marker_icons.insert(0, WRCCData.NETWORK_ICONS[str(sid_split[1])])
                 stn_networks.insert(0,WRCCData.NETWORK_CODES[str(sid_split[1])])
             else:
-                stn_sids.append(str(sid_split[0]).replace("\'"," "))
-                stn_network_codes.append(str(sid_split[1]))
-                if int(sid_split[1]) <= 10:
-                    stn_networks.append(WRCCData.NETWORK_CODES[str(sid_split[1])])
-                    marker_icons.append(WRCCData.NETWORK_ICONS[str(sid_split[1])])
-                else:
-                    stn_networks.append('Misc')
-                    marker_icons.append('red')
+            '''
+            #stn_sids.append(re.sub('[^a-zA-Z0-9\n\.]', ' ', str(sid_split[1])))
+            stn_sids.append(str(sid_split[0]).replace("\'"," "))
+            stn_network_codes.append(str(sid_split[1]))
+            if int(sid_split[1]) <= 10:
+                stn_networks.append(WRCCData.NETWORK_CODES[str(sid_split[1])])
+                marker_icons.append(WRCCData.NETWORK_ICONS[str(sid_split[1])])
+            else:
+                stn_networks.append('Misc')
+                marker_icons.append('red')
         #Sanity check : Some Acis records are incomplete, leading to key error
         if 'll' in stn.keys():
             lat = str(stn['ll'][1])
@@ -376,12 +380,13 @@ def station_meta_to_json(by_type, val, el_list=None, time_range=None, constraint
         else:
             continue
         try:
+            #name = re.sub('[^a-zA-Z0-9\n\.]', ' ', str(stn['name'])) if 'name' in stn.keys() else 'Name not listed'
             name = str(stn['name']).replace("\'"," ").replace('#','') if 'name' in stn.keys() else 'Name not listed'
         except:
             name = 'Name not listed'
         uid = str(stn['uid']) if 'uid' in stn.keys() else 'Uid not listed'
         elev = str(stn['elev']) if 'elev' in stn.keys() else 'Elevation not listed'
-        state_key = str(stn['state']).lower() if 'state' in stn.keys() else 'State not listed'
+        state_key = str(stn['state']).lower() if 'state' in stn.keys() else 'state not listed'
         #sort station networks so that coop is last
         #so that coop markers show on map
         stn_networks_sorted = []

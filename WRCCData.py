@@ -116,7 +116,7 @@ DISPLAY_PARAMS = {
     'end_year': 'End Year',
     'graph_start_year': 'Graph Start Year',
     'graph_end_year': 'Graph End Year',
-    'dates_constraints': 'Date Constraints',
+    'dates_constraints': '',
     'element':'Variable',
     'elements':'Variables',
     'elems_long':'Variables',
@@ -128,15 +128,15 @@ DISPLAY_PARAMS = {
     'units': 'Units',
     'metric': 'Metric',
     'english': 'English',
-    'elements_constraints':'Variable Constraints',
+    'elements_constraints':'',
     'base_temperature': 'Base Temperature',
-    'maxt': 'Maximum Daily Temperature',
+    'maxt': 'Maximum Temperature',
     'mly_maxt':'Maximum Monthly Temperature',
     'yly_maxt':'Maximum Yearly Temperature',
-    'mint': 'Minimum Daily Temperature',
+    'mint': 'Minimum Temperature',
     'mly_mint': 'Minimum Monthly Temperature',
     'yly_mint': 'Minimum Yearly Temperature',
-    'avgt': 'Average Daily Temperature',
+    'avgt': 'Average Temperature',
     'mly_avgt': 'Average Monthly Temperature',
     'yly_avgt': 'Average Yearly Temperature',
     'obst': 'Observation Time Temperature',
@@ -145,7 +145,7 @@ DISPLAY_PARAMS = {
     'yly_pcpn': 'Yearly Precipitation',
     'snow': 'Snowfall',
     'snwd': 'Snow Depth',
-    'dtr': 'Daily Temperature Range',
+    'dtr': 'Temperature Range',
     'gdd': 'Growing Degree Days',
     'hdd': 'Heating Degree Days',
     'cdd': 'Cooling Degree Days',
@@ -294,9 +294,9 @@ KELLY_NETWORK_CODES = {
             '6':'WMO',
             '7':'WBAN',
             '8':'CoCoRaHS',
-            #'9':'RCC',
+            '9':'RCC',
             '10':'Threadex',
-            #'11':'Misc'
+            '11':'Misc'
             }
 
 KELLY_NETWORK_ICONS = {
@@ -308,17 +308,17 @@ KELLY_NETWORK_ICONS = {
             '6': 'purple-dot',
             '7': 'yellow-dot',
             '8': 'purple',
-            #'9':'yellow',
+            '9':'yellow',
             '10':'green',
-            #'11': 'red'
+            '11': 'red'
             }
 
 
 ACIS_ELEMENTS = defaultdict(dict)
 ACIS_ELEMENTS ={
-              '1':{'name':'maxt', 'name_long': 'Maximum Daily Temperature (F/C)', 'vX':1},
-              '2':{'name':'mint', 'name_long': 'Minimum Daily Temperature (F/C)', 'vX':2},
-              '43': {'name':'avgt', 'name_long': 'Average Daily Temperature (F/C)', 'vX':43},
+              '1':{'name':'maxt', 'name_long': 'Maximum Temperature (F/C)', 'vX':1},
+              '2':{'name':'mint', 'name_long': 'Minimum Temperature (F/C)', 'vX':2},
+              '43': {'name':'avgt', 'name_long': 'Average Temperature (F/C)', 'vX':43},
               '3':{'name':'obst', 'name_long': 'Observation Time Temperature (F/C)', 'vX':3},
               '4': {'name': 'pcpn', 'name_long':'Precipitation (in/mm)', 'vX':4},
               '10': {'name': 'snow', 'name_long':'Snowfall (in/mm)', 'vX':10},
@@ -340,10 +340,10 @@ ACIS_ELEMENTS ={
               }
 
 ACIS_ELEMENTS_DICT = {
-              'maxt':{'name':'maxt', 'name_long': 'Maximum Daily Temperature', 'vX':1},
-              'mint':{'name':'mint', 'name_long': 'Minimum Daily Temperature', 'vX':2},
-              'avgt': {'name':'avgt', 'name_long': 'Mean Daily Temperature', 'vX':43},
-              'dtr': {'name':'dtr', 'name_long': 'Daily Temperature Range', 'vX':None},
+              'maxt':{'name':'maxt', 'name_long': 'Maximum Temperature', 'vX':1},
+              'mint':{'name':'mint', 'name_long': 'Minimum Temperature', 'vX':2},
+              'avgt': {'name':'avgt', 'name_long': 'Mean Temperature', 'vX':43},
+              'dtr': {'name':'dtr', 'name_long': 'Temperature Range', 'vX':None},
               'obst':{'name':'obst', 'name_long': 'Observation Time Temperature', 'vX':3},
               'pcpn': {'name': 'pcpn', 'name_long':'Precipitation', 'vX':4},
               'snow': {'name': 'snow', 'name_long':'Snowfall', 'vX':10},
@@ -388,13 +388,13 @@ ACIS_ELEMENTS_DICT_SR = {
               'yly_pcpn': {'name': 'yly_pcpn', 'name_long':'Yearly Precipitation', 'vX':98}
 }
 
-ACIS_ELEMENTS_LIST = [['maxt','Maximum Daily Temperature (F)'], ['mint','Minimum Daily Temperature (F)'],
-                      ['avgt','Average Daily Temperature (F)'], ['obst', 'Observation Time Temperature (F)'], \
+ACIS_ELEMENTS_LIST = [['maxt','Maximum Temperature (F)'], ['mint','Minimum Temperature (F)'],
+                      ['avgt','Average Temperature (F)'], ['obst', 'Observation Time Temperature (F)'], \
                       ['pcpn', 'Precipitation (in)'], ['snow', 'Snowfall (in)'], \
                       ['snwd', 'Snow Depth (in)'], ['cdd', 'Cooling Degree Days'], \
                       ['hdd','Heating Degree Days'], ['gdd', 'Growing Degree Days'], \
                       ['evap', 'Pan Evaporation (in)'], ['gdd', 'Wind Movement (Mi)'],\
-                      ['pet', 'Potential Evapotranspiration'], ['dtr', 'Daily Temperature Range (F)']]
+                      ['pet', 'Potential Evapotranspiration'], ['dtr', 'Temperature Range (F)']]
 
 ELEMENT_THRESHOLDS = {
     'english':{
@@ -1337,19 +1337,19 @@ CSV_HEADER_KEYS = {
 #SODXTRMTS
 ##########
 SXTR_ELEMENT_CHOICES = (
-    ('pcpn', 'Daily Precipitation'),
-    ('snow', 'Daily Snowfall'),
-    ('snwd', 'Daily Snowdepth'),
-    ('maxt', 'Daily Maximum Temperature '),
-    ('mint', 'Daily Minimum Temperature'),
-    ('avgt', 'Daily Mean Temperature'),
+    ('pcpn', 'Precipitation'),
+    ('snow', 'Snowfall'),
+    ('snwd', 'Snowdepth'),
+    ('maxt', 'Maximum Temperature '),
+    ('mint', 'Minimum Temperature'),
+    ('avgt', 'Mean Temperature'),
     ('obst', 'Observation Time Temperature'),
-    ('dtr', 'Daily Temperature Range'),
-    ('hdd', 'Daily Heating Degree Days'),
-    ('cdd', 'Daily Cooling Degree Days'),
-    ('gdd', 'DailyGrowing degree days'),
-    ('evap', 'Daily Evaporation'),
-    ('wdmv', 'Daily Wind Movement'),
+    ('dtr', 'Temperature Range'),
+    ('hdd', 'Heating Degree Days'),
+    ('cdd', 'Cooling Degree Days'),
+    ('gdd', 'Growing degree days'),
+    ('evap', 'Evaporation'),
+    ('wdmv', 'Wind Movement'),
     ('pet', 'Potential ET'),
 )
 
@@ -1371,7 +1371,7 @@ SXTR_ANALYSIS_CHOICES_DICT = {
     'sd': 'Standard Deviation',
     'ndays': 'Number of Days',
     'rmon': 'Range',
-    'msum': 'Sum',
+    'msum': 'Total',
 }
 
 
@@ -1598,7 +1598,7 @@ STATE_TUPLE = (
     ('ak','Alaska'),
     ('as','American Samoa'),
     ('az','Arizona'),
-    ('ar','Arkansa'),
+    ('ar','Arkansas'),
     ('ca','California'),
     ('co','Colorado'),
     ('ct','Connecticut'),
@@ -1835,6 +1835,19 @@ SCENIC_FORM_OPTIONS = {
         )
     },
     'spatial_summary':{
+        'state':STATE_TUPLE,
+        'area_type':MULTI_AREA_TUPLE,
+        'grid':GRID_CHOICES_TUPLE,
+        'elements':ACIS_ELEMENTS_TUPLE,
+        'add_degree_days':BOOLEAN_TUPLE,
+        'units':UNIT_TUPLE,
+        'spatial_summary':STATISTIC,
+        'data_format':DATA_FORMAT_CHOICES,
+        'delimiter':DELIMITER_TUPLE,
+        'data_type':DATA_TYPE_TUPLE,
+        'chart_type':CHART_TYPE
+    },
+    'new_spatial_summary':{
         'state':STATE_TUPLE,
         'area_type':MULTI_AREA_TUPLE,
         'grid':GRID_CHOICES_TUPLE,

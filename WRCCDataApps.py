@@ -1058,9 +1058,11 @@ def SodxtrmtsSCENIC(**kwargs):
             if count > 0.5:
                 mean_out[p_idx] = round(summ/count,2)
                 if kwargs['statistic'] == 'ndays':
-                    results[i][num_yrs].append('%d' % int(round(mean_out[p_idx])))
+                    results[i][num_yrs].append(int(round(mean_out[p_idx])))
+                    #results[i][num_yrs].append('%d' % int(round(mean_out[p_idx])))
                 else:
-                    results[i][num_yrs].append('%.2f' % round(ucv(element, mean_out[p_idx]),2))
+                    results[i][num_yrs].append(round(ucv(element, mean_out[p_idx]),2))
+                    #results[i][num_yrs].append('%.2f' % round(ucv(element, mean_out[p_idx]),2))
                 #New
                 results[i][num_yrs].append(' ')
             else:
@@ -1074,9 +1076,11 @@ def SodxtrmtsSCENIC(**kwargs):
             if count > 1.5:
                 try:
                     if kwargs['statistic'] == 'ndays':
-                        results[i][num_yrs+1].append('%d' % int(round(numpy.sqrt((summ2 - summ**2/count)/(count -1)))))
+                        results[i][num_yrs+1].append(int(round(numpy.sqrt((summ2 - summ**2/count)/(count -1)))))
+                       #results[i][num_yrs+1].append('%d' % int(round(numpy.sqrt((summ2 - summ**2/count)/(count -1)))))
                     else:
-                        results[i][num_yrs+1].append('%.2f' % round(ucv(element, numpy.sqrt((summ2 - summ**2/count)/(count -1))),2))
+                        results[i][num_yrs+1].append(round(ucv(element, numpy.sqrt((summ2 - summ**2/count)/(count -1))),2))
+                        #results[i][num_yrs+1].append('%.2f' % round(ucv(element, numpy.sqrt((summ2 - summ**2/count)/(count -1))),2))
                     #New
                     results[i][num_yrs+1].append(' ')
                 except:
@@ -1102,27 +1106,30 @@ def SodxtrmtsSCENIC(**kwargs):
                     results[i][num_yrs+1].append(' ')
 
             if kwargs['statistic'] == 'ndays':
-                results[i][num_yrs+2].append('%.1f' % round(sk,1))
+                results[i][num_yrs+2].append(round(sk,1))
+                #results[i][num_yrs+2].append('%.1f' % round(sk,1))
             else:
-                results[i][num_yrs+2].append('%.2f' %round(sk,2))
+                results[i][num_yrs+2].append(round(sk,2))
+                #results[i][num_yrs+2].append('%.2f' %round(sk,2))
             #New
             results[i][num_yrs+2].append(' ')
             if kwargs['statistic'] == 'ndays':
-                results[i][num_yrs+3].append('%d' % int(round(xmax)))
+                results[i][num_yrs+3].append(int(round(xmax)))
+                #results[i][num_yrs+3].append('%d' % int(round(xmax)))
             else:
-                results[i][num_yrs+3].append('%.2f' % ucv(element, xmax))
+                results[i][num_yrs+3].append(round(ucv(element, xmax),2))
+                #results[i][num_yrs+3].append('%.2f' % ucv(element, xmax))
             #New
             results[i][num_yrs+3].append(' ')
             if kwargs['statistic'] == 'ndays':
-                results[i][num_yrs+4].append('%d' % int(round(xmin)))
+                results[i][num_yrs+4].append(int(round(xmin)))
+                #results[i][num_yrs+4].append('%d' % int(round(xmin)))
             else:
-                results[i][num_yrs+4].append('%.2f' % round(ucv(element, xmin),2))
+                results[i][num_yrs+4].append(round(ucv(element, xmin),2))
+                #results[i][num_yrs+4].append('%.2f' % round(ucv(element, xmin),2))
             #New
             results[i][num_yrs+4].append(' ')
-            if kwargs['statistic'] == 'ndays':
-                results[i][num_yrs+5].append('%d' % int(round(count)))
-            else:
-                results[i][num_yrs+5].append('%.2f' % round(count,2))
+            results[i][num_yrs+5].append(int(round(count)))
             #New
             results[i][num_yrs+5].append(' ')
         #End p_idx loop
@@ -1141,20 +1148,22 @@ def SodxtrmtsSCENIC(**kwargs):
                     if kwargs['statistic'] == 'msum' and element == 'hdd' and table_1[yr][p_idx]> 9998.5:
                         continue
                     else:
-                        results[i][yr].append('-----')
+                        results[i][yr].append('')
                         results[i][yr].append('z')
                         continue
 
                 if kwargs['departures_from_averages']  == 'F':
                     #results[i][yr].append('%.2f%s' % (ucv(element, table_1[yr][p_idx]), outchr[p_idx]))
                     if kwargs['statistic'] == 'ndays':
-                        results[i][yr].append('%d' % int(table_1[yr][p_idx]))
+                        results[i][yr].append(int(table_1[yr][p_idx]))
+                        #results[i][yr].append('%d' % int(table_1[yr][p_idx]))
                     else:
-                        results[i][yr].append('%.2f' % ucv(element, table_1[yr][p_idx]))
+                        results[i][yr].append(round(ucv(element, table_1[yr][p_idx]),2))
+                        #results[i][yr].append('%.2f' % ucv(element, table_1[yr][p_idx]))
                     results[i][yr].append('%s' % outchr[p_idx])
                 else:
-                    #results[i][yr].append('%.2f%s' % (ucv(element, (table_1[yr][p_idx] - mean_out[p_idx])), outchr[p_idx]))
-                    results[i][yr].append('%.2f' % (ucv(element, (table_1[yr][p_idx] - mean_out[p_idx]))))
+                    results[i][yr].append(round(ucv(element, (table_1[yr][p_idx] - mean_out[p_idx])),2))
+                    #results[i][yr].append('%.2f' % (ucv(element, (table_1[yr][p_idx] - mean_out[p_idx]))))
                     results[i][yr].append('%s' % outchr[p_idx])
             #End p_idx loop
         #End of year loop
@@ -1668,10 +1677,7 @@ def Sodxtrmts(**kwargs):
                 results[i][num_yrs+4].append('%.2f' % round(ucv(element, xmin),2))
             #New
             results[i][num_yrs+4].append(' ')
-            if kwargs['statistic'] == 'ndays':
-                results[i][num_yrs+5].append('%d' % int(round(count)))
-            else:
-                results[i][num_yrs+5].append('%.2f' % round(count,2))
+            results[i][num_yrs+5].append(int(round(count)))
             #New
             results[i][num_yrs+5].append(' ')
         #End month loop
@@ -1699,7 +1705,7 @@ def Sodxtrmts(**kwargs):
                     if kwargs['statistic'] == 'msum' and element == 'hdd' and table_1[yr][mon]> 9998.5:
                         continue
                     else:
-                        results[i][yr].append('-----')
+                        results[i][yr].append('')
                         results[i][yr].append('z')
                         continue
                 if kwargs['departures_from_averages']  == 'F':
@@ -3199,7 +3205,7 @@ def Sodsumm(**kwargs):
                         val_list.append('%.1f' % ucv(el, s_ave))
 
                 if max_max == '-9999' or max_max == '9999':
-                    val_list.append('-9999')
+                    val_list.append('')
                 else:
                     val_list.append(int(round(ucv('maxt',max_max),0)))
                 if cat_idx >=12:

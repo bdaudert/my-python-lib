@@ -620,7 +620,6 @@ def request_and_format_data(form):
         error = 'Data request failed with error: %s.' %str(e)
         resultsdict['error'].append( error)
         return resultsdict
-
     #Sanity checks
     if req is None:
         error = 'No data found for these parameters.'
@@ -725,6 +724,7 @@ def format_data_single_lister(req,form):
             #Attach Obs time
             if obs_time is not None:
                 date_data.append(obs_time)
+        '''
         #check if all data is missing
         if all(v==-9999  for v in date_data) and flag_missing:
             pass
@@ -732,7 +732,8 @@ def format_data_single_lister(req,form):
             #Record first data value and set flag_missing to false
             d_data.append(date + date_data)
             flag_missing = False
-
+        '''
+        d_data.append(date + date_data)
         new_data = d_data
         if smry_data:
             smry_data.insert(0,name)
@@ -2362,7 +2363,7 @@ def sids_to_display(sids):
 def set_display_keys(app_name, form):
     header_keys = WRCCData.PARAMS_HEADER_KEYS[app_name]
     #Add data type
-    if 'data_type' in form.keys():
+    if 'data_type' in form.keys() and form['app_name']!='station_finder':
         header_keys.insert(0,'data_type')
     #Add grid
     if 'data_type' in form.keys() and form['data_type'] == 'grid':
@@ -2400,6 +2401,7 @@ def form_to_display_list(key_order_list, form):
         if str(key) not in keys:
             continue
         idx = keys.index(str(key))
+
         if key == 'area_type':
             if form[key] in form.keys():
                 display_list[idx] = [WRCCData.DISPLAY_PARAMS[form[key]], form[form[key]]]
@@ -2457,6 +2459,8 @@ def form_to_display_list(key_order_list, form):
             display_list[idx].append(WRCCData.MONTH_NAMES_SHORT_CAP[int(form[key]) - 1])
         elif key in ['start_date','end_date']:
             display_list[idx].append(format_date_string(form[key],'dash'))
+        elif key in ['elements_constraints', 'dates_constraints']:
+            display_list[idx] =[str(val).title() ,key.split('_')[0].title()]
         else:
             display_list[idx].append(str(val))
     return display_list

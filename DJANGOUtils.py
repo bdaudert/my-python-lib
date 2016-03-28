@@ -79,8 +79,8 @@ def set_min_max_dates(initial):
                 els.append('mint')
 
         vd = WRCCUtils.find_valid_daterange(stn_id,el_list=els,max_or_min='min')
-        if vd and len(vd[0]) >=1:sd = vd[0]
-        if vd and len(vd[1]) >1:ed = vd[1]
+        if vd and len(vd) >=1:sd = vd[0]
+        if vd and len(vd) >1:ed = vd[1]
         sd_fut =  sd;ed_fut = ed
     if 'location' in initial.keys():
         sd = WRCCData.GRID_CHOICES[str(initial['grid'])][3][0][0]
@@ -296,7 +296,7 @@ def set_initial(request,app_name):
     #data summaries
     if app_name in  ['temporal_summary', 'yearly_summary']:
         initial['data_summary'] = Get('data_summary', 'temporal_summary')
-    elif app_name in ['spatial_summary','multi_lister','map_overlay']:
+    elif app_name in ['new_spatial_summary','spatial_summary','multi_lister','map_overlay']:
         initial['data_summary'] = Get('data_summary', 'spatial_summary')
     else:
         initial['data_summary'] = Get('data_summary', 'none')
@@ -308,7 +308,7 @@ def set_initial(request,app_name):
             initial['temporal_summary'] = Get('temporal_summary', 'mean')
     else:
         initial['temporal_summary'] = Get('temporal_summary', 'mean')
-    if app_name in ['single_lister', 'multi_lister','spatial_summary','sf_download','map_overlay']:
+    if app_name in ['single_lister', 'multi_lister','spatial_summary','new_spatial_summary','sf_download','map_overlay']:
         initial['spatial_summary'] = Get('spatial_summary', 'mean')
 
     #download options
@@ -326,7 +326,7 @@ def set_initial(request,app_name):
     initial['user_email'] = Get('user_email', 'Your Email')
 
     #Set app specific params
-    if app_name in ['multi_lister','spatial_summary','station_finder']:
+    if app_name in ['multi_lister','spatial_summary','new_spatial_summary','station_finder']:
         initial['feature_id'] = 1
     if app_name in ['monthly_summary','climatology','sf_link']:
         initial['max_missing_days']  = Get('max_missing_days', '5')
@@ -334,9 +334,9 @@ def set_initial(request,app_name):
         initial['elements_constraints'] = Get('elements_constraints', 'all')
         initial['dates_constraints']  = Get('dates_constraints', 'all')
         initial['display'] = Get('display', 'map')
-        #all_meta = WRCCData.STATION_LIST_META_KEYS_DEFAULT
-        all_meta = ['name','state','ll','elev','networks','valid_daterange']
+        all_meta = ['name','state','ll','elev','ids','networks','valid_daterange']
         initial['metadata_keys'] = Getlist('metadata_keys',all_meta)
+        initial['metadata_keys_str'] = ','.join(initial['metadata_keys'])
         initial['metadata_names'] = [WRCCData.DISPLAY_PARAMS[meta] for meta in initial['metadata_keys']]
         initial['metadata_names_str'] = ','.join(initial['metadata_names'])
     if app_name in  ['monthly_summary','sf_link']:
@@ -370,9 +370,9 @@ def set_initial(request,app_name):
         initial['interpolation'] = Get('interpolation', 'cspline')
         initial['projection'] = Get('projection', 'lcc')
     #Ploting options for all pages that have charts
-    if app_name in ['monthly_summary', 'spatial_summary','yearly_summary', 'intraannual','data_comparison','map_overlay']:
-        if app_name in ['spatial_summary','monthly_summary','intraannual','map_overlay']:
-            if app_name in ['spatial_summary','map_overlay']:
+    if app_name in ['monthly_summary', 'spatial_summary','new_spatial_summary','yearly_summary', 'intraannual','data_comparison','map_overlay']:
+        if app_name in ['spatial_summary','new_spatial_summary','monthly_summary','intraannual','map_overlay']:
+            if app_name in ['spatial_summary','new_spatial_summary','map_overlay']:
                 shown_indices = ','.join([str(idx) for idx in range(len(initial['elements']))])
             elif app_name == 'intraannual':
                 shown_indices = str(int(initial['target_year']) - int(initial['min_year']))

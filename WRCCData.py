@@ -71,6 +71,7 @@ DISPLAY_PARAMS = {
     'select_stations_by': 'Station Data Request',
     #search areas
     'area_type':'Area Type',
+    'area_reduce':'Area Reduction',
     'user_area_id': 'Point/Area',
     'stnid': 'Station ID',
     'stnids': 'Station IDs',
@@ -112,6 +113,7 @@ DISPLAY_PARAMS = {
     'end_day': 'End Day',
     'time_period': 'Time Period',
     'X': 'X',
+    'year':'Year',
     'start_year': 'Start Year',
     'end_year': 'End Year',
     'graph_start_year': 'Graph Start Year',
@@ -431,6 +433,24 @@ ELEMENT_THRESHOLDS = {
         },
 }
 
+ACIS_UNITS_METRIC = {
+    'maxt':'degreeC',
+    'mint':'degreeC',
+    'avgt':'degreeC',
+    'dtr': 'degreeC',
+    'obst':'degreeC',
+    'pcpn': 'mm',
+    'snow': 'mm',
+    'snwd': 'mm',
+    'cdd': '',
+    'hdd': '',
+    'gdd':'',
+    'evap': 'mm',
+    'wdmv': 'km',
+    'elev':'m',
+    'pet':'mm/day'
+}
+
 UNITS_METRIC = {
     'maxt':'C',
     'mint':'C',
@@ -448,6 +468,25 @@ UNITS_METRIC = {
     'elev':'m',
     'pet':'mm/day'
 }
+
+ACIS_UNITS_ENGLISH = {
+    'maxt':'degreeF',
+    'mint':'degreeF',
+    'avgt':'degreeF',
+    'dtr': 'degreeF',
+    'obst':'degreeF',
+    'pcpn': 'inch',
+    'snow': 'inch',
+    'snwd': 'inch',
+    'cdd': '',
+    'hdd': '',
+    'gdd':'',
+    'evap': 'inch',
+    'wdmv': 'miles',
+    'elev':'foot',
+    'pet':'inch/day'
+}
+
 
 UNITS_ENGLISH = {
     'maxt':'F',
@@ -1313,6 +1352,7 @@ PARAMS_HEADER_KEYS = {
     'climatology':['area_type','element','start_year','end_year'],
     'multi_lister':['data_type','area_type','data_summary','start_date','end_date'],
     'spatial_summary':['data_type','area_type','spatial_summary','start_date','end_date'],
+    'monthly_spatial_summary':['year','state','area_type','area_reduce','spatial_summary','temporal_summary','element','units'],
     'temporal_summary':['data_type','area_type','temporal_summary','start_date','end_date'],
     'climate_engine':[]
 }
@@ -1494,6 +1534,7 @@ for c in CMAPS:
     CMAP_TUPLE+=((c, c),)
 
 MULTI_AREA_TUPLE = ()
+AREA_REDUCE_TUPLE = ()
 SINGLE_AREA_TUPLE = ()
 TEMPORAL_SUMMARY_AREA_TUPLE = ()
 STATION_FINDER_AREA_TUPLE = ()
@@ -1514,6 +1555,8 @@ for area in area_options:
         STATION_FINDER_AREA_TUPLE+=((area, dp),)
     if area in ['station_id','location']:
         SINGLE_AREA_TUPLE+=((area, dp),)
+    if area in ['county','county_warning_area','climate_division','basin','state']:
+        AREA_REDUCE_TUPLE+=((area, dp),)
 
 BOOLEAN_TUPLE = (
     ('T','Yes'),
@@ -1847,18 +1890,15 @@ SCENIC_FORM_OPTIONS = {
         'data_type':DATA_TYPE_TUPLE,
         'chart_type':CHART_TYPE
     },
-    'new_spatial_summary':{
+    'monthly_spatial_summary':{
         'state':STATE_TUPLE,
         'area_type':MULTI_AREA_TUPLE,
+        'area_reduce':AREA_REDUCE_TUPLE,
+        'area_statistic':STATISTIC,
         'grid':GRID_CHOICES_TUPLE,
-        'elements':ACIS_ELEMENTS_TUPLE,
-        'add_degree_days':BOOLEAN_TUPLE,
+        'element':ACIS_ELEMENTS_TUPLE,
         'units':UNIT_TUPLE,
-        'spatial_summary':STATISTIC,
-        'data_format':DATA_FORMAT_CHOICES,
-        'delimiter':DELIMITER_TUPLE,
-        'data_type':DATA_TYPE_TUPLE,
-        'chart_type':CHART_TYPE
+        'temporal_summary':STATISTIC,
     },
     'temporal_summary':{
         'state':STATE_TUPLE,

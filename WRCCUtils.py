@@ -258,6 +258,16 @@ def convert_elements_to_string(elements):
     return el_str
 
 
+def set_acis_units(en_or_met,element):
+    if element in ['gdd','hdd','cdd','corn','pet','wdmv','elev']:
+        return None
+    if en_or_met == 'metric':
+        units = WRCCData.ACIS_UNITS_METRIC[element]
+    if en_or_met == 'english':
+        units = WRCCData.ACIS_UNITS_ENGLISH[element]
+    return units
+
+
 def set_acis_meta(data_type):
     '''
     Sets all meta string for data request
@@ -2128,6 +2138,78 @@ def get_single_yearly_summary_data(form):
             year_data.append([date,-9999])
     return year_data, hc_data
 
+
+def monthly_spatial_summary(form):
+    sdate = form['year'] + '-1'
+    '''
+    if str(form['year']) == today_year and str(form['grid']) in ['1','3','21']:
+        edate = form['year'] + '-' + today_month
+    else:
+        edate = form['year'] + '-12'
+    '''
+    edate = form['year'] + '-12'
+    stat = form['temporal_summary']
+    area_stat = form['area_statistic']
+    area_reduce = WRCCData.SEARCH_AREA_FORM_TO_ACIS[form['area_reduce']]
+    units = set_acis_units(form['units'], form['element'])
+    elem = {
+        'vX':WRCCData.ACIS_ELEMENTS_DICT[form['element']]['vX'],
+        'interval':'mly',
+        'duration':'mly',
+        'reduce':stat,
+        'area_reduce': area_reduce + '_' + area_stat
+    }
+    if units is not None:
+        elem['units'] = units
+    params = {
+        'state':form['state'].lower(),
+        'sdate':sdate,
+        'edate':edate,
+        'grid':form['grid'],
+        'elems':[elem]
+    }
+    req = AcisWS.GridData(params)
+    if not req:
+        return {'error': 'Data request could not be performed'}
+    if 'error' in req.keys():
+        return {'error':req['error']}
+    if 'data' not in req.keys():
+        return {'error':'No data found for these paramters'}
+    area_name = WRCCData.DISPLAY_PARAMS[form['area_reduce']]
+    header = ['Name', 'ID'] + WRCCData.MONTH_NAMES_SHORT_CAP
+    results = {'smry':[]}
+    IDs = []; names = []
+    ID = ''; name = ''
+    data = [[] for i in range(len(req['data'][0][1].keys()))]
+    for mon_idx, mon_data in enumerate(req['data']):
+        mon = mon_data[0]
+        count = -1
+        #for area_id, area_data in mon_data[1].iteritems():
+        for i in range(len(req['data'][0][1].keys())):
+            area_id = req['data'][0][1].keys()[i]
+            try:
+                area_data = mon_data[1][area_id]
+            except:
+                area_data = -9999
+            if mon_idx == 0:
+                json_path = '/www/apps/csc/dj-projects/my_acis/media/json/US_' + form['area_reduce'] +'.json'
+                ID, name = find_id_and_name(area_id,json_path)
+                if not ID:ID = area_id
+                IDs.append(ID)
+                names.append(name)
+            count+=1
+            if not data[count]:
+                data[count].append(names[count])
+                data[count].append(IDs[count])
+            if area_data == -9999:
+                data[count].append(-9999)
+            else:
+                try:
+                    data[count].append(round(float(area_data),2))
+                except:
+                    data[count].append(-9999)
+    results['smry'] = [header] + data
+    return results
 ################################
 # HIGHCARTS DATA EXTRACTION
 ############################
@@ -2405,6 +2487,8 @@ def form_to_display_list(key_order_list, form):
         if key == 'area_type':
             if form[key] in form.keys():
                 display_list[idx] = [WRCCData.DISPLAY_PARAMS[form[key]], form[form[key]]]
+        elif key == 'area_reduce':
+            display_list[idx] = [WRCCData.DISPLAY_PARAMS[key],WRCCData.DISPLAY_PARAMS[form[key]]]
         elif key in ['station_id','station_ids']:
             in_list = form[key].strip().split(',')
             ids_string, names = find_ids_and_names(in_list,'/www/apps/csc/dj-projects/my_acis/media/json/US_station_id.json')

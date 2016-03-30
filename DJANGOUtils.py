@@ -82,7 +82,7 @@ def set_min_max_dates(initial):
         if vd and len(vd) >=1:sd = vd[0]
         if vd and len(vd) >1:ed = vd[1]
         sd_fut =  sd;ed_fut = ed
-    if 'location' in initial.keys():
+    if 'location' in initial.keys() or initial['app_name'] == 'monthly_spatial_summary':
         sd = WRCCData.GRID_CHOICES[str(initial['grid'])][3][0][0]
         ed = WRCCData.GRID_CHOICES[str(initial['grid'])][3][0][1]
         sd_fut =  sd;ed_fut = ed
@@ -152,7 +152,7 @@ def set_initial(request,app_name):
     elif initial['area_type'] in ['basin','county_warning_area','county','climate_division','state','shape']:
         initial['autofill_list'] = 'US_' + initial['area_type']
         initial['data_type'] = Get('data_type','station')
-    if app_name == 'temporal_summary':
+    if app_name in  ['temporal_summary','monthly_spatial_summary']:
         initial['data_type'] = 'grid'
     if app_name in ['station_finder','sf_download']:
         initial['data_type'] = 'station'
@@ -187,7 +187,7 @@ def set_initial(request,app_name):
     if app_name == 'map_overlay':
         initial['elements'] = Get('elements','maxt,mint,pcpn').split(',')
         initial['elements_str'] = ','.join(initial['elements'])
-    elif app_name in ['monthly_summary','data_comparison', 'yearly_summary','intraannual']:
+    elif app_name in ['monthly_spatial_summary','monthly_summary','data_comparison', 'yearly_summary','intraannual']:
             initial['element'] = Get('element',None)
             if initial['element'] is not None and len(initial['element'].split(',')) > 1:
                 initial['element'] =  str(initial['element'].split(',')[0])
@@ -243,6 +243,12 @@ def set_initial(request,app_name):
         initial['max_year'] = Get('max_year', ed[0:4])
         initial['min_year_fut'] = sd_fut[0:4]
         initial['max_year_fut'] = ed_fut[0:4]
+    elif app_name == 'monthly_spatial_summary':
+        initial['year'] = Get('year',ed[0:4])
+        initial['min_year'] = Get('min_year',sd[0:4])
+        initial['max_year'] = Get('max_year', ed[0:4])
+        initial['min_year_fut'] = sd_fut[0:4]
+        initial['max_year_fut'] = ed_fut[0:4]
     elif app_name in ['yearly_summary', 'intraannual']:
         initial['start_year'] = Get('start_year','POR')
         initial['end_year'] = Get('end_year','POR')
@@ -294,21 +300,21 @@ def set_initial(request,app_name):
         initial['start_window'] = Get('start_window', sw)
         initial['end_window'] = Get('end_window',ew)
     #data summaries
-    if app_name in  ['temporal_summary', 'yearly_summary']:
+    if app_name in  ['monthly_spatial_summary','temporal_summary', 'yearly_summary']:
         initial['data_summary'] = Get('data_summary', 'temporal_summary')
-    elif app_name in ['new_spatial_summary','spatial_summary','multi_lister','map_overlay']:
+    elif app_name in ['spatial_summary','multi_lister','map_overlay']:
         initial['data_summary'] = Get('data_summary', 'spatial_summary')
     else:
         initial['data_summary'] = Get('data_summary', 'none')
 
-    if app_name in ['temporal_summary', 'yearly_summary', 'sf_download']:
+    if app_name in ['temporal_summary', 'monthly_spatial_summary','yearly_summary', 'sf_download']:
         if 'element' in initial.keys() and initial['element'] in ['pcpn','snow','evap','pet']:
             initial['temporal_summary'] = Get('temporal_summary', 'sum')
         else:
             initial['temporal_summary'] = Get('temporal_summary', 'mean')
     else:
         initial['temporal_summary'] = Get('temporal_summary', 'mean')
-    if app_name in ['single_lister', 'multi_lister','spatial_summary','new_spatial_summary','sf_download','map_overlay']:
+    if app_name in ['single_lister', 'multi_lister','spatial_summary','sf_download','map_overlay']:
         initial['spatial_summary'] = Get('spatial_summary', 'mean')
 
     #download options
@@ -326,7 +332,10 @@ def set_initial(request,app_name):
     initial['user_email'] = Get('user_email', 'Your Email')
 
     #Set app specific params
-    if app_name in ['multi_lister','spatial_summary','new_spatial_summary','station_finder']:
+    if app_name == 'monthly_spatial_summary':
+        initial['area_reduce'] = Get('area_reduce','climate_division')
+        initial['area_statistic'] = Get('area_statistic','mean')
+    if app_name in ['multi_lister','spatial_summary','station_finder']:
         initial['feature_id'] = 1
     if app_name in ['monthly_summary','climatology','sf_link']:
         initial['max_missing_days']  = Get('max_missing_days', '5')
@@ -370,9 +379,9 @@ def set_initial(request,app_name):
         initial['interpolation'] = Get('interpolation', 'cspline')
         initial['projection'] = Get('projection', 'lcc')
     #Ploting options for all pages that have charts
-    if app_name in ['monthly_summary', 'spatial_summary','new_spatial_summary','yearly_summary', 'intraannual','data_comparison','map_overlay']:
-        if app_name in ['spatial_summary','new_spatial_summary','monthly_summary','intraannual','map_overlay']:
-            if app_name in ['spatial_summary','new_spatial_summary','map_overlay']:
+    if app_name in ['monthly_summary', 'spatial_summary','yearly_summary', 'intraannual','data_comparison','map_overlay']:
+        if app_name in ['spatial_summary','monthly_summary','intraannual','map_overlay']:
+            if app_name in ['spatial_summary','monthly_spatial_summary','map_overlay']:
                 shown_indices = ','.join([str(idx) for idx in range(len(initial['elements']))])
             elif app_name == 'intraannual':
                 shown_indices = str(int(initial['target_year']) - int(initial['min_year']))
@@ -467,7 +476,7 @@ def set_form(request, clean=True):
             form['data_type'] = 'station'
         if 'location' in form.keys():
             form['data_type'] = 'grid'
-        if 'app_name' in form.keys() and form['app_name'] == 'temporal_summary':
+        if 'app_name' in form.keys() and form['app_name'] in ['temporal_summary','monthly_spatial_summary']:
             form['data_type'] = 'grid'
     #Convert unicode to string
     if 'elements' in form.keys():

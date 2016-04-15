@@ -35,6 +35,9 @@ logger.addHandler(sh)
 thismodule =  sys.modules[__name__]
 today = WRCCUtils.set_back_date(0)
 today_year = today[0:4]
+today_month = today[4:6]
+today_day = today[6:8]
+today_michelle = WRCCData.MONTH_NAMES_LONG[int(today_month) - 1] + ' ' + str(int(today_day)) + ', ' + today_year
 param_check_function = {
     'station_id':'check_station_id',
     'start_date':'check_date',
@@ -1178,7 +1181,7 @@ def format_sodsumm_results_txt(results,table_name,data_params,wrapper):
             print 'degree day units is ((95 + 51) / 2) - 60 = 13. This is done for each day of the month and summed.'
             print 'Corn Growing Degree Day units have the limitations that the maximum daily temperatures greater'
             print 'than 86 F are set to 86 F and minimums less than 50 F are set to 50 F.'
-            print 'Table updated on ' + today
+            print 'Table updated on ' + today_michelle
             print 'Months with 5 or more missing days are not considered'
             print 'Years with 1 or more missing months are not considered'
 
@@ -1319,9 +1322,15 @@ def format_sodsumm_results_web(results,table_name,data_params,wrapper):
             pass
         if results and results[0]:
             for mon_idx, mon_vals in enumerate(results[0][table_name][1:]):
+                if mon_idx == len(results[0][table_name][1:]) - 5:
+                    print '<TR ALIGN=RIGHT><TD COLSPAN=' + str(len(mon_vals)) + '></TD>'
+                    print '<TR ALIGN=RIGHT><TD COLSPAN=' + str(len(mon_vals)) + '></TD>'
                 print '<TR ALIGN=RIGHT>'
                 for v_idx, val in enumerate(mon_vals):
-                    print '<TD>' + str(val) + '</TD>'
+                    if v_idx == 0:
+                        print '<TD ALIGN=LEFT>' + str(val) + '</TD>'
+                    else:
+                        print '<TD>' + str(val) + '</TD>'
                 print '</TR>'
         print '</TABLE>'
 
@@ -1329,7 +1338,7 @@ def print_sodsumm_footer_web(app_params):
     '''
     Sodsumm footer web content
     '''
-    print 'Table updated on ' + today + '<BR>'
+    print 'Table updated on ' + today_michelle + '<BR>'
     print 'For monthly and annual means, thresholds, and sums:'
     print '<BR>'
     print 'Months with ' + str(app_params['max_missing_days']) + ' or more missing   days are not considered'
@@ -1419,8 +1428,6 @@ def format_sodxtrmts_results_web(results, data, data_params, app_params, wrapper
             print '<H3>Start Year: ' + user_start_year + ', End Year:' + user_end_year +'</H3>'
             print '</CENTER>'
             print '<PRE>'
-            #print 'NO DATA FOUND!'
-            #print '</CENTER>'
             print '</PRE>'
             print '</BODY>'
             print '</HTML>'
@@ -1428,7 +1435,7 @@ def format_sodxtrmts_results_web(results, data, data_params, app_params, wrapper
             print '</CENTER>'
             print '<CENTER>'
             print '<CAPTION ALIGN=LEFT><CENTER>'
-            print 'File last updated on '+ WRCCData.NUMBER_TO_MONTH_NAME[today[4:6]] + ' ' + today[6:8] + ', ' + today[0:4]
+            print 'File last updated on '+ today_michelle
             print '<BR>'
             print 'a = 1 day missing, b = 2 days missing, c = 3 days, ..etc..,'
             print '<BR>'
@@ -1448,7 +1455,8 @@ def format_sodxtrmts_results_web(results, data, data_params, app_params, wrapper
                 print '</CENTER>'
                 print '<PRE></PRE>'
             else:
-                print '<TABLE BORDER=0 CELLSPACING=2 CELLPADDING=0>'
+                #print '<TABLE BORDER=0 CELLSPACING=2 CELLPADDING=0>'
+                print '<TABLE BORDER=0 CELLPADDING=0>'
                 header = '<TR><TD>YEAR(S)</TD>'
                 s_month = int(app_params['start_month'])
                 month_names_list = []
@@ -1470,15 +1478,17 @@ def format_sodxtrmts_results_web(results, data, data_params, app_params, wrapper
                         print '<TR><TD ALIGN=CENTER COLSPAN=26> Period of Record Statistics</TD></TR>'
 
                     yrs = str(yr_data[0]); w='CENTER'
-                    row = '<TR><TD ALIGN=' + w + ' WIDTH=8%>' + yrs + '</TD>'
-
+                    #row = '<TR><TD ALIGN=' + w + ' WIDTH=8%>' + yrs + '</TD>'
+                    row = '<TR><TD ALIGN=' + w + ' WIDTH=50px>' + yrs + '</TD>'
                     for idx,val in enumerate(yr_data[1:]):
                         if str(val) == '-9999.00':v = '-9999'
                         elif  str(val) == '9999.00':v = '9999'
                         else:v = str(val)
 
-                        if idx % 2 == 0:row+='<TD ALIGN=RIGHT WIDTH=6%>'
-                        else:row+='<TD ALIGN=LEFT WIDTH=1%>'
+                        #if idx % 2 == 0:row+='<TD ALIGN=RIGHT WIDTH=6%>'
+                        #else:row+='<TD ALIGN=LEFT WIDTH=1%>'
+                        if idx % 2 == 0:row+='<TD ALIGN=RIGHT WIDTH=40px>'
+                        else:row+='<TD ALIGN=LEFT WIDTH=10px>'
                         row+=v + '</TD>'
                     row+='</TR>'
                     print row
@@ -1542,7 +1552,7 @@ def format_sodsum_results_web(results, data, data_params,wrapper,station_dates=N
             print '<CENTER>'
             print '<H1> Statistics by element </H1>'
             print '(From ACIS data archives)<BR>'
-            print 'Last updated ' + today
+            print 'Last updated ' + today_michelle
             print '. Dates are format of YYYYMMDD. Numbers are total Number of observations<BR>'
             print '<TABLE>'
             el_header = '<TR><TH>STATION </TH><TH>START </TH><TH> END </TH>'
@@ -1575,7 +1585,7 @@ def format_sodsum_results_web(results, data, data_params,wrapper,station_dates=N
             print '<CENTER>'
             print '<H1> Statistics by observation </H1>'
             print '(From ACIS data archives) <BR>'
-            print 'Last updated ' + today
+            print 'Last updated ' + today_michelle
             print '. Dates are format of YYYYMMDD. Numbers are total Number of observations<BR>'
             print '<TABLE>'
             print '<TR><TH> STATION </TH>'

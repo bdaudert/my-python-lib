@@ -33,7 +33,6 @@ def state_aves_stn(state, month, elements):
     '''
     mon = int(month)
     if mon not in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]:
-        print "Not a valid month: %s. Enter a number 1-12" % str(mon)
         sys.exit(0)
 
     mon_lens = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
@@ -92,7 +91,6 @@ def state_aves_grid(state, month, elements):
     state_aves = defaultdict(dict)
     mon = int(month)
     if mon not in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]:
-        print "Not a valid month: %s. Enter a number 1-12" % str(mon)
         sys.exit(0)
 
     mon_lens = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
@@ -1705,7 +1703,7 @@ def Sodxtrmts(**kwargs):
                     if kwargs['statistic'] == 'msum' and element == 'hdd' and table_1[yr][mon]> 9998.5:
                         continue
                     else:
-                        results[i][yr].append('')
+                        results[i][yr].append('-----')
                         results[i][yr].append('z')
                         continue
                 if kwargs['departures_from_averages']  == 'F':
@@ -2227,7 +2225,6 @@ def Sodpct(**kwargs):
                 val = None
                 #check if we have to compute values from maxt, mint
                 if el_type in ['dtr', 'hdd', 'cdd', 'gdd', 'avgt']:
-                    #print yr, doy
                     dat_x = el_data[0][yr][doy]
                     dat_n = el_data[1][yr][doy]
                     val_x, flag_x = WRCCUtils.strip_data(dat_x)
@@ -2516,7 +2513,6 @@ def Sodrun(**kwargs):
     verbose = kwargs['verbose']
     #Loop over stations
     for i, stn in enumerate(station_ids):
-        #print "STATION:" + station_ids[i]
         results[i] = []
         stn_data = kwargs['data'][i]
         #first format data to include dates
@@ -2673,7 +2669,6 @@ def Sodrun(**kwargs):
             #Check for invalid flag
             #######################
             if not flag.isdigit():
-                print 'found invalid flag %s' % str(flag)
                 sys.exit(1)
 
             #Make sure data can be converted to float
@@ -2681,7 +2676,6 @@ def Sodrun(**kwargs):
             try:
                 float(date_val[1])
             except ValueError:
-                print '%s cannot be converted to float' % str(date_val[1])
                 sys.exit(1)
             #Data is sound and we can check threshold condition
             ###################################################
@@ -2935,7 +2929,8 @@ def Sodsumm(**kwargs):
     if kwargs['el_type'] == 'temp':tables = ['temp']
     if kwargs['el_type'] == 'g':tables = ['gdd', 'corn']
     months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-    time_cats = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Ann', 'Win', 'Spr', 'Sum', 'Aut']
+    #time_cats = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Annual', 'Winter', 'Spring', 'Summer', 'Fall']
+    time_cats = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December', 'Annual', 'Winter', 'Spring', 'Summer', 'Fall']
     #time_cats = ['Ja', 'Fe', 'Ma', 'Ap', 'Ma', 'Jn', 'Jl', 'Au', 'Se', 'Oc', 'No', 'De']
     time_cats_lens = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31, 366, 91, 92, 92, 91]
     mon_lens = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
@@ -3152,12 +3147,6 @@ def Sodsumm(**kwargs):
                         if cat_idx == 12 and not WRCCUtils.is_leap_year(current_year):
                             del data_list[-306]
                         '''
-                        '''
-                        if cat_idx == 13 and kwargs['el_type'] == 'temp' and el=='maxt' and yr == 75:
-                            print el_dates[el][idx_start:idx_end]
-                            print 'YEAR: ' + str(yr)
-                            print idx_start, idx_end
-                        '''
                     #Statistics
                     sm = 0
                     cnt = 0
@@ -3239,8 +3228,9 @@ def Sodsumm(**kwargs):
                 yr_list = []
                 for yr in range(num_yrs):
                     #Omit data yrs where month max_missing day threshold is not met
-                    if x_miss[cat_idx]['avgt'][yr] > max_missing_days:
-                        continue
+                    if cat_idx < 12:
+                        if x_miss[cat_idx]['avgt'][yr] > max_missing_days:
+                            continue
                     idx_start = time_cats_lens[cat_idx] * yr
                     #idx_end = idx_start + time_cats_lens[cat_idx]
                     idx_end = idx_start + cat_l
@@ -3289,8 +3279,9 @@ def Sodsumm(**kwargs):
                         cnt_days = []
                         for yr in range(num_yrs):
                             #Omit data yrs where max_missing day threshold is not met
-                            if x_miss[cat_idx][el][yr] > max_missing_days:
-                                continue
+                            if cat_idx<12:
+                                if x_miss[cat_idx][el][yr] > max_missing_days:
+                                    continue
                             idx_start = time_cats_lens[cat_idx]*yr
                             #idx_end = idx_start + time_cats_lens[cat_idx]
                             idx_end = idx_start + cat_l

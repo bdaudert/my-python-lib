@@ -1010,7 +1010,7 @@ GRID_CHOICES = {
     '14': ['WRFG + NCEP (Historical only)','',50,[['19700101','19991231']]],
     '15': ['WRFG + CCSM','',50,[['19700101','19991231'],['20400101','20691231']]],
     '16': ['WRFG + CGCM3','',50,[['19700101','19991231'],['20400101','20691231']]],
-    '21': ['PRISM','',50,[['19810101',today]]],#Daily
+    '21': ['PRISM','',50,[['19810101',today]]], #Daily
     '22': ['GFDL-CM3','',6,[['19500101','20051231'],['20060101','20991231']]], #rcp4.5
     '23': ['GFDL-CM3','',6,[['19500101','20051231'],['20060101','20991231']]], #rcp8.5
     '24': ['HadGEM2-CC','',6,[['19500101','20051231'],['20060101','20991231']]],#rcp4.5
@@ -1350,10 +1350,10 @@ PARAMS_HEADER_KEYS = {
     'intraannual':['element','start_month','start_day'],
     'data_comparison':['area_type','start_date','end_date'],
     'climatology':['area_type','element','start_year','end_year'],
-    'multi_lister':['data_type','area_type','data_summary','start_date','end_date'],
-    'spatial_summary':['data_type','area_type','spatial_summary','start_date','end_date'],
+    'multi_lister':['area_type','data_summary','start_date','end_date'],
+    'spatial_summary':['area_type','spatial_summary','start_date','end_date'],
     'monthly_spatial_summary':['year','state','area_type','area_reduce','spatial_summary','temporal_summary','element','units'],
-    'temporal_summary':['data_type','area_type','temporal_summary','start_date','end_date'],
+    'temporal_summary':['area_type','temporal_summary','start_date','end_date'],
     'climate_engine':[]
 }
 
@@ -1513,7 +1513,8 @@ TABLE_LIST_NO_GRAPHICS = {
 ###################################
 ###################################
 GRID_CHOICES_TUPLE =()
-key_order = [1,3,21] + range(22,42) + range(4,17)
+#key_order = [1,3,21] + range(22,42) + range(4,17)
+key_order = [1,3,21] + range(4,17)
 for key in key_order:
     k = str(key)
     name_range = GRID_CHOICES[k][0]

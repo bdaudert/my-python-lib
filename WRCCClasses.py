@@ -385,8 +385,8 @@ class CsvWriter(object):
                     meta_display_params = self.req['meta'][p_idx]
                     for key_val in meta_display_params:
                         key = key_val[0].replace(' ','')
-                        val = str(key_val[1]).replace(' ','')
-                        row = ['*' + key,val]
+                        #val = str(key_val[1]).replace(' ','')
+                        row = ['*' + key,str(key_val[1])]
                         self.writer.writerow(row)
             #Write data
             if 'app_name' in self.form.keys() and self.form['app_name'] in  ['intraannual']:
@@ -402,7 +402,7 @@ class CsvWriter(object):
                     if self.form['app_name'] not in ['intraannual','yearly_summary']:
                         if p_name:h = ['Name'] + h
                         if p_id:h = ['ID'] + h
-                        h = ['*'] + h
+                    h = ['*'] + h
                 d = date_data[1:]
                 #Add name and ID as columns
                 if p_name:d = [p_name] + d

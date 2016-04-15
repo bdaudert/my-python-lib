@@ -723,7 +723,8 @@ def format_data_single_lister(req,form):
             #strip flag from data
             strp_val, flag = strip_data(val)
             try:
-                val = round(unit_convert(form['elements'][el_idx],float(strp_val)),4)
+                v = float(strp_val)
+                val = round(unit_convert(form['elements'][el_idx],v),4)
             except:
                 val = strp_val
             if 'show_flags' in form.keys() and form['show_flags'] == 'T':
@@ -841,10 +842,11 @@ def station_data_trim_and_summary(req,form):
                     val = el_data
                 #Strip flag from data
                 strp_val, flag = strip_data(val)
+
                 try:
                     val = round(unit_convert(form['elements'][el_idx],float(strp_val)),4)
                     #Don't include -9999 (Missing) values
-                    if str(strp_val) != '-9999':
+                    if abs(float(strp_val) + 9999) > 0.001 and abs(float(strp_val) + 999) > 0.0001:
                         if form['data_summary'] == 'spatial_summary':
                             smry_data[date_idx][el_idx].append(val)
                         if form['data_summary'] == 'temporal_summary':
@@ -983,12 +985,14 @@ def grid_data_trim_and_summary(req,form):
                 d_data = [format_date(date_data[0],sep)]
                 for el_idx,el in enumerate(form['elements']):
                     try:
-                        d = unit_convert(el, float(date_data[el_idx+1][grid_idx][lon_idx]))
+                        v = float(date_data[el_idx+1][grid_idx][lon_idx])
+                        d = unit_convert(el, float(v))
                         d_data.append(round(d,4))
-                        if form['data_summary'] == 'spatial_summary':
-                            smry_data[date_idx][el_idx].append(d)
-                        if form['data_summary'] == 'temporal_summary':
-                            smry_data[el_idx].append(d)
+                        if abs(v + 9999) > 0.001 and abs(v + 999) > 0.0001:
+                            if form['data_summary'] == 'spatial_summary':
+                                smry_data[date_idx][el_idx].append(d)
+                            if form['data_summary'] == 'temporal_summary':
+                                smry_data[el_idx].append(d)
                     except:
                         d_data.append(date_data[el_idx+1][grid_idx][lon_idx])
                 new_data[-1].append(d_data)
@@ -1080,8 +1084,10 @@ def format_grid_spatial_summary(req,form):
             for date_idx,date_data in enumerate(req[data_key]):
                 for el_idx,el in enumerate(form['elements']):
                     try:
-                        val = unit_convert(el,float(date_data[el_idx+1][grid_idx][lon_idx]))
-                        smry_data[date_idx][el_idx].append(float(val))
+                        v = float(date_data[el_idx+1][grid_idx][lon_idx])
+                        if abs(v + 9999) > 0.001 and abs(v + 999) > 0.0001:
+                            val = unit_convert(el,float(date_data[el_idx+1][grid_idx][lon_idx]))
+                            smry_data[date_idx][el_idx].append(float(val))
                     except:
                         pass
                     #Compute spatial summary at last gridpoint iteration
@@ -1300,11 +1306,12 @@ def format_grid_temporal_summary(req,form):
             for data in req[data_key]:
                 for el_idx,el in enumerate(form['elements']):
                     try:
-                        val = unit_convert(el,float(req[data_key][el_idx][grid_idx][lon_idx]))
+                        v = float(req[data_key][el_idx][grid_idx][lon_idx])
+                        if abs(v + 9999)< 0.001 or abs(v + 999)< 0.001:continue
+                        val = unit_convert(el,v)
                         smry_data[el_idx].append(float(val))
-                        d_data.append(val)
                     except:
-                        pass
+                        continue
             #Temporal summary
             row = [str(lon) + ',' + str(lat)]
             for el_idx, el in enumerate(form['elements']):
@@ -1365,12 +1372,11 @@ def format_station_spatial_summary(req,form):
         for date_idx,date_data in enumerate(stn_data['data']):
             for el_idx, el_data in enumerate(date_data):
                 strp_val, flag = strip_data(el_data)
-                #Don't include -9999 (Missing) values
-                if str(strp_val) == '-9999':strp_val = ''
                 try:
-                    val = unit_convert(form['elements'][el_idx],float(strp_val))
-                    #val = unit_convert(form['elements'][el_idx],float(el_data))
-                    smry_data[date_idx][el_idx].append(val)
+                    v = float(strp_val)
+                    if abs(v + 9999)> 0.001 and abs(v + 999)> 0.001:
+                        val = unit_convert(form['elements'][el_idx],v)
+                        smry_data[date_idx][el_idx].append(val)
                 except:
                     pass
                 #Compute spatial summary at last station iteration
@@ -1435,7 +1441,6 @@ def format_station_no_summary(req,form):
                 #If user asked for flags/obstime
                 #data el_data is a list and we need to pick the correct value
                 obs_time = None
-                if stn_idx == 0:print el_data
                 if isinstance(el_data, list):
                     val = el_data[0]
                     if len(el_data) >1:
@@ -1587,7 +1592,7 @@ def format_station_temporal_summary(req,form):
             stn_ids = ' (' + stn_ids + ')'
         except:
             stn_ids = ' ()'
-        #Tempral summary
+        #Temporal summary
         ss = [unit_convert(form['elements'][el_idx],stn_data['smry'][el_idx]) for el_idx in range(len(form['elements']))]
         row = [stn_name + stn_ids] + ss
         new_smry.append(row)
@@ -3072,7 +3077,6 @@ def feat_id_to_lls(app_name,geom_info):
     if geom_info['input_geom_type'] in ['MULTIPOLYGON']:
         polys_lls = []
         #MULTIPOLYGONS are made of polygons
-        #print geom_info['proj_geom'].GetGeometryCount()
         ll_list = []
         for i in range(0, geom_info['proj_geom'].GetGeometryCount()):
             poly = geom_info['proj_geom'].GetGeometryRef(i)

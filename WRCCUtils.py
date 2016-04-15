@@ -285,7 +285,59 @@ def set_acis_meta(data_type):
         #return 'll'
         return 'll,elev'
 
+
 def set_acis_els(form):
+    '''
+    Sets element list for ACIS data request
+    Args:
+        form -- user form input dictionary
+    Returns:
+        acis_elems -- list of elements for ACIS data request
+    '''
+    data_type = get_data_type(form)
+    acis_elems = []
+    for el in form['elements']:
+        el_strip, base_temp = get_el_and_base_temp(el)
+        l = {'vX':WRCCData.ACIS_ELEMENTS_DICT[el_strip]['vX']}
+        #Special case PRISM monthly/yearly
+        if data_type == 'grid' and form['grid'] == '21':
+            if 'temporal_resolution' in form.keys() and form['temporal_resolution'] in ['mly','yly']:
+                l = {'name':form['temporal_resolution'] + '_' + el_strip}
+        #Temporal Summaries
+        if 'data_summary' in form.keys() and form['data_summary'] == 'temporal_summary':
+            '''
+            For performance: Summary only requests for multi point requests
+            For single requests always get data, too
+            '''
+            if data_type == 'station' and form['area_type'] != 'shape':
+                if form['area_type'] not in special_station_areas:
+                    l['smry'] = form['temporal_summary']
+                if form['area_type'] in station_reduction_areas:
+                    l['smry_only'] = 1
+            if data_type == 'grid':
+                if form['area_type'] not in special_grid_areas:
+                    l['smry'] = form['temporal_summary']
+                if form['area_type'] in grid_reduction_areas:
+                    l['smry_only'] = 1
+        #Spatial Summaries
+        if 'data_summary' in form.keys() and form['data_summary'] == 'spatial_summary':
+            if data_type == 'grid' and form['area_type'] != 'shape':
+                l['area_reduce'] = form['area_type'] + '_' + form['spatial_summary']
+        if el_strip in ['gdd', 'hdd', 'cdd']:
+            if base_temp is None and el_strip in ['hdd','cdd']:
+                base_temp = '65'
+            if base_temp is None and el_strip in ['gdd']:
+                base_temp = '50'
+            l['base'] = int(base_temp)
+        #Add obs time if data_type is station
+        #NOTE: flags are always showing in the data so we never query for them separately
+        if data_type == 'station':
+            if 'show_observation_time' in form.keys() and form['show_observation_time'] =='T':
+                l['add'] = 't'
+        acis_elems.append(l)
+    return acis_elems
+
+def set_acis_els_old(form):
     '''
     Sets element list for ACIS data request
     Args:
@@ -333,33 +385,9 @@ def set_acis_els(form):
         if el_strip in ['gdd', 'hdd', 'cdd']:
             if base_temp is None and el_strip in ['hdd','cdd']:
                 base_temp = '65'
-                '''
-                if form['units'] == 'metric':
-                    base_temp = '18'
-                '''
             if base_temp is None and el_strip in ['gdd']:
                 base_temp = '50'
-                '''
-                if form['units'] == 'metric':
-                    base_temp = '10'
-                '''
             l['base'] = int(base_temp)
-            '''
-            #Convert to english, ACIS station queries not possible in metric
-            if form['units'] == 'metric':
-                l['base'] = convert_to_english('base_temp', base_temp)
-            '''
-        #Add obs time if data_type is station
-        '''
-        if data_type == 'station':
-            if 'show_flags' in form.keys() and 'show_observation_time' in form.keys():
-                if form['show_flags'] == 'T' and form['show_observation_time'] =='F':
-                    l['add'] = 'f'
-                if form['show_flags'] == 'F' and form['show_observation_time'] =='T':
-                    l['add'] = 't'
-                if form['show_flags'] == 'T' and form['show_observation_time'] =='T':
-                    l['add']= 'f,t'
-        '''
         #Add obs time if data_type is station
         #NOTE: flags are always showing in the data so we never query for them separately
         if data_type == 'station':
@@ -371,7 +399,7 @@ def set_acis_els(form):
 
 
 
-def set_acis_params(form, large_request):
+def set_acis_params(form):
     '''
     Sets ACIS parameters according to:
         area_type: station_id, location, county, state, etc.
@@ -402,12 +430,6 @@ def set_acis_params(form, large_request):
         p_key = WRCCData.FORM_TO_PARAMS['station_ids']
         f_key = 'station_ids'
         params[p_key] = str(form['station_ids'])
-    elif large_request:
-        #Need to make single calls
-        if data_type == 'station':
-            pass
-        if data_type == 'grid':
-            pass
     else:
         for area_key in area_keys:
             if area_key not in form.keys():
@@ -621,8 +643,7 @@ def request_and_format_data(form):
         request_data = getattr(AcisWS,'GridData')
 
     #Set request parameters
-    large_request = False
-    params = set_acis_params(form, large_request)
+    params = set_acis_params(form)
     #Make data request
     try:
         req = request_data(params)
@@ -708,7 +729,7 @@ def format_data_single_lister(req,form):
             #Format Summary
             if 'smry' in req.keys() and req['smry']:
                 try:
-                    val = round(unit_convert(form['elements'][el_idx],float(req['smry'][el_idx])),4)
+                    val = unit_convert(form['elements'][el_idx],float(req['smry'][el_idx]))
                 except:
                     val = str(req['smry'][el_idx])
                 smry_data.append(val)
@@ -724,7 +745,7 @@ def format_data_single_lister(req,form):
             strp_val, flag = strip_data(val)
             try:
                 v = float(strp_val)
-                val = round(unit_convert(form['elements'][el_idx],v),4)
+                val = unit_convert(form['elements'][el_idx],v)
             except:
                 val = strp_val
             if 'show_flags' in form.keys() and form['show_flags'] == 'T':
@@ -844,7 +865,7 @@ def station_data_trim_and_summary(req,form):
                 strp_val, flag = strip_data(val)
 
                 try:
-                    val = round(unit_convert(form['elements'][el_idx],float(strp_val)),4)
+                    val = unit_convert(form['elements'][el_idx],float(strp_val))
                     #Don't include -9999 (Missing) values
                     if abs(float(strp_val) + 9999) > 0.001 and abs(float(strp_val) + 999) > 0.0001:
                         if form['data_summary'] == 'spatial_summary':
@@ -881,13 +902,13 @@ def station_data_trim_and_summary(req,form):
             row = [stn_name + stn_ids]
             if point_in:
                 for el_idx, el in enumerate(form['elements']):
-                    row.append(compute_statistic(smry_data[el_idx],form['temporal_summary']))
+                    row.append(convert_nothing(el,compute_statistic(smry_data[el_idx],form['temporal_summary'])))
                 new_smry.append(row)
     #Compute spatial summary
     if form['data_summary'] == 'spatial_summary':
         for date_idx in range(len(dates)):
-            for el_idx in range(len(form['elements'])):
-                new_smry[date_idx].append(compute_statistic(smry_data[date_idx][el_idx],form['spatial_summary']))
+            for el_idx,el in enumerate(form['elements']):
+                new_smry[date_idx].append(convert_nothing(el,compute_statistic(smry_data[date_idx][el_idx],form['spatial_summary'])))
     #Insert summary header
     if new_smry:
         new_smry.insert(0,header_smry)
@@ -953,15 +974,6 @@ def grid_data_trim_and_summary(req,form):
     if 'units' in form.keys() and form['units'] == 'metric':
         unit_convert = getattr(thismodule,'convert_to_metric')
     #lat,lon loop over data
-    '''
-    generator_lat =  ((grid_idx, lat_grid) for grid_idx, lat_grid in enumerate(req['meta']['lat']))
-    for (grid_idx, lat_grid) in generator_lat:
-        generator_lon = ((lon_idx, lon) for lon_idx, lon in enumerate(req['meta']['lon'][grid_idx]))
-        lat = lat_grid[0]
-        new_lons = []
-        new_elevs = []
-        for (lon_idx, lon) in generator_lon:
-    '''
     for grid_idx in xrange(len(req['meta']['lat'])):
         lat = req['meta']['lat'][grid_idx][0]
         new_lons = [];new_lats = [];new_elevs = []
@@ -987,14 +999,15 @@ def grid_data_trim_and_summary(req,form):
                     try:
                         v = float(date_data[el_idx+1][grid_idx][lon_idx])
                         d = unit_convert(el, float(v))
-                        d_data.append(round(d,4))
+                        #d_data.append(round(d,4))
+                        d_data.append(d)
                         if abs(v + 9999) > 0.001 and abs(v + 999) > 0.0001:
                             if form['data_summary'] == 'spatial_summary':
                                 smry_data[date_idx][el_idx].append(d)
                             if form['data_summary'] == 'temporal_summary':
                                 smry_data[el_idx].append(d)
                     except:
-                        d_data.append(date_data[el_idx+1][grid_idx][lon_idx])
+                        d_data.append(convert_nothing(el,date_data[el_idx+1][grid_idx][lon_idx]))
                 new_data[-1].append(d_data)
             #Wndowed Data
             if form['data_summary'] == 'windowed_data':
@@ -1010,14 +1023,14 @@ def grid_data_trim_and_summary(req,form):
                 row = [str(round(lon,4)) + ',' + str(round(lat,4))]
                 if point_in:
                     for el_idx, el in enumerate(form['elements']):
-                        row.append(compute_statistic(smry_data[el_idx],form['temporal_summary']))
+                        row.append(convert_nothing(el,compute_statistic(smry_data[el_idx],form['temporal_summary'])))
                 new_smry.append(row)
 
     #Compute spatial summary
     if form['data_summary'] == 'spatial_summary':
         for date_idx in range(len(req[data_key])):
-            for el_idx in range(len(form['elements'])):
-                new_smry[date_idx].append(compute_statistic(smry_data[date_idx][el_idx],form['spatial_summary']))
+            for el_idx, el in enumerate(form['elements']):
+                new_smry[date_idx].append(convert_nothing(el,compute_statistic(smry_data[date_idx][el_idx],form['spatial_summary'])))
     #Insert summary header
     if new_smry:
         new_smry.insert(0,header_smry)
@@ -1040,7 +1053,6 @@ def format_grid_spatial_summary(req,form):
         new_data -- []
         smry -- [[date1,el1smry,el2smry,...], [date2...]]
         new_meta -- [{'lat':lat1,lon:'lon1','elev':elev1}, {'lat':lat2,lon:'lon2','elev':elev2},...]
-
     '''
     resultsdict = {}
     #Check that metadata and data are there
@@ -1058,45 +1070,24 @@ def format_grid_spatial_summary(req,form):
     format_date = getattr(thismodule,'format_date_string')
     sep = 'dash'
     new_smry = [[format_date(str(req[data_key][date_idx][0]),sep)] for date_idx in range(len(req[data_key]))]
-    smry_data = [[[] for el in form['elements']] for date_idx in range(len(req[data_key]))]
     new_data = [];new_meta = []
     #Set unit converter
     unit_convert = getattr(thismodule,'convert_nothing')
     if 'units' in form.keys() and form['units'] == 'metric':
         unit_convert = getattr(thismodule,'convert_to_metric')
-    #lat,lon loop over data
+    if form['area_type'] in ['state']:ID = form[form['area_type']].upper()
+    else:ID = form[form['area_type']]
     '''
-    generator_lat =  ((grid_idx, lat_grid) for grid_idx, lat_grid in enumerate(req['meta']['lat']))
-    for (grid_idx, lat_grid) in generator_lat:
-        generator_lon = ((lon_idx, lon) for lon_idx, lon in enumerate(req['meta']['lon'][grid_idx]))
-        lat = lat_grid[0]
-        for (lon_idx, lon) in generator_lon:
+    json_path = '/www/apps/csc/dj-projects/my_acis/media/json/US_' + form['area_type'] +'.json'
+    ID, name = find_id_and_name(form[form['area_type']],json_path)
     '''
-    for grid_idx in xrange(len(req['meta']['lat'])):
-        lat = req['meta']['lat'][grid_idx][0]
-        for lon_idx in xrange(len(req['meta']['lon'][grid_idx])):
-            lon = req['meta']['lon'][grid_idx][lon_idx]
-            #elev = unit_convert('elev',req['meta']['elev'][grid_idx][lon_idx])
-            elev = '-9999'
-            meta_dict = write_grid_metadict(lat,lon,elev)
-            meta_display_list = metadict_to_display_list(meta_dict, meta_dict.keys(),form)
-            new_meta.append(meta_display_list)
-            for date_idx,date_data in enumerate(req[data_key]):
-                for el_idx,el in enumerate(form['elements']):
-                    try:
-                        v = float(date_data[el_idx+1][grid_idx][lon_idx])
-                        if abs(v + 9999) > 0.001 and abs(v + 999) > 0.0001:
-                            val = unit_convert(el,float(date_data[el_idx+1][grid_idx][lon_idx]))
-                            smry_data[date_idx][el_idx].append(float(val))
-                    except:
-                        pass
-                    #Compute spatial summary at last gridpoint iteration
-                    if grid_idx == len(req['meta']['lat']) -1 and lon_idx == len(req['meta']['lon'][grid_idx]) -1:
-                        s = smry_data[date_idx][el_idx]
-                        new_smry[date_idx].append(compute_statistic(s,form['spatial_summary']))
-    #Insert summary header
-    if new_smry:
-        new_smry.insert(0,header_smry)
+    for date_idx, date_data in enumerate(req[data_key]):
+        for el_idx, el in enumerate(form['elements']):
+            try:
+                new_smry[date_idx].append(unit_convert(el, date_data[el_idx + 1][ID]))
+            except:
+                new_smry[date_idx].append(-9999)
+    if new_smry:new_smry.insert(0,header_smry)
     resultsdict = {
         'data':new_data,
         'smry':new_smry,
@@ -1139,13 +1130,6 @@ def format_grid_no_summary(req,form):
     if 'units' in form.keys() and form['units'] == 'metric':
         unit_convert = getattr(thismodule,'convert_to_metric')
     #Lat/lon loop
-    '''
-    generator_lat =  ((grid_idx, lat_grid) for grid_idx, lat_grid in enumerate(req['meta']['lat']))
-    for (grid_idx, lat_grid) in generator_lat:
-        generator_lon = ((lon_idx, lon) for lon_idx, lon in enumerate(req['meta']['lon'][grid_idx]))
-        lat = lat_grid[0]
-        for (lon_idx, lon) in generator_lon:
-    '''
     for grid_idx in xrange(len(req['meta']['lat'])):
         lat = req['meta']['lat'][grid_idx][0]
         for lon_idx in xrange(len(req['meta']['lon'][grid_idx])):
@@ -1162,7 +1146,7 @@ def format_grid_no_summary(req,form):
                 for el_idx,el in enumerate(form['elements']):
                     try:
                         val = unit_convert(el, float(date_data[el_idx+1][grid_idx][lon_idx]))
-                        d_data.append(round(val,4))
+                        d_data.append(val)
                     except:
                         d_data.append(date_data[el_idx+1][grid_idx][lon_idx])
                 new_data[-1].append(d_data)
@@ -1209,13 +1193,6 @@ def format_grid_windowed_data(req,form):
     if 'units' in form.keys() and form['units'] == 'metric':
         unit_convert = getattr(thismodule,'convert_to_metric')
     #Lon/Lat Loop
-    '''
-    generator_lat =  ((grid_idx, lat_grid) for grid_idx, lat_grid in enumerate(req['meta']['lat']))
-    for (grid_idx, lat_grid) in generator_lat:
-        generator_lon = ((lon_idx, lon) for lon_idx, lon in enumerate(req['meta']['lon'][grid_idx]))
-        lat = lat_grid[0]
-        for (lon_idx, lon) in generator_lon:
-    '''
     for grid_idx in xrange(len(req['meta']['lat'])):
         lat = req['meta']['lat'][grid_idx][0]
         for lon_idx in xrange(len(req['meta']['lon'][grid_idx])):
@@ -1232,7 +1209,7 @@ def format_grid_windowed_data(req,form):
                 for el_idx,el in enumerate(form['elements']):
                     try:
                         val = unit_convert(el,float(date_data[el_idx+1][grid_idx][lon_idx]))
-                        d_data.append(round(val,4))
+                        d_data.append(val)
                     except:
                         d_data.append(date_data[el_idx+1][grid_idx][lon_idx])
                 new_data[-1].append(d_data)
@@ -1309,13 +1286,13 @@ def format_grid_temporal_summary(req,form):
                         v = float(req[data_key][el_idx][grid_idx][lon_idx])
                         if abs(v + 9999)< 0.001 or abs(v + 999)< 0.001:continue
                         val = unit_convert(el,v)
-                        smry_data[el_idx].append(float(val))
+                        smry_data[el_idx].append(val)
                     except:
                         continue
             #Temporal summary
             row = [str(lon) + ',' + str(lat)]
             for el_idx, el in enumerate(form['elements']):
-                row.append(compute_statistic(smry_data[el_idx],form['temporal_summary']))
+                row.append(convert_nothing(el,compute_statistic(smry_data[el_idx],form['temporal_summary'])))
             new_smry.append(row)
     if new_smry:
         new_smry.insert(0,header_smry)
@@ -1381,7 +1358,8 @@ def format_station_spatial_summary(req,form):
                     pass
                 #Compute spatial summary at last station iteration
                 if stn_idx == len(req['data']) -1:
-                    new_smry[date_idx].append(compute_statistic(smry_data[date_idx][el_idx],form['spatial_summary']))
+                    el = form['elements'][el_idx]
+                    new_smry[date_idx].append(convert_nothing(el,compute_statistic(smry_data[date_idx][el_idx],form['spatial_summary'])))
     if new_smry:
         new_smry.insert(0,header_smry)
     resultsdict = {
@@ -1450,7 +1428,7 @@ def format_station_no_summary(req,form):
                 #Strip flag from data
                 strp_val, flag = strip_data(val)
                 try:
-                    val = round(unit_convert(form['elements'][el_idx],float(strp_val)),4)
+                    val = unit_convert(form['elements'][el_idx],float(strp_val))
                 except:
                     val = strp_val
                 if 'show_flags' in form.keys() and form['show_flags'] == 'T':
@@ -1528,7 +1506,7 @@ def format_station_windowed_data(req,form):
                 #Strip flag from data
                 strp_val, flag = strip_data(val)
                 try:
-                    val = round(unit_convert(form['elements'][el_idx],float(strp_val)),4)
+                    val = unit_convert(form['elements'][el_idx],float(strp_val))
                     if form['data_summary'] == 'spatial_summary':
                         smry_data[date_idx][el_idx].append(val)
                     if form['data_summary'] == 'temporal_summary':
@@ -1593,7 +1571,12 @@ def format_station_temporal_summary(req,form):
         except:
             stn_ids = ' ()'
         #Temporal summary
-        ss = [unit_convert(form['elements'][el_idx],stn_data['smry'][el_idx]) for el_idx in range(len(form['elements']))]
+        ss = []
+        for el_idx, el in enumerate(form['elements']):
+            try:
+                ss.append(unit_convert(form['elements'][el_idx],stn_data['smry'][el_idx]))
+            except:
+                ss.append(-9999)
         row = [stn_name + stn_ids] + ss
         new_smry.append(row)
     if new_smry:
@@ -2442,7 +2425,10 @@ def sids_to_display(sids):
     sid_str = ''
     for sid in sids:
         sid_l = sid.split()
-        sid_str+=str(sid_l[0]) + '/' + WRCCData.NETWORK_CODES[str(sid_l[1])] + ', '
+        try:
+            sid_str+=str(sid_l[0]) + '/' + WRCCData.NETWORK_CODES[str(sid_l[1])] + ', '
+        except:
+            sid_str+=str(sid_l[0]) + '/' + 'NoNetwork' + ', '
     #Remove last comma
     sid_str = sid_str.rstrip(', ')
     return sid_str
@@ -3340,7 +3326,27 @@ def get_station_ids(stn_json_file_path):
     return stn_ids
 
 def convert_nothing(element,value):
-    return value
+    el,base_temp = get_el_and_base_temp(element)
+    '''
+    try:
+        v = float(value)
+    except:
+        return value
+    '''
+    v = float(value)
+    if el in ['maxt','mint','avgt','obst', 'yly_maxt', 'yly_mint', 'mly_maxt', 'mly_mint', 'dtr','base_temp']:
+        v = int(round(v))
+    elif el in ['hdd','cdd','gdd']:
+        v = int(round(v))
+    elif el in ['pcpn','snow','snwd','evap','yly_pcpn', 'mly_pcpn', 'pet', 'evap']:
+        v = round(v,2)
+    elif el in ['wdmv']:
+        v = round(v,1)
+    elif el =='elev':
+        v = round(v,1)
+    else:
+        v = value
+    return v
 
 def convert_to_metric(element, value):
     el,base_temp = get_el_and_base_temp(element)

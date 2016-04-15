@@ -754,25 +754,29 @@ GRID_DATA_FORMATTER = {
     'county':{
         'none':'grid_data_trim_and_summary',
         'temporal_summary':'grid_data_trim_and_summary',
-        'spatial_summary':'format_grid_spatial_summary',
+        #'spatial_summary':'format_grid_spatial_summary',
+        'spatial_summary':'grid_data_trim_and_summary',
         'windowed_data':'grid_data_trim_and_summary'
     },
     'climate_division':{
         'none':'grid_data_trim_and_summary',
         'temporal_summary':'grid_data_trim_and_summary',
-        'spatial_summary':'format_grid_spatial_summary',
+        #'spatial_summary':'format_grid_spatial_summary',
+        'spatial_summary':'grid_data_trim_and_summary',
         'windowed_data':'grid_data_trim_and_summary'
     },
     'county_warning_area':{
         'none':'grid_data_trim_and_summary',
         'temporal_summary':'grid_data_trim_and_summary',
-        'spatial_summary':'format_grid_spatial_summary',
+        #'spatial_summary':'format_grid_spatial_summary',
+        'spatial_summary':'grid_data_trim_and_summary',
         'windowed_data':'grid_data_trim_and_summary'
     },
     'basin':{
         'none':'grid_data_trim_and_summary',
         'temporal_summary':'grid_data_trim_and_summary',
-        'spatial_summary':'format_grid_spatial_summary',
+        #'spatial_summary':'format_grid_spatial_summary',
+        'spatial_summary':'grid_data_trim_and_summary',
         'windowed_data':'grid_data_trim_and_summary'
     },
     'bounding_box':{

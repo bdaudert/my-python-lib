@@ -285,8 +285,67 @@ def set_acis_meta(data_type):
         #return 'll'
         return 'll,elev'
 
-
 def set_acis_els(form):
+    '''
+    Sets element list for ACIS data request
+    Args:
+        form -- user form input dictionary
+    Returns:
+        acis_elems -- list of elements for ACIS data request
+    '''
+    data_type = get_data_type(form)
+    acis_elems = []
+    for el in form['elements']:
+        el_strip, base_temp = get_el_and_base_temp(el)
+
+        if data_type == 'grid' and form['grid'] == '21':
+            if 'temporal_resolution' in form.keys() and form['temporal_resolution'] in ['mly','yly']:
+                #Special case prims data
+                l = {
+                    'name':form['temporal_resolution'] + '_' + el_strip
+                }
+            else:
+                l ={
+                    'vX':WRCCData.ACIS_ELEMENTS_DICT[el_strip]['vX']
+                }
+        else:
+            l ={
+                'vX':WRCCData.ACIS_ELEMENTS_DICT[el_strip]['vX']
+            }
+        #Get smry if data_summary is temporal
+        if 'data_summary' in form.keys() and form['data_summary'] == 'temporal_summary':
+            #For performance: Summary only requests for multi area requests
+            #Of station data
+            #For single requests always get data, too
+            #Note: GridData does not support  basin, shape,cws,climdiv or county
+            #We need to get the data to compute data summaries
+            if data_type == 'station' and form['area_type'] != 'shape':
+                if form['area_type'] not in special_station_areas:
+                    if form['temporal_summary'] not in ['median']:
+                        l['smry'] = form['temporal_summary']
+                if form['area_type'] in station_reduction_areas:
+                    l['smry_only'] = 1
+            if data_type == 'grid':
+                if form['area_type'] not in special_grid_areas:
+                    l['smry'] = form['temporal_summary']
+                if form['area_type'] in grid_reduction_areas:
+                    l['smry_only'] = 1
+        if el_strip in ['gdd', 'hdd', 'cdd']:
+            if base_temp is None and el_strip in ['hdd','cdd']:
+                base_temp = '65'
+            if base_temp is None and el_strip in ['gdd']:
+                base_temp = '50'
+            l['base'] = int(base_temp)
+        #Add obs time if data_type is station
+        #NOTE: flags are always showing in the data so we never query for them separately
+        if data_type == 'station':
+            if 'show_observation_time' in form.keys() and form['show_observation_time'] =='T':
+                l['add'] = 't'
+
+        acis_elems.append(l)
+    return acis_elems
+
+def set_acis_els_new(form):
     '''
     Sets element list for ACIS data request
     Args:
@@ -1043,7 +1102,75 @@ def grid_data_trim_and_summary(req,form):
     }
     return resultsdict
 
+
 def format_grid_spatial_summary(req,form):
+    '''
+    Formats spatial summary grid data request for printing or writing to file.
+    Args:
+        req -- ACIS data request dictionary
+        form -- user form input dictionary
+    Returns:
+        new_data -- []
+        smry -- [[date1,el1smry,el2smry,...], [date2...]]
+        new_meta -- [{'lat':lat1,lon:'lon1','elev':elev1}, {'lat':lat2,lon:'lon2','elev':elev2},...]
+    '''
+    resultsdict = {}
+    #Check that metadata and data are there
+    data_key = 'data'
+    #LOCAFIX ME LOCA NO ELEVS
+    meta_keys = ['lat','lon','elev']
+    #meta_keys = ['lat','lon']
+    results_dict = {}
+    error = check_request_for_data(req,meta_keys,data_key)
+    if error is not None:
+        return {'data':[],'smry':[],'meta':[],'form':form,'error':error}
+
+    header_data, header_smry = set_lister_headers(form)
+    #Set date converter
+    format_date = getattr(thismodule,'format_date_string')
+    sep = 'dash'
+    new_smry = [[format_date(str(req[data_key][date_idx][0]),sep)] for date_idx in range(len(req[data_key]))]
+    smry_data = [[[] for el in form['elements']] for date_idx in range(len(req[data_key]))]
+    new_data = [];new_meta = []
+    #Set unit converter
+    unit_convert = getattr(thismodule,'convert_nothing')
+    if 'units' in form.keys() and form['units'] == 'metric':
+        unit_convert = getattr(thismodule,'convert_to_metric')
+    #lat,lon loop over data
+    for grid_idx in xrange(len(req['meta']['lat'])):
+        lat = req['meta']['lat'][grid_idx][0]
+        for lon_idx in xrange(len(req['meta']['lon'][grid_idx])):
+            lon = req['meta']['lon'][grid_idx][lon_idx]
+            #elev = unit_convert('elev',req['meta']['elev'][grid_idx][lon_idx])
+            elev = '-9999'
+            meta_dict = write_grid_metadict(lat,lon,elev)
+            meta_display_list = metadict_to_display_list(meta_dict, meta_dict.keys(),form)
+            new_meta.append(meta_display_list)
+            for date_idx,date_data in enumerate(req[data_key]):
+                for el_idx,el in enumerate(form['elements']):
+                    try:
+                        v = float(date_data[el_idx+1][grid_idx][lon_idx])
+                        if abs(v + 9999) > 0.001 and abs(v + 999) > 0.0001:
+                            val = unit_convert(el,float(date_data[el_idx+1][grid_idx][lon_idx]))
+                            smry_data[date_idx][el_idx].append(val)
+                    except:
+                        pass
+                    #Compute spatial summary at last gridpoint iteration
+                    if grid_idx == len(req['meta']['lat']) -1 and lon_idx == len(req['meta']['lon'][grid_idx]) -1:
+                        s = smry_data[date_idx][el_idx]
+                        new_smry[date_idx].append(convert_nothing(el,compute_statistic(s,form['spatial_summary'])))
+    #Insert summary header
+    if new_smry:
+        new_smry.insert(0,header_smry)
+    resultsdict = {
+        'data':new_data,
+        'smry':new_smry,
+        'meta':new_meta,
+        'form':form
+    }
+    return resultsdict
+
+def format_grid_spatial_summary_new(req,form):
     '''
     Formats spatial summary grid data request for printing or writing to file.
     Args:

@@ -244,11 +244,12 @@ def set_initial(request,app_name):
         initial['min_year_fut'] = sd_fut[0:4]
         initial['max_year_fut'] = ed_fut[0:4]
     elif app_name == 'monthly_spatial_summary':
-        initial['year'] = Get('year',ed[0:4])
+        initial['year'] = Get('year',str(int(ed[0:4]) - 1))
         initial['min_year'] = Get('min_year',sd[0:4])
         initial['max_year'] = Get('max_year', ed[0:4])
         initial['min_year_fut'] = sd_fut[0:4]
         initial['max_year_fut'] = ed_fut[0:4]
+        initial['season'] = Get('season','1')
     elif app_name in ['yearly_summary', 'intraannual']:
         initial['start_year'] = Get('start_year','POR')
         initial['end_year'] = Get('end_year','POR')

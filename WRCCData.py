@@ -111,6 +111,7 @@ DISPLAY_PARAMS = {
     'end_month': 'End Month',
     'start_day':'Start Day',
     'end_day': 'End Day',
+    'season':'Month/Season',
     'time_period': 'Time Period',
     'X': 'X',
     'year':'Year',
@@ -1356,7 +1357,7 @@ PARAMS_HEADER_KEYS = {
     'climatology':['area_type','element','start_year','end_year'],
     'multi_lister':['area_type','data_summary','start_date','end_date'],
     'spatial_summary':['area_type','spatial_summary','start_date','end_date'],
-    'monthly_spatial_summary':['year','state','area_type','area_reduce','spatial_summary','temporal_summary','element','units'],
+    'monthly_spatial_summary':['year','season','state','area_type','area_reduce','spatial_summary','temporal_summary','element','units'],
     'temporal_summary':['area_type','temporal_summary','start_date','end_date'],
     'climate_engine':[]
 }
@@ -1607,6 +1608,60 @@ MONTH_TUPLE = (
     ('11', 'November'),
     ('12', 'December'),
 )
+
+SEASON_TUPLE = (
+    ('1', 'January'),
+    ('2', 'February'),
+    ('3', 'March'),
+    ('4', 'April'),
+    ('5', 'May'),
+    ('6', 'June'),
+    ('7', 'July'),
+    ('8', 'August'),
+    ('9', 'September'),
+    ('10', 'October'),
+    ('11', 'November'),
+    ('12', 'December'),
+    ('winter','Winter (Dec - Feb)'),
+    ('spring','Sping (Mar - May)'),
+    ('summer','Summer (Jun - Aug)'),
+    ('fall','Fall (Sep - Nov)'),
+    ('water_year','Water Year (Oct - Sep)'),
+    ('year_to_date','Year to Date'),
+    ('ann', 'Year (Jan - Dec)')
+)
+
+
+SEASON_START_END = {
+    '1':['1','1'],
+    '2':['2','2'],
+    '3':['3','3'],
+    '4':['4','4'],
+    '5':['5','5'],
+    '6':['6','6'],
+    '7':['7','7'],
+    '8':['8','8'],
+    '9':['9','9'],
+    '10':['10','10'],
+    '11':['11','11'],
+    '12':['12','12'],
+    '01':['1','1'],
+    '02':['2','2'],
+    '03':['3','3'],
+    '04':['4','4'],
+    '05':['5','5'],
+    '06':['6','6'],
+    '07':['7','7'],
+    '08':['8','8'],
+    '09':['9','9'],
+    'winter':['12','2'],
+    'spring':['3','5'],
+    'summer':['6','8'],
+    'fall':['9','11'],
+    'water_year':['10','9'],
+    'year_to_date':['1',str(int(today_month))],
+    'ann':['1','12']
+}
 
 DAY_TUPLE = ()
 for d in range(1,32):
@@ -1897,6 +1952,7 @@ SCENIC_FORM_OPTIONS = {
     'monthly_spatial_summary':{
         'state':STATE_TUPLE,
         'area_type':MULTI_AREA_TUPLE,
+        'season':SEASON_TUPLE,
         'area_reduce':AREA_REDUCE_TUPLE,
         'area_statistic':STATISTIC,
         'grid':GRID_CHOICES_TUPLE,

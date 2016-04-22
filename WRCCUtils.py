@@ -2255,14 +2255,15 @@ def get_single_yearly_summary_data(form):
 
 
 def monthly_spatial_summary(form):
-    sdate = form['year'] + '-1'
-    '''
-    if str(form['year']) == today_year and str(form['grid']) in ['1','3','21']:
-        edate = form['year'] + '-' + today_month
+    start_month = WRCCData.SEASON_START_END[str(form['season'])][0]
+    end_month = WRCCData.SEASON_START_END[str(form['season'])][1]
+    sdate = form['year'] + '-' + start_month
+    if int(start_month) > int(end_month):
+        edate = str(int(form['year']) + 1) + '-' + end_month
+        mon_range = range(int(start_month),13) + range(1,int(end_month) + 1)
     else:
-        edate = form['year'] + '-12'
-    '''
-    edate = form['year'] + '-12'
+        edate = form['year'] + '-' + end_month
+        mon_range = range(int(start_month),int(end_month) + 1)
     stat = form['temporal_summary']
     area_stat = form['area_statistic']
     area_reduce = WRCCData.SEARCH_AREA_FORM_TO_ACIS[form['area_reduce']]
@@ -2291,7 +2292,11 @@ def monthly_spatial_summary(form):
     if 'data' not in req.keys():
         return {'error':'No data found for these paramters'}
     area_name = WRCCData.DISPLAY_PARAMS[form['area_reduce']]
-    header = ['Name', 'ID'] + WRCCData.MONTH_NAMES_SHORT_CAP
+    #header = ['Name', 'ID'] + WRCCData.MONTH_NAMES_SHORT_CAP
+    header = ['Name', 'ID']
+
+    for mon_idx in mon_range:
+        header+= [WRCCData.MONTH_NAMES_SHORT_CAP[mon_idx -1]]
     results = {'smry':[]}
     IDs = []; names = []
     ID = ''; name = ''

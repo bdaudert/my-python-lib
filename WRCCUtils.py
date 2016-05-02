@@ -2311,12 +2311,16 @@ def monthly_spatial_summary(form):
                 area_data = mon_data[1][area_id]
             except:
                 area_data = -9999
+            IDs.append(area_id)
+            names.append('')
+            '''
             if mon_idx == 0:
                 json_path = '/www/apps/csc/dj-projects/my_acis/media/json/US_' + form['area_reduce'] +'.json'
                 ID, name = find_id_and_name(area_id,json_path)
                 if not ID:ID = area_id
                 IDs.append(ID)
                 names.append(name)
+            '''
             count+=1
             if not data[count]:
                 data[count].append(names[count])
@@ -2719,6 +2723,11 @@ def metadict_to_display_list(metadata, key_order_list,form):
             vd = metadata['valid_daterange']
             el_list_long = elements_to_display(els, units, valid_daterange=vd)
             meta[idx].append(', '.join(el_list_long))
+        elif key == 'll':
+            try:
+                meta[idx].append(', '.join([str(v) for v in val]))
+            except:
+                meta[idx].append(str(val))
         else:
             try:
                 meta[idx].append(str(val))

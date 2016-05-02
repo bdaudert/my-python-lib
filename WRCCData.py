@@ -170,6 +170,7 @@ DISPLAY_PARAMS = {
     'data_summary': 'Data Summary',
     'summary_type': 'Summary Type',
     'temporal_summary':'Temporal Summary',
+    'area_statistic':'Spatial Summary',
     'spatial_summary':'Spatial Summary',
     'windowed_data': 'Windowed Data',
     'mean': 'Mean',
@@ -1357,7 +1358,7 @@ PARAMS_HEADER_KEYS = {
     'climatology':['area_type','element','start_year','end_year'],
     'multi_lister':['area_type','data_summary','start_date','end_date'],
     'spatial_summary':['area_type','spatial_summary','start_date','end_date'],
-    'monthly_spatial_summary':['year','season','state','area_type','area_reduce','spatial_summary','temporal_summary','element','units'],
+    'monthly_spatial_summary':['year','season','state','area_type','area_reduce','area_statistic','temporal_summary','element','units'],
     'temporal_summary':['area_type','temporal_summary','start_date','end_date'],
     'climate_engine':[]
 }

@@ -1519,8 +1519,8 @@ TABLE_LIST_NO_GRAPHICS = {
 ###################################
 ###################################
 GRID_CHOICES_TUPLE =()
-#key_order = [1,3,21] + range(22,42) + range(4,17)
-key_order = [1,3,21] + range(4,17)
+key_order = [1,3,21] + range(22,42) + range(4,17)
+#key_order = [1,3,21] + range(4,17)
 for key in key_order:
     k = str(key)
     name_range = GRID_CHOICES[k][0]

@@ -1562,7 +1562,7 @@ for area in area_options:
         STATION_FINDER_AREA_TUPLE+=((area, dp),)
     if area in ['station_id','location']:
         SINGLE_AREA_TUPLE+=((area, dp),)
-    if area in ['county','county_warning_area','climate_division','basin','state']:
+    if area in ['county','county_warning_area','climate_division','basin']:
         AREA_REDUCE_TUPLE+=((area, dp),)
 
 BOOLEAN_TUPLE = (

@@ -2298,9 +2298,13 @@ def monthly_spatial_summary(form):
     for mon_idx in mon_range:
         header+= [WRCCData.MONTH_NAMES_SHORT_CAP[mon_idx -1]]
     results = {'smry':[]}
-    IDs = []; names = []
     ID = ''; name = ''
     data = [[] for i in range(len(req['data'][0][1].keys()))]
+    IDs = [req['data'][0][1].keys()[i] for i in range(len(req['data'][0][1].keys()))]
+    #Find the names
+    json_path = '/www/apps/csc/dj-projects/my_acis/media/json/US_' + form['area_reduce'] +'.json'
+    ids, names = find_ids_and_names(IDs,json_path)
+    names_list = names.split(',')
     for mon_idx, mon_data in enumerate(req['data']):
         mon = mon_data[0]
         count = -1
@@ -2311,19 +2315,9 @@ def monthly_spatial_summary(form):
                 area_data = mon_data[1][area_id]
             except:
                 area_data = -9999
-            IDs.append(area_id)
-            names.append('')
-            '''
-            if mon_idx == 0:
-                json_path = '/www/apps/csc/dj-projects/my_acis/media/json/US_' + form['area_reduce'] +'.json'
-                ID, name = find_id_and_name(area_id,json_path)
-                if not ID:ID = area_id
-                IDs.append(ID)
-                names.append(name)
-            '''
             count+=1
             if not data[count]:
-                data[count].append(names[count])
+                data[count].append(names_list[count])
                 data[count].append(IDs[count])
             if area_data == -9999:
                 data[count].append(-9999)
@@ -2477,12 +2471,18 @@ def find_ids_and_names(in_list, json_file_path):
         if len(i_list) == 1:
             #check if we have id
             n = i_list[0].split(' ')
+            '''
             if bool(re.compile('\d').search(i_list[0])) and len(n) == 1:
                 ids[idx] = i_list[0]
             else:
                 names[idx] = i_list[0].upper()
+            '''
+            if len(n) ==1:
+                ids[idx] = i_list[0]
+            else:
+                names[idx] = i_list[0].upper()
     #If all ids are present, return ids
-    if ids.count('No ID') == 0:
+    if ids.count('No ID') == 0 and names.count('No name') == 0:
         return ','.join(ids), ','.join(names)
     #Check that autofill file exists
     if not os.path.isfile(json_file_path) or os.path.getsize(json_file_path) == 0:
@@ -2490,13 +2490,20 @@ def find_ids_and_names(in_list, json_file_path):
     #Loop over entries in autofill list and find missing ids
     json_data = load_json_data_from_file(json_file_path)
     for entry in json_data:
+        '''
         if entry['name'].upper() not in names:
             continue
-        index = names.index(entry['name'].upper())
-        if ids[index] is 'No ID':
+        '''
+
+        if entry['id'] not in ids and entry['name'].upper() not in names:continue
+        if entry['id'] in ids:
+            index = ids.index(entry['id'])
+            names[index] = entry['name']
+        if entry['name'].upper() in names:
+            index = names.index(entry['name'].upper())
             ids[index] = entry['id']
-        #check if we ids list is complete
-        if ids.count('No ID') == 0:
+        #check if the ids list is complete
+        if ids.count('No ID') == 0 and names.count('No name') == 0:
             return ','.join(ids),','.join(names)
     return ','.join(ids),','.join(names)
 

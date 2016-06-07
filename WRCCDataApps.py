@@ -1153,15 +1153,15 @@ def SodxtrmtsSCENIC(**kwargs):
                 if kwargs['departures_from_averages']  == 'F':
                     #results[i][yr].append('%.2f%s' % (ucv(element, table_1[yr][p_idx]), outchr[p_idx]))
                     if kwargs['statistic'] == 'ndays':
-                        results[i][yr].append(int(table_1[yr][p_idx]))
-                        #results[i][yr].append('%d' % int(table_1[yr][p_idx]))
+                        #results[i][yr].append(int(table_1[yr][p_idx]))
+                        results[i][yr].append('%d' % int(table_1[yr][p_idx]))
                     else:
-                        results[i][yr].append(round(ucv(element, table_1[yr][p_idx]),2))
-                        #results[i][yr].append('%.2f' % ucv(element, table_1[yr][p_idx]))
+                        #results[i][yr].append(round(ucv(element, table_1[yr][p_idx]),2))
+                        results[i][yr].append('%.2f' % ucv(element, table_1[yr][p_idx]))
                     results[i][yr].append('%s' % outchr[p_idx])
                 else:
-                    results[i][yr].append(round(ucv(element, (table_1[yr][p_idx] - mean_out[p_idx])),2))
-                    #results[i][yr].append('%.2f' % (ucv(element, (table_1[yr][p_idx] - mean_out[p_idx]))))
+                    #results[i][yr].append(round(ucv(element, (table_1[yr][p_idx] - mean_out[p_idx])),2))
+                    results[i][yr].append('%.2f' % (ucv(element, (table_1[yr][p_idx] - mean_out[p_idx]))))
                     results[i][yr].append('%s' % outchr[p_idx])
             #End p_idx loop
         #End of year loop

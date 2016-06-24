@@ -208,15 +208,16 @@ def station_meta_to_json(by_type, val, el_list=None, time_range=None, constraint
     for the given time range are listed.
     '''
     def stn_in_poly(by_type, shape_type, shape,stn_meta):
-        shape = [float(s) for s in shape]
+        #convert to floats
+        s = [float(s) for s in shape]
         if shape_type == 'circle':
-            poly = shape
+            poly = s
             stn_in = WRCCUtils.point_in_circle(stn_meta['ll'][0], stn_meta['ll'][1], poly)
         else:
             if shape_type in ['bbox','location']:
-                poly = [(shape[0],shape[1]), (shape[0],shape[3]),(shape[2],shape[3]),(shape[2],shape[1])]
+                poly = [(s[0],s[1]), (s[0],s[3]),(s[2],s[3]),(s[2],s[1])]
             else:
-                poly = [(shape[2*idx],shape[2*idx+1]) for idx in range(len(shape)/2)]
+                poly = [(s[2*idx],s[2*idx+1]) for idx in range(len(s)/2)]
             stn_in = WRCCUtils.point_in_poly(stn_meta['ll'][0], stn_meta['ll'][1], poly)
         if not stn_in:return False
         else:return True
@@ -333,6 +334,7 @@ def station_meta_to_json(by_type, val, el_list=None, time_range=None, constraint
         #if custom shape, check if  stn lies within shape
         if by_type == 'shape':
             if shape_type in ['bbox','location']:shape = bbox.split(',')
+            elif shape_type == 'polygon':shape = WRCCUtils.orient_shape_ccw(val).split(',')
             else:shape = val.split(',')
             if not stn_in_poly(by_type, shape_type, shape, stn):
                 continue

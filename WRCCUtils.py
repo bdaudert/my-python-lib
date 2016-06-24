@@ -3808,6 +3808,31 @@ def generate_kml_file_new(area_type, state, kml_file_name, dir_location):
 
     return 'Success'
 
+def orient_shape_ccw(shape):
+    polygon_array = []
+    shape_list = shape.replace(', ',',').split(',')
+    for lon_idx in range(0,len(shape_list),2):
+        polygon_array.append([float(shape_list[lon_idx]),float(shape_list[lon_idx + 1])])
+    sum1 = 0
+    sum2 = 0
+    for i in range(len(polygon_array[0:len(polygon_array) - 1])):
+        sum1+=polygon_array[i][0]*polygon_array[i+1][1]
+        sum2+=polygon_array[i+1][0]*polygon_array[i][1]
+    sum1+=polygon_array[len(polygon_array) - 1][0]*polygon_array[0][1]
+    sum2+=polygon_array[0][0]*polygon_array[len(polygon_array) - 1][1]
+    A = sum1 - sum2
+    #Already ccw
+    if A >=0:
+        return shape
+    #cw, need to reverse the coords
+    if A < 0:
+        polygon_array_reversed = list(reversed(polygon_array))
+        shape_new = ''
+        for ll_idx, ll in enumerate(polygon_array_reversed):
+            shape_new = shape_new + str(ll[0]) + ',' + str(ll[1])
+            if ll_idx < len(polygon_array_reversed) - 1:shape_new+=','
+        return shape_new
+
 
 def find_bbox_of_shape(shape):
     '''

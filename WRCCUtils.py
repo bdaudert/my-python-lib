@@ -2236,7 +2236,7 @@ def get_single_yearly_summary_data(form):
         else:
             year_data.append([yr,-9999])
         #reset
-        smry_data = []
+        smry_data = []; smry = None
         yr = data_yr
     #Last value
     if smry_data:

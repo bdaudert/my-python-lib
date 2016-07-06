@@ -247,18 +247,20 @@ DISPLAY_PARAMS = {
     'user_email': 'User Email'
 }
 
-FIPS_STATE_KEYS = {'al':'01','az':'02','ca':'04','co':'05','ct':'06','hi':'51', 'id':'10','mt':'24', 'nv':'26', \
+FIPS_STATE_KEYS = {'al':'01','az':'02','as':'03','ca':'04','co':'05','ct':'06','hi':'51',\
+             'id':'10','gu':'14','mt':'24', 'nv':'26', \
              'nm':'29','pa':'91','or':'35','tx':'41', 'ut':'42', 'wa':'45','ar':'03', 'ct':'06', \
              'de':'07','fl':'08','ga':'09','il':'11', 'in':'12', 'ia':'13','ks':'14', 'ky':'15', \
              'la':'16','me':'17','md':'18','ma':'19', 'mi':'20', 'mn':'21','ms':'22', 'mo':'23', \
              'ne':'25','nh':'27','nj':'28','ny':'30', 'nc':'31', 'nd':'32','oh':'33', 'ok':'34', \
              'pa':'36','ri':'37','sc':'38','sd':'39', 'tn':'40', 'vt':'43','va':'44', 'wv':'46', \
-             'wi':'47','wy':'48','vi':'67','pr':'66','wr':'96', 'ml':'97', 'ws':'98','ak':'50'}
+             'wi':'47','wy':'48','vi':'67','fm':'64','pr':'66','mh':'68','mp':'69','pw':'70',\
+             'wr':'96', 'ml':'97', 'ws':'98','ak':'50'}
 
-STATE_CHOICES = ['AK', 'AL', 'AR', 'AS','AZ', 'CA', 'CO', 'CT', 'DC', 'DE', 'FL', 'GA', 'GU',\
-                'HI', 'IA', 'ID', 'IL', 'IN', 'KS', 'KY', 'LA', 'MA', 'MD', 'ME', \
-                'MI', 'MN', 'MO', 'MS', 'MT', 'NC', 'ND', 'NE', 'NH', 'NJ', 'NM', 'NV', \
-                'NY', 'OH', 'OK', 'OR', 'PA', 'PR','RI', 'SC', 'SD', 'TN', 'TX', 'UT', \
+STATE_CHOICES = ['AK', 'AL', 'AR', 'AS','AZ', 'CA', 'CO', 'CT', 'DC', 'DE', 'FL', 'FM', 'GA', 'GU',\
+                'HI', 'IA', 'ID', 'IL', 'IN', 'KS', 'KY', 'LA', 'MA', 'MD', 'ME', 'MH', \
+                'MI', 'MN', 'MO', 'MP','MS', 'MT', 'NC', 'ND', 'NE', 'NH', 'NJ', 'NM', 'NV', \
+                'NY', 'OH', 'OK', 'OR', 'PA', 'PR','PW','RI', 'SC', 'SD', 'TN', 'TX', 'UT', \
                 'VA', 'VT', 'WA', 'WI', 'WV', 'WY','AS']
 
 
@@ -980,17 +982,17 @@ AREA_DEFAULTS = {
     'climate_division':'Northwestern, NV01',
     'cwa':'Las Vegas NV, VEF',
     'county_warning_area':'Las Vegas NV, VEF',
-    'bbox':'-115,34,-114,35',
-    'bounding_box':'-115,34,-114,35',
+    'bbox':'-120.3,38.89,-118.89,40.21',
+    'bounding_box':'-120.3,38.89,-118.89,40.21',
     'state':'nv',
     'states':'states',
     'sw_states':'states',
     'county':'Churchill, 32001',
     'basin':'Hot Creek-Railroad Valleys,16060012',
-    'shape':'-115,34, -115, 35,-114,35, -114, 34',
+    'shape':'-120.3,38.89,-120.3,40.12,-118.89,40.21,-118.89,38.89',
     'shape_file':'',
-    'point': '-111,40',
-    'location':'-111,40'
+    'point': '-119,39',
+    'location':'-119,39'
 }
 
 
@@ -1708,6 +1710,7 @@ STATE_TUPLE = (
     ('de','Delaware'),
     ('dc','District of Columbia'),
     ('fl','Florida'),
+    ('fm','Federated States of Micronesia'),
     ('ga','Georgia'),
     ('gu','Guam'),
     ('hi','Hawaii'),
@@ -1721,10 +1724,12 @@ STATE_TUPLE = (
     ('ma','Massachusetts'),
     ('md','Maryland'),
     ('me','Maine'),
+    ('mh','Marshall Islands'),
     ('mi','Michigan'),
     ('mn','Minnesota'),
     ('ms','Mississippi'),
     ('mo','Missouri'),
+    ('mp','Northern Mariana Islands'),
     ('mt','Montana'),
     ('ne','Nebraska'),
     ('nv','Nevada'),
@@ -1739,6 +1744,7 @@ STATE_TUPLE = (
     ('or','Oregon'),
     ('pa','Pennsylvania'),
     ('pr','Puerto Rico'),
+    ('pw','Palau'),
     ('ri','Rhode Island'),
     ('sc','South Carolina'),
     ('sd','South Dakota'),

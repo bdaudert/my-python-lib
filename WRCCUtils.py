@@ -484,6 +484,8 @@ def set_acis_params(form):
     f_key = None
     #Set up area parameter
     #Convert form area key to ACIS area key
+    num_points, num_days = check_request_size(form)
+    large_request = check_if_large_request(num_points,num_days)
     if 'station_ids' in form.keys() and not large_request:
         #Special case station finder download data
         p_key = WRCCData.FORM_TO_PARAMS['station_ids']

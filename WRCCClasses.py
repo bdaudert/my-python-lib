@@ -89,6 +89,8 @@ class GraphDictWriter(object):
         return chartType
 
     def set_elUnits(self):
+        if 'statistic' in self.form.keys() and self.form['statistic'] == 'ndays':
+            return 'days'
         el_strip, base_temp = WRCCUtils.get_el_and_base_temp(self.element)
         if 'units' in self.form.keys() and self.form['units'] == 'metric':
             elUnits = WRCCData.UNITS_METRIC[el_strip]

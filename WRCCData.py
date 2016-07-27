@@ -750,10 +750,10 @@ GRID_DATA_FORMATTER = {
         'windowed_data':'format_data_single_lister'
     },
     'locations':{
-        'none':'format_grid_no_summary',
-        'temporal_summary':'format_grid_temporal_summary',
-        'spatial_summary':'format_grid_spatial_summary',
-        'windowed_data':'format_grid_windowed_data'
+        'none':'grid_data_trim_and_summary',
+        'temporal_summary':'grid_data_trim_and_summary',
+        'spatial_summary':'grid_data_trim_and_summary',
+        'windowed_data':'grid_data_trim_and_summary'
     },
     'county':{
         'none':'grid_data_trim_and_summary',
@@ -838,6 +838,7 @@ SEARCH_AREA_FORM_TO_ACIS = {
     'basin':'basin',
     'shape':None,
     'location':'loc',
+    'locations':'bbox',
     'point':'loc',
 }
 
@@ -860,6 +861,7 @@ STN_AREA_FORM_TO_PARAM = {
     'basin':'basin',
     'shape':'bbox',
     'location':'loc',
+    'locations':'bbox',
     'point':'loc'
 }
 
@@ -883,6 +885,7 @@ FORM_TO_META_PARAMS = {
     'basin':'basin',
     'shape':'bbox',
     'location':'loc',
+    'locations':'loc',
     'point':'loc'
 }
 
@@ -904,7 +907,7 @@ FORM_TO_PARAMS = {
     'basin':'basin',
     'shape':'bbox',
     'location':'loc',
-    'locations':'loc',
+    'locations':'locs',
     'point':'loc'
 }
 #NEW
@@ -926,6 +929,7 @@ PARAMS_TO_FORM= {
     'point':'location',
     'location':'location',
     'loc':'location',
+    'locations':'locations',
     'state':'state',
     'states':'states',
 }
@@ -946,6 +950,7 @@ GRID_AREA_FORM_TO_PARAM = {
     'basin':'bbox',
     'shape':'bbox',
     'location':'loc',
+    'locations':'loc',
     'point':'loc'
 }
 
@@ -966,6 +971,7 @@ ACIS_TO_SEARCH_AREA = {
     'shape':'shape',
     'point':'location',
     'location':'location',
+    'locatons':'locations',
     'loc':'location',
     'state':'state',
     'states':'states',
@@ -992,7 +998,8 @@ AREA_DEFAULTS = {
     'shape':'-120.3,38.89,-120.3,40.12,-118.89,40.21,-118.89,38.89',
     'shape_file':'',
     'point': '-119,39',
-    'location':'-119,39'
+    'location':'-119,39',
+    'locations':'-119,39,-119.1,39.1'
 }
 
 
@@ -1133,7 +1140,8 @@ SHAPE_NAMES = {
     'climate_division':'Climate Division ',
     'county_warning_area':'County Warning Area ',
     'basin':'Drainage Basin ',
-    'location':'Point Location '
+    'location':'Point Location ',
+    'locations': 'Point Locations '
 }
 
 

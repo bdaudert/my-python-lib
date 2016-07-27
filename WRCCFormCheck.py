@@ -560,17 +560,17 @@ def check_locations(form):
     #Backbutton sanity check
     if 'locations' not in form.keys():
         return 'Locations field not valid. You may have pressed the backbutton. Please reset the Points of Interest field.'
-    ll_list = form['location'].replace(' ','').split(',')
-    if len(ll_list) !=2:
-        return '%s is not a valid longitude,latitude pair.' %form['location']
+    ll_list = form['locations'].replace(' ','').split(',')
+    if len(ll_list) % 2 != 0:
+        return '%s is not a valid longitude,latitude pair.' %form['locations']
     for idx, s in enumerate(ll_list):
         try:
             float(s)
         except:
-            return '%s is not a valid longitude,latitude pair.' %form['location']
-        if idx == 0 and float(s) >0:
+            return '%s is not a valid longitude,latitude pair.' %form['locations']
+        if idx % 2 == 0 and float(s) >0:
             return '%s is not a valid longitude.' %s
-        if idx == 1 and float(s) < 0:
+        if idx % 2 ==  1 and float(s) < 0:
             return '%s is not a valid latitude.' %s
     return err
 

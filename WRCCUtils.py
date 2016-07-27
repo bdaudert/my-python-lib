@@ -50,7 +50,7 @@ thismodule =  sys.modules[__name__]
 area_keys = ['station_id','station_ids','location','locations','state',\
 'bounding_box','county','county_warning_area','basin','climate_division','shape']
 special_station_areas = ['shape']
-special_grid_areas = ['county', 'county_warning_area','basin','climate_division','shape']
+special_grid_areas = ['locations','county', 'county_warning_area','basin','climate_division','shape']
 station_reduction_areas = ['county', 'county_warning_area','basin',\
 'climate_division','state','bounding_box']
 grid_reduction_areas = ['state','bounding_box']
@@ -512,10 +512,12 @@ def set_acis_params(form):
     if special_shape:
         del params[p_key]
         #Need to run request on enclosing bbox
-        if f_key == 'shape':
+        if f_key in ['shape']:
             shape_type,bbox = get_bbox(form['shape'])
             if shape_type == 'location':params['loc'] = form['shape']
             else:params['bbox'] = bbox
+        elif f_key ==  'locations':
+            bbox =  get_bbox_of_gridpoints(form['locations'])
         else:
             bbox = AcisWS.get_acis_bbox_of_area(p_key,form[area_key])
         params['bbox'] = bbox
@@ -3903,6 +3905,10 @@ def get_bbox(shape):
 
     return t, bbox
 
+def get_bbox_of_gridpoints(locations):
+    locs = locations.replace(', ',',').split(',')
+    l = [float(loc) for loc in locs]
+    return find_bbox_of_shape(l)
 
 def find_num_lls(bbox,grid):
     '''
@@ -4101,6 +4107,11 @@ def set_poly_and_PointIn(prms):
             #PointIn = getattr(thismodule,'point_in_poly')
             PointIn = getattr(thismodule,'point_in_or_on_poly')
     else:
+        if 'locations' in prms.keys():
+            shape = prms['locations']
+            poly = [(shape[2*idx],shape[2*idx+1]) for idx in range(len(shape)/2)]
+            PointIn = getattr(thismodule,'point_in_or_on_poly')
+            return poly, PointIn
         if 'basin' in prms.keys():
             sh = AcisWS.find_geojson_of_area('basin', prms['basin'])
         if 'location' in prms.keys():

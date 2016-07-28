@@ -2360,7 +2360,10 @@ class LargeDataRequest(object):
         resultsdict has keys:
             errors, meta, data, smry, form
         '''
-        resultsdict = WRCCUtils.request_and_format_data(self.form)
+        if 'locations' in self.form.keys():
+            resultsdict = WRCCUtils.request_and_format_multiple_gridpoints(self.form)
+        else:
+            resultsdict = WRCCUtils.request_and_format_data(self.form)
         if 'errors' in resultsdict.keys():
             self.logger.error('ERROR in get_data: ' + str(resultsdict['errors']))
             return {}
@@ -2445,8 +2448,7 @@ class LargeDataRequest(object):
                     return str(e)
             else:
                 Writer = CsvWriter(data_chunk, f = path_to_file)
-
-        if self.form['data_format'] == 'xl':
+        elif self.form['data_format'] == 'xl':
             if 'output_format' in self.form.keys():
                 try:
                     if self.form['output_format'] == 'verbose':
@@ -2458,6 +2460,8 @@ class LargeDataRequest(object):
                     return str(e)
             else:
                 Writer = ExcelWriter(data_chunk,f = path_to_file)
+        else:
+            Writer = ExcelWriter(data_chunk,f = path_to_file)
         self.logger.info('Writing data to file.')
         Writer.write_to_file()
         '''

@@ -50,7 +50,7 @@ thismodule =  sys.modules[__name__]
 area_keys = ['station_id','station_ids','location','locations','state',\
 'bounding_box','county','county_warning_area','basin','climate_division','shape']
 special_station_areas = ['shape']
-special_grid_areas = ['locations','county', 'county_warning_area','basin','climate_division','shape']
+special_grid_areas = ['county', 'county_warning_area','basin','climate_division','shape']
 station_reduction_areas = ['county', 'county_warning_area','basin',\
 'climate_division','state','bounding_box']
 grid_reduction_areas = ['state','bounding_box']
@@ -108,9 +108,9 @@ def check_request_size(form):
         return num_points, num_days
     elif 'locations' in form.keys():
         if isinstance(form['locations'], basestring):
-            num_points = len(form['locations'].split(',')) / 2
+            num_points = round(len(form['locations'].split(',')) / 2.0)
         if isinstance(form['locations'],list):
-            num_points = len(form['locations']) / 2
+            num_points = round(len(form['locations']) / 2.0)
         return num_points, num_days
     elif 'station_ids' in form.keys():
         if isinstance(form['station_ids'], basestring):
@@ -495,11 +495,10 @@ def set_acis_params(form):
         for area_key in area_keys:
             if area_key not in form.keys():
                 continue
-            if area_key in form.keys():
-                p_key = WRCCData.FORM_TO_PARAMS[area_key]
-                f_key = area_key
-                params[p_key] = str(form[area_key])
-                break
+            p_key = WRCCData.FORM_TO_PARAMS[area_key]
+            f_key = area_key
+            params[p_key] = str(form[area_key])
+            break
     if not p_key:
         return {}
     #Override area parameter if necessary
@@ -516,8 +515,6 @@ def set_acis_params(form):
             shape_type,bbox = get_bbox(form['shape'])
             if shape_type == 'location':params['loc'] = form['shape']
             else:params['bbox'] = bbox
-        elif f_key ==  'locations':
-            bbox =  get_bbox_of_gridpoints(form['locations'])
         else:
             bbox = AcisWS.get_acis_bbox_of_area(p_key,form[area_key])
         params['bbox'] = bbox
@@ -668,6 +665,63 @@ def check_data_and_dates(data_key,req, dates):
         error = 'Dates mismatch.'
     return error
 
+
+def request_and_format_multiple_gridpoints(form):
+    '''
+    ACIS data request and data formatting for
+    multiple gridpoint requests.
+    NOTE: this call is so different from all the
+    other calls, it needed to be seperate from
+    request_and_format_data
+    '''
+    resultsdict = {
+        'error':[],
+        'meta':[],
+        'data':[],
+        'smry':[],
+        'form':form
+    }
+    data_type = 'grid'
+    params = set_acis_params(form)
+    lons_lats = params['locs'].replace(', ',',').split(',')
+    lons = [lon for lon in lons_lats[0:len(lons_lats):2]]
+    #Loop over locations and rquest data for each point
+    for lon_idx, lon in enumerate(lons):
+        lat = lons_lats[2*lon_idx + 1]
+        params_single = copy.deepcopy(params)
+        params_single['loc'] = lon + ',' + lat
+        del params_single['locs']
+        request_data = getattr(AcisWS,'GridData')
+        #Make data request
+        try:
+            req = request_data(params_single)
+        except Exception, e:
+            error = 'Data request failed with error: %s.' %str(e)
+            resultsdict['error'].append(error)
+            continue
+        #Sanity checks
+        if req is None or  (not 'data' in req.keys() and not 'smry' in req.keys()):
+            error = 'No data found for these parameters.'
+            resultsdict['error'].append(error)
+            continue
+        #Write meta dict
+        if 'meta' in req.keys():
+            elev = req['meta']['elev']
+            meta_dict = write_grid_metadict(lat,lon,elev)
+            meta_display_list = metadict_to_display_list(meta_dict, meta_dict.keys(),form)
+            resultsdict['meta'].append(meta_display_list)
+        #Format request for display
+        FORMATTER = copy.deepcopy(WRCCData.GRID_DATA_FORMATTER)
+        formatter = FORMATTER[form['area_type']][form['data_summary']]
+        format_data = getattr(thismodule,formatter)
+        results = format_data(req, form)
+        if 'data' in results.keys() and results['data']:
+            #resultsdict['data'].append(results['data'])
+            resultsdict['data']+=results['data']
+        if 'smry' in results.keys() and results['smry']:
+            #resultsdict['smry'].append(results['smry'])
+            resultsdict['smry']+=results['smry']
+    return resultsdict
 
 def request_and_format_data(form):
     '''

@@ -751,10 +751,10 @@ GRID_DATA_FORMATTER = {
         'windowed_data':'format_data_single_lister'
     },
     'locations':{
-        'none':'format_data_single_lister',
-        'temporal_summary':'format_data_single_lister',
-        'spatial_summary':'format_data_single_lister',
-        'windowed_data':'format_data_single_lister'
+        'none':'format_grid_no_summary',
+        'temporal_summary':'format_grid_temporal_summary',
+        'spatial_summary':'format_grid_spatial_summary',
+        'windowed_data':'format_grid_windowed_data'
     },
     'county':{
         'none':'grid_data_trim_and_summary',

@@ -674,9 +674,9 @@ def request_and_format_multiple_gridpoints(form):
     other calls, it needed to be seperate from
     request_and_format_data
     '''
-    resultsdict = {
+    requestdict = {
         'error':[],
-        'meta':[],
+        'meta':{'lon':[],'lat':[],'elev':[]},
         'data':[],
         'smry':[],
         'form':form
@@ -691,36 +691,51 @@ def request_and_format_multiple_gridpoints(form):
         params_single = copy.deepcopy(params)
         params_single['loc'] = lon + ',' + lat
         del params_single['locs']
+        form_single = copy.deepcopy(form)
+        #del form['locations']
+        form['location'] = lon + ',' + lat
         request_data = getattr(AcisWS,'GridData')
         #Make data request
         try:
             req = request_data(params_single)
         except Exception, e:
             error = 'Data request failed with error: %s.' %str(e)
-            resultsdict['error'].append(error)
+            requestdict['error'].append(error)
             continue
         #Sanity checks
         if req is None or  (not 'data' in req.keys() and not 'smry' in req.keys()):
             error = 'No data found for these parameters.'
-            resultsdict['error'].append(error)
+            requestdict['error'].append(error)
             continue
+        #Add meta for this point
+        requestdict['meta']['lat'].append([lat])
+        requestdict['meta']['lon'].append([[lon]])
+        requestdict['meta']['lon'].append([req['meta']['elev']])
+
+        #Add the data for this point
+        requestdict['data'].append([req['data']])
+        '''
         #Write meta dict
         if 'meta' in req.keys():
             elev = req['meta']['elev']
             meta_dict = write_grid_metadict(lat,lon,elev)
             meta_display_list = metadict_to_display_list(meta_dict, meta_dict.keys(),form)
-            resultsdict['meta'].append(meta_display_list)
+            requestdict['meta'].append(meta_display_list)
         #Format request for display
         FORMATTER = copy.deepcopy(WRCCData.GRID_DATA_FORMATTER)
         formatter = FORMATTER[form['area_type']][form['data_summary']]
         format_data = getattr(thismodule,formatter)
         results = format_data(req, form)
         if 'data' in results.keys() and results['data']:
-            #resultsdict['data'].append(results['data'])
-            resultsdict['data']+=results['data']
+            requestdict['data']+=results['data']
         if 'smry' in results.keys() and results['smry']:
-            #resultsdict['smry'].append(results['smry'])
-            resultsdict['smry']+=results['smry']
+            requestdict['smry']+=results['smry']
+        '''
+    #Format data
+    FORMATTER = copy.deepcopy(WRCCData.GRID_DATA_FORMATTER)
+    formatter = FORMATTER[form['area_type']][form['data_summary']]
+    format_data = getattr(thismodule,formatter)
+    resultsdict = format_data(req, form)
     return resultsdict
 
 def request_and_format_data(form):

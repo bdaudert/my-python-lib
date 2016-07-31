@@ -302,13 +302,16 @@ def check_start_date(form):
                 'elems':','.join(form['elements']),
                 'meta':'valid_daterange'
             }
+            if 'pet' in form['elements'] or 'dtr' in form['elements']:
+                meta_params['elems'].replace('pet','maxt,mint')
+                meta_params['elems'].replace('dtr','maxt,mint')
             #meta_data = AcisWS.StnMeta(meta_params)
             try:
                 meta_data = AcisWS.StnMeta(meta_params)
             except:
                 meta_data = {'meta':[]}
             start_dts = [];end_dts = []
-            if 'meta' in meta_data.keys():
+            if meta_data and 'meta' in meta_data.keys():
                 for stn_meta in meta_data['meta']:
                     for el_vd in stn_meta['valid_daterange']:
                         if el_vd and len(el_vd) == 2:

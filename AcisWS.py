@@ -228,6 +228,7 @@ def station_meta_to_json(by_type, val, el_list=None, time_range=None, constraint
             flag_invalid_station = True
         elif constraints in ['all_all', 'all_any']:
             flag_invalid_station = False
+
         for el_idx, el_vX in enumerate(el_list):
             #Find correct index in vX_list
             try:
@@ -445,7 +446,6 @@ def station_meta_to_json(by_type, val, el_list=None, time_range=None, constraint
                 stn_meta_list.append(stn_dict)
             else:
                 stn_meta_list.insert(stn_idx, stn_dict)
-
     stn_json['stations'] = stn_meta_list
     WRCCUtils.load_data_to_json_file(f_dir + f_name, stn_json)
     return stn_json, f_name

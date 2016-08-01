@@ -82,6 +82,7 @@ DISPLAY_PARAMS = {
     'location': 'Location (lon,lat)',
     'locations':'Locations (lon, lat)',
     'loc': 'Location(lon,lat)',
+    'locs':'Locations (lon, lat)',
     'point': 'Location (lon,lat)',
     'lat': 'Latitude',
     'lon': 'Longitude',
@@ -750,10 +751,10 @@ GRID_DATA_FORMATTER = {
         'windowed_data':'format_data_single_lister'
     },
     'locations':{
-        'none':'grid_data_trim_and_summary',
-        'temporal_summary':'grid_data_trim_and_summary',
-        'spatial_summary':'grid_data_trim_and_summary',
-        'windowed_data':'grid_data_trim_and_summary'
+        'none':'format_grid_no_summary',
+        'temporal_summary':'format_grid_temporal_summary',
+        'spatial_summary':'format_grid_spatial_summary',
+        'windowed_data':'format_grid_windowed_data'
     },
     'county':{
         'none':'grid_data_trim_and_summary',
@@ -838,7 +839,7 @@ SEARCH_AREA_FORM_TO_ACIS = {
     'basin':'basin',
     'shape':None,
     'location':'loc',
-    'locations':'bbox',
+    'locations':'locs',
     'point':'loc',
 }
 
@@ -861,7 +862,7 @@ STN_AREA_FORM_TO_PARAM = {
     'basin':'basin',
     'shape':'bbox',
     'location':'loc',
-    'locations':'bbox',
+    'locations':'locs',
     'point':'loc'
 }
 
@@ -885,7 +886,7 @@ FORM_TO_META_PARAMS = {
     'basin':'basin',
     'shape':'bbox',
     'location':'loc',
-    'locations':'loc',
+    'locations':'locs',
     'point':'loc'
 }
 
@@ -930,6 +931,7 @@ PARAMS_TO_FORM= {
     'location':'location',
     'loc':'location',
     'locations':'locations',
+    'locs':'locations',
     'state':'state',
     'states':'states',
 }
@@ -950,7 +952,7 @@ GRID_AREA_FORM_TO_PARAM = {
     'basin':'bbox',
     'shape':'bbox',
     'location':'loc',
-    'locations':'loc',
+    'locations':'locs',
     'point':'loc'
 }
 
@@ -973,6 +975,7 @@ ACIS_TO_SEARCH_AREA = {
     'location':'location',
     'locatons':'locations',
     'loc':'location',
+    'locs':'locations',
     'state':'state',
     'states':'states',
     'sw_states':'states'

@@ -678,13 +678,17 @@ def request_and_format_multiple_gridpoints(form):
         'error':[],
         'meta':{'lon':[],'lat':[],'elev':[]},
         'data':[],
-        'smry':[],
+        'smry':[[] for j in range(len(form['elements']))],
         'form':form
     }
     data_type = 'grid'
     params = set_acis_params(form)
     lons_lats = params['locs'].replace(', ',',').split(',')
     lons = [lon for lon in lons_lats[0:len(lons_lats):2]]
+    dates = get_dates(form['start_date'],form['end_date'])
+    data = [[date] for date in dates]
+    for i in range(len(data)):
+        data[i]+= [[] for j in range(len(form['elements']))]
     #Loop over locations and rquest data for each point
     for lon_idx, lon in enumerate(lons):
         lat = lons_lats[2*lon_idx + 1]
@@ -702,6 +706,7 @@ def request_and_format_multiple_gridpoints(form):
             error = 'Data request failed with error: %s.' %str(e)
             requestdict['error'].append(error)
             continue
+
         #Sanity checks
         if req is None or  (not 'data' in req.keys() and not 'smry' in req.keys()):
             error = 'No data found for these parameters.'
@@ -709,33 +714,23 @@ def request_and_format_multiple_gridpoints(form):
             continue
         #Add meta for this point
         requestdict['meta']['lat'].append([lat])
-        requestdict['meta']['lon'].append([[lon]])
-        requestdict['meta']['lon'].append([req['meta']['elev']])
-
-        #Add the data for this point
-        requestdict['data'].append([req['data']])
-        '''
-        #Write meta dict
-        if 'meta' in req.keys():
-            elev = req['meta']['elev']
-            meta_dict = write_grid_metadict(lat,lon,elev)
-            meta_display_list = metadict_to_display_list(meta_dict, meta_dict.keys(),form)
-            requestdict['meta'].append(meta_display_list)
-        #Format request for display
-        FORMATTER = copy.deepcopy(WRCCData.GRID_DATA_FORMATTER)
-        formatter = FORMATTER[form['area_type']][form['data_summary']]
-        format_data = getattr(thismodule,formatter)
-        results = format_data(req, form)
-        if 'data' in results.keys() and results['data']:
-            requestdict['data']+=results['data']
-        if 'smry' in results.keys() and results['smry']:
-            requestdict['smry']+=results['smry']
-        '''
+        requestdict['meta']['lon'].append([lon])
+        requestdict['meta']['elev'].append([req['meta']['elev']])
+        #Add the data for this point without dates
+        for i in range(len(data)):
+            for j in range(len(form['elements'])):
+                #data[i][j+1].append([req['data'][i][j+1]])
+                try:
+                    data[i][j+1].append([req['data'][i][j+1]])
+                    requestdict['smry'][j].append([req['data'][i][j+1]])
+                except:
+                    data[i][j+ 1].append([-9999])
+    requestdict['data']+= data
     #Format data
     FORMATTER = copy.deepcopy(WRCCData.GRID_DATA_FORMATTER)
     formatter = FORMATTER[form['area_type']][form['data_summary']]
     format_data = getattr(thismodule,formatter)
-    resultsdict = format_data(req, form)
+    resultsdict = format_data(requestdict, form)
     return resultsdict
 
 def request_and_format_data(form):
@@ -1463,13 +1458,6 @@ def format_grid_temporal_summary(req,form):
     if 'units' in form.keys() and form['units'] == 'metric':
         unit_convert = getattr(thismodule,'convert_to_metric')
     #lat,lon loop over data
-    '''
-    generator_lat =  ((grid_idx, lat_grid) for grid_idx, lat_grid in enumerate(req['meta']['lat']))
-    for (grid_idx, lat_grid) in generator_lat:
-        generator_lon = ((lon_idx, lon) for lon_idx, lon in enumerate(req['meta']['lon'][grid_idx]))
-        lat = lat_grid[0]
-        for (lon_idx, lon) in generator_lon:
-    '''
     for grid_idx in xrange(len(req['meta']['lat'])):
         lat = req['meta']['lat'][grid_idx][0]
         for lon_idx in xrange(len(req['meta']['lon'][grid_idx])):

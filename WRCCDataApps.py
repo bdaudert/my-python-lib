@@ -837,7 +837,7 @@ def SodxtrmtsSCENIC(**kwargs):
                                         else:
                                             value = ave - float(kwargs['base_temperature'])
                                         if value < 0:
-                                            value = i
+                                            value = 0.0
                             except:
                                 value = xmiss
                     if kwargs['statistic'] in ['mmax', 'mmin']:
@@ -1067,7 +1067,7 @@ def SodxtrmtsSCENIC(**kwargs):
                 if kwargs['statistic'] == 'ndays':
                     results[i][num_yrs].append(0)
                 else:
-                    results[i][num_yrs].append(0.00)
+                    results[i][num_yrs].append(0.0)
                 #New
                 results[i][num_yrs].append(' ')
             sk = 0.0
@@ -1099,7 +1099,7 @@ def SodxtrmtsSCENIC(**kwargs):
                     #space for flags
                     results[i][num_yrs+1].append(' ')
                 else:
-                    results[i][num_yrs+1].append(0.00)
+                    results[i][num_yrs+1].append(0.0)
                     #space for flags
                     results[i][num_yrs+1].append(' ')
 
@@ -1153,15 +1153,15 @@ def SodxtrmtsSCENIC(**kwargs):
                 if kwargs['departures_from_averages']  == 'F':
                     #results[i][yr].append('%.2f%s' % (ucv(element, table_1[yr][p_idx]), outchr[p_idx]))
                     if kwargs['statistic'] == 'ndays':
-                        #results[i][yr].append(int(table_1[yr][p_idx]))
-                        results[i][yr].append('%d' % int(table_1[yr][p_idx]))
+                        results[i][yr].append(int(table_1[yr][p_idx]))
+                        #results[i][yr].append('%d' % int(table_1[yr][p_idx]))
                     else:
-                        #results[i][yr].append(round(ucv(element, table_1[yr][p_idx]),2))
-                        results[i][yr].append('%.2f' % ucv(element, table_1[yr][p_idx]))
+                        results[i][yr].append(round(ucv(element, table_1[yr][p_idx]),2))
+                        #results[i][yr].append('%.2f' % ucv(element, table_1[yr][p_idx]))
                     results[i][yr].append('%s' % outchr[p_idx])
                 else:
-                    #results[i][yr].append(round(ucv(element, (table_1[yr][p_idx] - mean_out[p_idx])),2))
-                    results[i][yr].append('%.2f' % (ucv(element, (table_1[yr][p_idx] - mean_out[p_idx]))))
+                    results[i][yr].append(round(ucv(element, (table_1[yr][p_idx] - mean_out[p_idx])),2))
+                    #results[i][yr].append('%.2f' % (ucv(element, (table_1[yr][p_idx] - mean_out[p_idx]))))
                     results[i][yr].append('%s' % outchr[p_idx])
             #End p_idx loop
         #End of year loop

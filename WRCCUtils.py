@@ -1970,9 +1970,7 @@ def get_single_intraannual_data(form):
     else:
         unit_convert =  getattr(thismodule,'convert_nothing')
     elems = []
-    if form['element'] == 'dtr':
-        elems = [{'vX':1},{'vX':2}]
-    elif form['element'] == 'pet':
+    if form['element'] in ['dtr','pet']:
         elems = [{'vX':1},{'vX':2}]
     else:
         elems = [{'vX':WRCCData.ACIS_ELEMENTS_DICT[form['element']]['vX']}]

@@ -113,12 +113,13 @@ class GraphDictWriter(object):
         '''
         unit = self.set_elUnits()
         title = ''
-        if 'spatial_summary' in self.form.keys():
-            title = WRCCData.DISPLAY_PARAMS[self.form['spatial_summary']]
-            title += ' of ' + WRCCData.DISPLAY_PARAMS[el_strip]
-        elif 'temporal_summary' in self.form.keys() and not 'start_month' in self.form.keys():
-            title = WRCCData.DISPLAY_PARAMS[self.form['temporal_summary']]
-            title += ' of ' + WRCCData.DISPLAY_PARAMS[el_strip]
+        if 'data_summary' in self.form.keys() and self.form['data_summary']!='none':
+            if 'spatial_summary' in self.form.keys():
+                title = WRCCData.DISPLAY_PARAMS[self.form['spatial_summary']]
+                title += ' of ' + WRCCData.DISPLAY_PARAMS[el_strip]
+            elif 'temporal_summary' in self.form.keys() and not 'start_month' in self.form.keys():
+                title = WRCCData.DISPLAY_PARAMS[self.form['temporal_summary']]
+                title += ' of ' + WRCCData.DISPLAY_PARAMS[el_strip]
 
         elif 'statistic' in self.form.keys():
             if self.form['statistic'] == 'ndays':
@@ -143,10 +144,11 @@ class GraphDictWriter(object):
             elif 'location' in self.form.keys():
                  title = 'Location: ' + self.form['location']
             title += ', '
-            if 'temporal_summary' in self.form.keys():
-                title += WRCCData.DISPLAY_PARAMS[self.form['temporal_summary']] + ' of '
-            elif 'spatial_summary' in self.form.keys():
-                title += WRCCData.DISPLAY_PARAMS[self.form['spatial_summary']] + ' of '
+            if 'data_summary' in self.form.keys() and self.form['data_summary']!='none':
+                if 'temporal_summary' in self.form.keys():
+                    title += WRCCData.DISPLAY_PARAMS[self.form['temporal_summary']] + ' of '
+                elif 'spatial_summary' in self.form.keys():
+                    title += WRCCData.DISPLAY_PARAMS[self.form['spatial_summary']] + ' of '
             if 'calculation' in self.form.keys() and self.form['calculation'] == 'cumulative':
                 title += 'Cumulative ' + WRCCData.DISPLAY_PARAMS[el_strip]
             else:

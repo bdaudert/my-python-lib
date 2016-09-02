@@ -1142,7 +1142,8 @@ def SodxtrmtsSCENIC(**kwargs):
                 outchr[p_idx] = mischr[intgr]
                 if annsav[yr][p_idx] != ' ':
                     outchr[p_idx] = annsav[yr][p_idx]
-                if (abs(table_1[yr][p_idx] -  9999) < 0.001 or abs(table_1[yr][p_idx] + 9999.0) <0.001 or outchr[p_idx] =='z'):
+                #if (abs(table_1[yr][p_idx] -  9999) < 0.001 or abs(table_1[yr][p_idx] + 9999.0) <0.001 or outchr[p_idx] =='z'):
+                if (abs(table_1[yr][p_idx] -  9999) < 0.001 or abs(table_1[yr][p_idx] + 9999.0) <0.001):
                     if kwargs['statistic'] == 'msum' and element == 'hdd' and table_1[yr][p_idx]> 9998.5:
                         continue
                     else:
@@ -1699,7 +1700,8 @@ def Sodxtrmts(**kwargs):
                 outchr[monind] = mischr[intgr]
                 if annsav[yr][mon] != ' ':
                     outchr[monind] = annsav[yr][mon]
-                if (abs(table_1[yr][mon] -  9999) < 0.001 or abs(table_1[yr][mon] + 9999.0) <0.001 or outchr[monind] =='z'):
+                #if (abs(table_1[yr][mon] -  9999) < 0.001 or abs(table_1[yr][mon] + 9999.0) <0.001 or outchr[monind] =='z'):
+                if (abs(table_1[yr][mon] -  9999) < 0.001 or abs(table_1[yr][mon] + 9999.0) <0.001):
                     if kwargs['statistic'] == 'msum' and element == 'hdd' and table_1[yr][mon]> 9998.5:
                         continue
                     else:
@@ -2778,6 +2780,68 @@ def Sodlist(**kwargs):
                 stn_data[k][j].insert(0,date)
         results[i]=stn_data
     return results
+
+
+def Sodmonline_new(kwargs):
+    '''
+    Needs to be rewritten from scratch
+    if needed
+    '''
+    results =  {}
+    params = {
+        'sid':str(kwargs['station_id']),
+        #'elems':[{'name':str(kwargs['element']),'add':'f'}],
+        'elems':[{'name':str(kwargs['element'])}],
+        'sdate':str(kwargs['start_date']) + '01-01',
+        'edate':str(kwargs['end_date']) + '12-31',
+        'meta':'name,state,sids,ll,elev,uid,valid_daterange'
+    }
+    request = AcisWS.StnData(params)
+    #Sanity checks
+    if not request:
+        results['error'] = 'ERROR in data request. Check parameters!'
+        return results
+    if 'data' not in request.keys():
+        results['error'] = 'ERROR: No data found.'
+        return results
+    if 'meta' not in request.keys():
+        results['error'] = 'ERROR: No meta data found.'
+        return results
+    else:results['meta'] =  request['meta']
+    if 'error' in request.keys():
+        results['error'] = 'ERROR: ' + str(request['error'])
+        return results
+    #Set unit converter
+    if kwargs['units'] == 'metric':ucv = getattr(WRCCUtils,'convert_to_metric')
+    else:ucv = getattr(WRCCUtils,'convert_nothing')
+    #Sort results by mon and year
+    data = []
+    current_year = None
+    current_mont = None
+    for date_data in request['data']:
+        date = WRCCUtils.date_to_eight(str(date_data[0]))
+        year = date[0:4]
+        mon = str(int(date[4:6]))
+        day = str(int(date[6:8]))
+        try:
+            val = ucv(kwargs['element'],int(date_data[1]))
+        except:
+            try:
+                val = ucv(kwargs['element'],float(date_data[1]))
+            except:
+                val = str(date_data[1])
+        if day == '1':
+            #Take care of months with less than 31 days in it
+            if data and len(data[-1]) != 33:
+                for i in range(len(data[-1]),33):
+                    data[-1].append('M')
+            data.append([year, mon,val])
+        else:
+            data[-1].append(val)
+    if data:results['data'] = data
+    else:results['error'] = 'ERROR: No data found.'; return results
+    return results
+
 
 def Sodlist_new(kwargs):
     results = [];

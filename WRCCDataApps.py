@@ -2842,6 +2842,72 @@ def Sodmonline_new(kwargs):
     else:results['error'] = 'ERROR: No data found.'; return results
     return results
 
+def Sodmonlinemy_new(kwargs):
+    '''
+    Needs to be rewritten from scratch
+    if needed
+    '''
+    results =  {}
+    params = {
+        'sid':str(kwargs['station_id']),
+        #'elems':[{'name':str(kwargs['element']),'add':'f'}],
+        'elems':[{'name':str(kwargs['element'])}],
+        'sdate':str(kwargs['start_date']) + '01-01',
+        'edate':str(kwargs['end_date']) + '12-31',
+        'meta':'name,state,sids,ll,elev,uid,valid_daterange'
+    }
+    request = AcisWS.StnData(params)
+    #Sanity checks
+    if not request:
+        results['error'] = 'ERROR in data request. Check parameters!'
+        return results
+    if 'data' not in request.keys():
+        results['error'] = 'ERROR: No data found.'
+        return results
+    if 'meta' not in request.keys():
+        results['error'] = 'ERROR: No meta data found.'
+        return results
+    else:results['meta'] =  request['meta']
+    if 'error' in request.keys():
+        results['error'] = 'ERROR: ' + str(request['error'])
+        return results
+    #Set unit converter
+    if kwargs['units'] == 'metric':ucv = getattr(WRCCUtils,'convert_to_metric')
+    else:ucv = getattr(WRCCUtils,'convert_nothing')
+    #Sort results by mon and year
+    #data = [[] for mon_idx in range(12)]
+    data = {}
+    for mon_idx in range(1,13):
+        data[mon_idx] = []
+    current_year = None
+    current_mon = 1
+    for date_data in request['data']:
+        date = WRCCUtils.date_to_eight(str(date_data[0]))
+        year = date[0:4]
+        mon = int(date[4:6])
+        day = str(int(date[6:8]))
+        try:
+            val = ucv(kwargs['element'],int(date_data[1]))
+        except:
+            try:
+                val = ucv(kwargs['element'],float(date_data[1]))
+            except:
+                val = str(date_data[1])
+        if day == '1':
+            #Take care of months with less than 31 days in it
+            if data[current_mon] and len(data[current_mon][-1]) != 33:
+                for i in range(len(data[current_mon][-1]),33):
+                    data[current_mon][-1].append('M')
+            data[mon].append([year, mon,val])
+            current_mon = mon
+            current_year = year
+        else:
+            try:data[mon][-1].append(val)
+            except:pass
+    if data:results['data'] = dict(sorted(data.items(), key=lambda x: x[1]))
+    #sorted(data,key=data.get)
+    else:results['error'] = 'ERROR: No data found.'; return results
+    return results
 
 def Sodlist_new(kwargs):
     results = [];
@@ -2892,6 +2958,11 @@ def Sodlist_new(kwargs):
     #format data and add dates
     for stn_data in request['data']:
         stn_dict = {'meta':{}, 'data':[]}
+        #Write header
+        #stn_dict['data'].append(['ST','STN','YR','MON','DAY'])
+        stn_dict['data'].append(['STN','DATE'])
+        for el_name in el_list:
+            stn_dict['data'][-1] =  stn_dict['data'][-1] + [el_name.upper(),'F','T']
         stn_id = ' '
         if 'meta' in stn_data.keys():
             stn_dict['meta'] =  WRCCUtils.format_station_meta(stn_data['meta'])
@@ -2905,6 +2976,9 @@ def Sodlist_new(kwargs):
                 while idx <= end:
                     #fix me: what's tobs?? different for each element
                     #FIXED: upon Greg's request, we choose tmin tobs
+                    #dat =[stn_id[0:2], stn_id[2:6],dates[idx][0:4],dates[idx][4:6],dates[idx][6:8]]
+                    dat = [stn_id,dates[idx]]
+                    '''
                     if kwargs['output_format'] == 'kr_csv':
                         if kwargs['minimize']:
                             dat =[dates[idx][0:4],dates[idx][4:6],dates[idx][6:8]]
@@ -2915,12 +2989,18 @@ def Sodlist_new(kwargs):
                             dat = [dates[idx]]
                         else:
                             dat = [stn_id + dates[idx]]
+                    '''
                     for el_idx, vX in enumerate(vx_list):
                         if len(dates) ==1:
                             data_flag_tobs = stn_data['data'][el_idx]
                         else:
                             data_flag_tobs = stn_data['data'][idx][el_idx]
+                        '''
+                        for d in data_flad_tobs:
+                            dat.append(d)
+                        '''
                         wrcc_data = WRCCUtils.format_sodlist_data(data_flag_tobs)
+                        '''
                         if str(vX) == '4':
                             #add hour to data
                             if not kwargs['minimize']:
@@ -2928,6 +3008,7 @@ def Sodlist_new(kwargs):
                                     dat.append(wrcc_data[-1])
                                 else:
                                     dat[0]+=wrcc_data[-1]
+                        '''
                         #Format to Kelly's output:
                         #pcpn, snow,snwd in 100th of inches
                         if str(vX) in ['4','7']:
@@ -2942,9 +3023,12 @@ def Sodlist_new(kwargs):
                                 dat.append(-999)
                         else:
                             dat.append(wrcc_data[0])
+                        #Flag
                         dat.append(wrcc_data[1])
-                        dat.append(wrcc_data[2])
+                        #Obs time
+                        dat.append(wrcc_data[3])
                     stn_dict['data'].append(dat)
+                    dat = []
                     idx+=1
         results.append(stn_dict)
     return results
@@ -4126,8 +4210,6 @@ def Soddyrec(**kwargs):
                         row.append(year)
                 results[i][j].append(row)
     return results
-
-
 
 def Sodsum(**kwargs):
     '''

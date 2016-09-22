@@ -1700,8 +1700,8 @@ def Sodxtrmts(**kwargs):
                 outchr[monind] = mischr[intgr]
                 if annsav[yr][mon] != ' ':
                     outchr[monind] = annsav[yr][mon]
-                #if (abs(table_1[yr][mon] -  9999) < 0.001 or abs(table_1[yr][mon] + 9999.0) <0.001 or outchr[monind] =='z'):
-                if (abs(table_1[yr][mon] -  9999) < 0.001 or abs(table_1[yr][mon] + 9999.0) <0.001):
+                if (abs(table_1[yr][mon] -  9999) < 0.001 or abs(table_1[yr][mon] + 9999.0) <0.001 or outchr[monind] =='z'):
+                    #if (abs(table_1[yr][mon] -  9999) < 0.001 or abs(table_1[yr][mon] + 9999.0) <0.001):
                     if kwargs['statistic'] == 'msum' and element == 'hdd' and table_1[yr][mon]> 9998.5:
                         continue
                     else:
@@ -3838,6 +3838,13 @@ def Soddd(**kwargs):
     #if output_type daily long-term ave:
     #results[stn_id][doy]=[doy, Jan_ave, Jan_yrs, Feb_ave, Feb_yrs, ..., Dec_ave, Dec_yrs]
     results = defaultdict(list)
+    #Write header line
+    if kwargs['output_type'] == 'm':
+        header = ['YEAR'] + WRCCData.MONTH_NAMES_SHORT_CAP + ['ANN']
+    else:
+        header = ['DAY']
+        for MON in WRCCData.MONTH_NAMES_SHORT_CAP:
+            header+=[MON,'']
     #Loop over stations
     for i, stn in enumerate(kwargs['station_ids']):
         yrs = max(len(kwargs['data'][i][j]) for j in range(len(kwargs['elements'])))
@@ -3965,6 +3972,11 @@ def Soddd(**kwargs):
                     else:
                         results[i][day].append(-99)
                         results[i][day].append(0)
+        results[i].insert(0,header)
+        if kwargs['output_type'] != 'm':
+            header2 = ['']
+            for k in range(12):header2+=['AV','YR']
+            results[i].insert(1,header2)
     return results
 
 #def Soddynorm(data, dates, elements, station_ids, station_names, filter_type, filter_days):
@@ -3988,7 +4000,8 @@ def Soddynorm(**kwargs):
             else:
                 el_data_list2[j] = [['0.0','0.0','0'] for day in range(366)]
         #el_data_list_f = [[] for el in elements] #filtered data
-        results[i] = [[] for el in kwargs['elements']]
+        #results[i] = [[] for el in kwargs['elements']]
+        results[i]=[['DOY','MON','DAY','MAXT AVE','MAXT STD','MAXT YRS','MINT AVE','MINT STD','MINT YRS','PCPN AVE','PCPN YRS']]
         #Check for empty data
         if kwargs['data'][i] == [[],[],[]]:
             continue

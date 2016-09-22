@@ -340,10 +340,12 @@ def sodxtrmts_wrapper(argv, offline = False):
     if args['start_year'].upper() == 'POR' or args['end_year'].upper() == 'POR':
         valid_daterange = por_to_valid_daterange(args['station_id'])
         if args['start_year'].upper() == 'POR':
-            args['start_year'] = valid_daterange[0][0:4]
+            if args['start_month'] != '01' and int(args['start_month']) > int(valid_daterange[0][4:6]):
+                args['start_year'] = str(int(valid_daterange[0][0:4]) - 1)
+            else:
+                args['start_year'] = valid_daterange[0][0:4]
         if args['end_year'].upper() == 'POR':
             args['end_year'] = valid_daterange[1][0:4]
-
     err = check_year_range(args['start_year'], args['end_year'])
     #Sanity check on year range
     if err:

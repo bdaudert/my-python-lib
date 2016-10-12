@@ -269,7 +269,8 @@ def check_start_date(form):
                 flag = False
                 break
             else:
-                flag = True
+                if str(dr[1]) == str(grid_dr[-1][1]):
+                    flag = True
                 continue
         if flag:
             grid_s = WRCCUtils.datetime_to_date(grid_s,'-')
@@ -418,7 +419,8 @@ def check_end_date(form):
                 flag = False
                 break
             else:
-                flag = True
+                if str(dr[1]) == str(grid_dr[-1][1]):
+                    flag = True
                 continue
         if flag:
             grid_s = WRCCUtils.datetime_to_date(grid_s,'-')

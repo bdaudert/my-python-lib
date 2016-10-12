@@ -3746,6 +3746,7 @@ def Sodpad(**kwargs):
         thramt = [.005,.095,.145,.195,.245,.295,.395,.495,.745,.995,1.495,1.995,2.495,2.995,3.995,4.995,5.995,7.995,9.995]
         lenper = [1,2,3,4,5,6,7,8,9,10,12,14,15,16,18,20,22,24,25,26,28,30]
         for doy in range(366):
+            header = [' ','01','10','15','20','25','30','40','50','75','100','150','200','250','300','400','500','600','800','1000','AVE PRECIP']
             results[i][doy] = [[0.0 for k in range(len(thramt)+1)] for j in lenper]
             #skip leap days, too complicated
             if doy == 59:
@@ -3819,7 +3820,11 @@ def Sodpad(**kwargs):
                         except:
                             pass
                     results[i][doy][icount][19] = '%.2f' % round(avepre/100.0,2)
+                results[i][doy][icount].insert(0,lenper[icount])
                 icount+=1
+            mon, day = WRCCUtils.compute_mon_day(doy + 1)
+            header[0] = 'STN: ' + str(stn) + ', MON:' + str(mon) + ', DAY: ' + str(day)
+            results[i][doy].insert(0,header)
     return results
 
 def Soddd(**kwargs):

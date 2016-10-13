@@ -2467,6 +2467,10 @@ def Sodpct(**kwargs):
             for doy in range(doy_start):
                 results_temp.append(results[i][doy])
             results[i] = results_temp
+        #Insert header
+        header = ['Mon','Dy','Nd','M','Num','Low']
+        header+=['5%','10%','20%','25%','30%','33.3%','40%','50%','60%','67.7%','70%','75%','80%','90%','95%','High']
+        results[i].insert(0,header)
     return results
 
 def Sodrun(**kwargs):

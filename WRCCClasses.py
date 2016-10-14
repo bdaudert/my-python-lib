@@ -113,6 +113,11 @@ class GraphDictWriter(object):
         '''
         unit = self.set_elUnits()
         title = ''
+        if 'app_name' in self.form.keys() and self.form['app_name'] == 'yearly_summary':
+            title += WRCCData.DISPLAY_PARAMS[self.form['temporal_summary']]
+            title += ' of ' + WRCCData.DISPLAY_PARAMS[el_strip]
+            return title
+
         if 'data_summary' in self.form.keys() and self.form['data_summary']!='none':
             if 'spatial_summary' in self.form.keys():
                 title = WRCCData.DISPLAY_PARAMS[self.form['spatial_summary']]
@@ -282,6 +287,12 @@ class GraphDictWriter(object):
 
     def set_seriesName(self):
         sname = self.name
+        if 'app_name' in self.form.keys() and self.form['app_name'] == 'yearly_summary':
+            el_strip, base_temp = WRCCUtils.get_el_and_base_temp(self.element)
+            sname = WRCCData.DISPLAY_PARAMS[self.form['temporal_summary']]
+            sname += ' of ' + WRCCData.DISPLAY_PARAMS[el_strip]
+            return sname
+
         if 'spatial_summary' in self.form.keys():
             el_strip, base_temp = WRCCUtils.get_el_and_base_temp(self.element)
             if self.form['units'] == 'metric':

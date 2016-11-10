@@ -113,7 +113,7 @@ class GraphDictWriter(object):
         '''
         unit = self.set_elUnits()
         title = ''
-        if 'app_name' in self.form.keys() and self.form['app_name'] == 'yearly_summary':
+        if 'app_name' in self.form.keys() and self.form['app_name'] == 'seasonal_summary':
             title += WRCCData.DISPLAY_PARAMS[self.form['temporal_summary']]
             title += ' of ' + WRCCData.DISPLAY_PARAMS[el_strip]
             return title
@@ -287,7 +287,7 @@ class GraphDictWriter(object):
 
     def set_seriesName(self):
         sname = self.name
-        if 'app_name' in self.form.keys() and self.form['app_name'] == 'yearly_summary':
+        if 'app_name' in self.form.keys() and self.form['app_name'] == 'seasonal_summary':
             el_strip, base_temp = WRCCUtils.get_el_and_base_temp(self.element)
             sname = WRCCData.DISPLAY_PARAMS[self.form['temporal_summary']]
             sname += ' of ' + WRCCData.DISPLAY_PARAMS[el_strip]
@@ -377,7 +377,7 @@ class CsvWriter(object):
                 pass
 
         if self.data_type == 'station' and not self.smry:
-            if 'app_name' in self.form.keys() and self.form['app_name'] in  ['yearly_summary','intraannual']:
+            if 'app_name' in self.form.keys() and self.form['app_name'] in  ['seasonal_summary','intraannual']:
                 pass
             else:
                 row = ['*DataFlags','M=Missing', 'T=Trace', 'S=Subsequent', 'A=Accumulated']
@@ -414,7 +414,7 @@ class CsvWriter(object):
                 h = [date_data[0]]
                 if d_idx == 0:
                     #Data Header
-                    if self.form['app_name'] not in ['intraannual','yearly_summary']:
+                    if self.form['app_name'] not in ['intraannual','seasonal_summary']:
                         if p_name:h = ['Name'] + h
                         if p_id:h = ['ID'] + h
                     h = ['*'] + h

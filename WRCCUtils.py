@@ -1778,7 +1778,7 @@ def format_station_temporal_summary(req,form):
     return resultsdict
 
 ################################
-# YEARLY_SUMMARY/INTRAANNUAL DATA MODULES
+# SEASONAL SUMMARY/INTRAANNUAL DATA MODULES
 ############################
 def compute_running_mean(data,num):
     '''
@@ -2164,7 +2164,7 @@ def get_single_intraannual_data(form):
     #================================
     return year_txt_data, year_graph_data, climoData, percentileData
 
-def get_single_yearly_summary_data(form):
+def get_single_seasonal_summary_data(form):
     '''
     Yearly Summary data
     Args: cleaned form field entries
@@ -2666,7 +2666,7 @@ def form_to_display_list(key_order_list, form):
             display_list.append([WRCCData.DISPLAY_PARAMS[key]])
         except:
             display_list.append([''])
-    #Special case window for yearly_summary
+    #Special case window for seasonal_summary
     if 'window' in keys:
         idx = keys.index(str(key))
         window = 'From ' + WRCCData.NUMBER_TO_MONTH_NAME[str(form['start_month'])] + '-' + str(form['start_day'])

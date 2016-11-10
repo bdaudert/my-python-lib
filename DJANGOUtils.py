@@ -114,7 +114,7 @@ def set_initial(request,app_name):
     Getlist = set_GET_list(request)
     #Set area type: station_id(s), location, basin,...
     area_type = None
-    if app_name in ['single_lister','climatology','monthly_summary', 'yearly_summary','intraannual']:
+    if app_name in ['single_lister','climatology','monthly_summary', 'seasonal_summary','intraannual']:
         initial['area_type'] = Get('area_type','station_id')
     elif app_name in ['data_comparison']:
         initial['area_type'] = 'location'
@@ -187,7 +187,7 @@ def set_initial(request,app_name):
     if app_name == 'map_overlay':
         initial['elements'] = Get('elements','maxt,mint,pcpn').split(',')
         initial['elements_str'] = ','.join(initial['elements'])
-    elif app_name in ['monthly_spatial_summary','monthly_summary','data_comparison', 'yearly_summary','intraannual']:
+    elif app_name in ['monthly_spatial_summary','monthly_summary','data_comparison', 'seasonal_summary','intraannual']:
             initial['element'] = Get('element',None)
             if initial['element'] is not None and len(initial['element'].split(',')) > 1:
                 initial['element'] =  str(initial['element'].split(',')[0])
@@ -250,14 +250,14 @@ def set_initial(request,app_name):
         initial['min_year_fut'] = sd_fut[0:4]
         initial['max_year_fut'] = ed_fut[0:4]
         initial['season'] = Get('season','1')
-    elif app_name in ['yearly_summary', 'intraannual']:
+    elif app_name in ['seasonal_summary', 'intraannual']:
         initial['start_year'] = Get('start_year','POR')
         initial['end_year'] = Get('end_year','POR')
         initial['start_month']  = Get('start_month', '1')
         initial['start_day']  = Get('start_day', '1')
         initial['min_year_fut'] = sd_fut[0:4]
         initial['max_year_fut'] = ed_fut[0:4]
-        if app_name == 'yearly_summary':
+        if app_name == 'seasonal_summary':
             initial['min_year'] = Get('min_year',sd[0:4])
             initial['max_year'] = Get('max_year', ed[0:4])
             initial['end_month']  = Get('end_month', '1')
@@ -301,14 +301,14 @@ def set_initial(request,app_name):
         initial['start_window'] = Get('start_window', sw)
         initial['end_window'] = Get('end_window',ew)
     #data summaries
-    if app_name in  ['monthly_spatial_summary','temporal_summary', 'yearly_summary']:
+    if app_name in  ['monthly_spatial_summary','temporal_summary', 'seasonal_summary']:
         initial['data_summary'] = Get('data_summary', 'temporal_summary')
     elif app_name in ['spatial_summary','multi_lister','map_overlay']:
         initial['data_summary'] = Get('data_summary', 'spatial_summary')
     else:
         initial['data_summary'] = Get('data_summary', 'none')
 
-    if app_name in ['temporal_summary', 'monthly_spatial_summary','yearly_summary', 'sf_download']:
+    if app_name in ['temporal_summary', 'monthly_spatial_summary','seasonal_summary', 'sf_download']:
         if 'element' in initial.keys() and initial['element'] in ['pcpn','snow','evap','pet']:
             initial['temporal_summary'] = Get('temporal_summary', 'sum')
         else:
@@ -380,7 +380,7 @@ def set_initial(request,app_name):
         initial['interpolation'] = Get('interpolation', 'cspline')
         initial['projection'] = Get('projection', 'lcc')
     #Ploting options for all pages that have charts
-    if app_name in ['monthly_summary', 'spatial_summary','yearly_summary', 'intraannual','data_comparison','map_overlay']:
+    if app_name in ['monthly_summary', 'spatial_summary','seasonal_summary', 'intraannual','data_comparison','map_overlay']:
         if app_name in ['spatial_summary','monthly_summary','intraannual','map_overlay']:
             if app_name in ['spatial_summary','monthly_spatial_summary','map_overlay']:
                 shown_indices = ','.join([str(idx) for idx in range(len(initial['elements']))])
@@ -391,7 +391,7 @@ def set_initial(request,app_name):
             initial['chart_indices_string'] = Get('chart_indices_string',shown_indices)
         initial['chart_type'] = Get('chart_type','spline')
         initial['show_running_mean'] = Get('show_running_mean','F')
-        if app_name in ['monthly_summary', 'yearly_summary']:
+        if app_name in ['monthly_summary', 'seasonal_summary']:
             initial['running_mean_years'] = Get('running_mean_years',5)
         else:
             initial['running_mean_days'] = Get('running_mean_days',9)

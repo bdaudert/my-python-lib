@@ -1366,7 +1366,7 @@ PARAMS_HEADER_KEYS = {
     'sf_station_list':['area_type','elements', 'elements_constraints','start_date','end_date', 'dates_constraints'],
     'single_lister':['area_type','data_summary','start_date','end_date'],
     'monthly_summary':['area_type','element','start_year','end_year'],
-    'yearly_summary':['element','start_month','start_day'],
+    'seasonal_summary':['element','start_month','start_day'],
     'intraannual':['element','start_month','start_day'],
     'data_comparison':['area_type','start_date','end_date'],
     'climatology':['area_type','element','start_year','end_year'],
@@ -1383,7 +1383,7 @@ CSV_HEADER_KEYS = {
     'sf_station_list':['area_type','elements', 'elements_constraints','start_date','end_date', 'dates_constraints'],
     'single_lister':['area_type','data_summary','start_date','end_date'],
     'monthly_summary':['area_type','element','start_year','end_year'],
-    'yearly_summary':['element','start_month','start_day'],
+    'seasonal_summary':['element','start_month','start_day'],
     'intraannual':['element','start_month','start_day'],
     'data_comparison':['area_type','start_date','end_date'],
     'climatology':['area_type','element','start_year','end_year'],
@@ -1908,7 +1908,7 @@ SCENIC_FORM_OPTIONS = {
         'delimiter':DELIMITER_TUPLE,
         'chart_type':CHART_TYPE
     },
-    'yearly_summary':{
+    'seasonal_summary':{
         'area_type':SINGLE_AREA_TUPLE,
         'grid':GRID_CHOICES_TUPLE,
         'element':ACIS_ELEMENTS_TUPLE,
@@ -2072,7 +2072,7 @@ SCENIC_DATA_PARAMS = {
         'max_missing_days':'5',
         'departures_from_averages':'F'
     },
-    'yearly_summary':{
+    'seasonal_summary':{
         'area_type':'station_id',
         'station_id':'RENO TAHOE INTL AP, 266779',
         'element':'pcpn',

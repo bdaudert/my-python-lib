@@ -181,7 +181,7 @@ class setUp(object):
             except AssertionError as err:
                 logger.error('AssertionError ' + str(err) + '\n')
 
-    def run_yearly_summary(self,params):
+    def run_seasonal_summary(self,params):
         results = {};err = None
         initial, err = self.setInitial(params)
         if err is not None:return results, err
@@ -190,9 +190,9 @@ class setUp(object):
         form_cleaned, err = self.setFormCleaned(initial)
         if err is not None:return results, err
         try:
-            year_data, hc_data = WRCCUtils.get_single_yearly_summary_data(form_cleaned)
+            year_data, hc_data = WRCCUtils.get_single_seasonal_summary_data(form_cleaned)
         except Exception, e:
-            err = 'FAIL get_single_yearly_summary_data. ERROR: ' + \
+            err = 'FAIL get_single_seasonal_summary_data. ERROR: ' + \
             str(e) + ' PARAMS: ' + str(params)
             return results, err
         results['year_data'] = year_data
@@ -207,7 +207,7 @@ class setUp(object):
         results['graph_dict'] = graph_dict
         return results, err
 
-    def test_yearly_summary_results(self,utClass,results,err):
+    def test_seasonal_summary_results(self,utClass,results,err):
         if err is not None:
             logger.error(err + '\n')
         try:
@@ -659,18 +659,18 @@ class Test_multi_lister(unittest.TestCase):
                     results, err = self.setUp.run_multi_lister(params)
                     self.setUp.test_multi_lister_results(self,results,err)
 
-class Test_yearly_summary(unittest.TestCase):
+class Test_seasonal_summary(unittest.TestCase):
     def setUp(self):
-        self.params = copy.deepcopy(WRCCData.SCENIC_DATA_PARAMS['yearly_summary'])
-        self.setUp = setUp('yearly_summary')
+        self.params = copy.deepcopy(WRCCData.SCENIC_DATA_PARAMS['seasonal_summary'])
+        self.setUp = setUp('seasonal_summary')
 
     def test_default(self):
         msg = 'Testing Yearly Summaries with default values'
         logger.info(msg + '\n')
         params = copy.deepcopy(self.params)
         logger.info(str(params) + '\n')
-        results, err = self.setUp.run_yearly_summary(params)
-        self.setUp.test_yearly_summary_results(self,results,err)
+        results, err = self.setUp.run_seasonal_summary(params)
+        self.setUp.test_seasonal_summary_results(self,results,err)
 
 class Test_intraannual(unittest.TestCase):
     def setUp(self):

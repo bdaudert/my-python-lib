@@ -605,6 +605,9 @@ def Sodpiii(**kwargs):
             results_0[i][tbl_idx][num_yrs+4].append('%.2f' % round(xminn,2))
             results_0[i][tbl_idx][num_yrs+5].append('%.2f' % round(xmaxx,2))
             results_0[i][tbl_idx][num_yrs+6].append('%i' % int(count))
+        #Make all table rows same length
+        for k in range(0,7):
+            results_0[i][tbl_idx][num_yrs + k]+=['--','--']
         #End numdur while loop... Phew...
         if kwargs['mean'] == 'am':stats[0] = amean
         annpcp = 50.0 #from settings.LIB_PREFIX + arealstats.dat

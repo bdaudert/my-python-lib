@@ -2486,9 +2486,15 @@ def Sodrun(**kwargs):
     def write_str_missing(days, nxt):
         print_str = '%5s DAYS MISSING.  NEXT DATE %s' % (str(days), str(nxt))
         return print_str
+
     def write_str_data(start, end, days, el, op, thresh):
         print_str = ' %s %2s %5s START : %s END : %s %7s DAYS' % (el, op, str(thresh), str(start), str(end), str(days))
         return print_str
+    def write_list_data(start, end, days, el, op, thresh):
+        print_str = ' %s %2s %5s START : %s END : %s %7s DAYS' % (el, op, str(thresh), str(start), str(end), str(days))
+        t = '%s %2s %5s' %(el, op, str(thresh))
+        print_list = [t, str(start),str(end),str(days)]
+        return print_list
     def write_str_thresh(days, nxt):
         print_str = '%5s DAYS WHERE THRESHOLD NOT MET.  NEXT DATE %s' % (str(days), str(nxt))
         return print_str
@@ -2601,8 +2607,9 @@ def Sodrun(**kwargs):
             jd = WRCCUtils.JulDay(int(date_val[0][0:4]), int(date_val[0][4:6]), int(date_val[0][6:8]))
             gap_days = jd - jd_old
             if idx == 0 and gap_days >0: #found gap between user given start data and  first data point
-                print_str =  write_str_missing(str(gap_days), convert_date(date_val[0]))
-                results[i].append(print_str)
+                if verbose:
+                    print_str =  write_str_missing(str(gap_days), convert_date(date_val[0]))
+                    results[i].append(print_str)
             elif gap_days >1: #gap between two successive data entries
                 days_missing += gap_days
                 gap = True
@@ -2615,13 +2622,18 @@ def Sodrun(**kwargs):
                 if day_cnt >= min_run:
                     update_run_cnt(run_cnt, day_cnt)
                     if el == 'range' and app_name == 'Sodrunr':
-                        print_str = write_str_range(stn_data_range[idx-1])
-                        results[i].append(print_str)
-                    print_str = write_str_data(convert_date(run_start), convert_date(run_end), str(day_cnt), el, op, thresh)
+                        if verbose:
+                            print_str = write_str_range(stn_data_range[idx-1])
+                            results[i].append(print_str)
+                    if verbose:
+                        print_str = write_str_data(convert_date(run_start), convert_date(run_end), str(day_cnt), el, op, thresh)
+                    else:
+                        print_str = write_list_data(convert_date(run_start), convert_date(run_end), str(day_cnt), el, op, thresh)
                     results[i].append(print_str)
                     if days_missing !=0:
-                        print_str = write_str_missing(str(days_missing), convert_date(date_val[0]))
-                        results[i].append(print_str)
+                        if verbose:
+                            print_str = write_str_missing(str(days_missing), convert_date(date_val[0]))
+                            results[i].append(print_str)
                 day_cnt = 0
                 flag = 0
                 days_missing = 0
@@ -2640,8 +2652,9 @@ def Sodrun(**kwargs):
                 if days_missing != 0:
                     flag = date_val[1][-1]
                     if not flag in ['M', 'S', 'A', 'T', ' ']:
-                        print_str = write_str_missing(str(days_missing), convert_date(date_val[0]))
-                        results[i].append(print_str)
+                        if verbose:
+                            print_str = write_str_missing(str(days_missing), convert_date(date_val[0]))
+                            results[i].append(print_str)
                         days_missing = 0
             elif flag == 0 and day_cnt != 0: #Middle of run
                 day_cnt+=1
@@ -2649,7 +2662,10 @@ def Sodrun(**kwargs):
             elif flag == 'D' and day_cnt != 0: #End of run
                 if day_cnt >= min_run:
                     update_run_cnt(run_cnt, day_cnt)
-                    print_str = write_str_data(convert_date(run_start), convert_date(run_end), str(day_cnt), el, op, thresh)
+                    if verbose:
+                        print_str = write_str_data(convert_date(run_start), convert_date(run_end), str(day_cnt), el, op, thresh)
+                    else:
+                        print_str = write_list_data(convert_date(run_start), convert_date(run_end), str(day_cnt), el, op, thresh)
                     results[i].append(print_str)
                 day_cnt = 0
                 flag = 0
@@ -2663,7 +2679,10 @@ def Sodrun(**kwargs):
                 if day_cnt != 0 and day_cnt >= min_run: #Run ends here
                     run_end = date_val[0]
                     update_run_cnt(run_cnt, day_cnt)
-                    print_str = write_str_data(convert_date(run_start), convert_date(run_end), str(day_cnt), el, op, thresh)
+                    if verbose:
+                        print_str = write_str_data(convert_date(run_start), convert_date(run_end), str(day_cnt), el, op, thresh)
+                    else:
+                        print_str = write_list_data(convert_date(run_start), convert_date(run_end), str(day_cnt), el, op, thresh)
                     results[i].append(print_str)
                 if days_not_thresh != 0:
                     if verbose:
@@ -2698,14 +2717,16 @@ def Sodrun(**kwargs):
             if (op == '>' and data > thresh) or (op == '<' and data < thresh) \
             or (op == '=' and data == thresh):
                 if el == 'range' and app_name == 'Sodrunr':
+                    if verbose:
                         print_str = write_str_range(stn_data_range[idx])
                         results[i].append(print_str)
                 if day_cnt == 0: #Start of run
                     run_start = date_val[0]
                     run_start_idx = idx
                     if days_missing != 0:
-                        print_str = write_str_missing(str(days_missing), convert_date(date_val[0]))
-                        results[i].append(print_str)
+                        if verbose:
+                            print_str = write_str_missing(str(days_missing), convert_date(date_val[0]))
+                            results[i].append(print_str)
                         days_missing = 0
                     if days_not_thresh != 0:
                         if verbose:
@@ -2724,13 +2745,18 @@ def Sodrun(**kwargs):
             if day_cnt !=0 and day_cnt >= min_run:
                 update_run_cnt(run_cnt, day_cnt)
                 if el == 'range' and app_name == 'Sodrunr':
-                    print_str = write_str_range(stn_data_range[idx])
-                    results[i].append(print_str)
-                print_str = write_str_data(convert_date(run_start), convert_date(run_end), str(day_cnt), el, op, thresh)
+                    if verbose:
+                        print_str = write_str_range(stn_data_range[idx])
+                        results[i].append(print_str)
+                if verbose:
+                    print_str = write_str_data(convert_date(run_start), convert_date(run_end), str(day_cnt), el, op, thresh)
+                else:
+                    print_str = write_list_data(convert_date(run_start), convert_date(run_end), str(day_cnt), el, op, thresh)
                 results[i].append(print_str)
             elif days_missing != 0:
-                print_str = write_str_missing(str(days_missing), convert_date(date_val[0]))
-                results[i].append(print_str)
+                if verbose:
+                    print_str = write_str_missing(str(days_missing), convert_date(date_val[0]))
+                    results[i].append(print_str)
             elif days_not_thresh != 0:
                 if verbose:
                     print_str = write_str_thresh(str(days_not_thresh), convert_date(date_val[0]))
@@ -2744,9 +2770,13 @@ def Sodrun(**kwargs):
             if day_cnt !=0 and day_cnt >= min_run:
                 update_run_cnt(run_cnt, day_cnt)
                 if el == 'range' and app_name == 'Sodrunr':
-                    print_str = write_str_range(stn_data_range[run_start_idx])
-                    results[i].append(print_str)
-                print_str = write_str_data(convert_date(run_start), convert_date(run_end), str(day_cnt), el, op, thresh)
+                    if verbose:
+                        print_str = write_str_range(stn_data_range[run_start_idx])
+                        results[i].append(print_str)
+                if verbose:
+                    print_str = write_str_data(convert_date(run_start), convert_date(run_end), str(day_cnt), el, op, thresh)
+                else:
+                    print_str = write_list_data(convert_date(run_start), convert_date(run_end), str(day_cnt), el, op, thresh)
                 results[i].append(print_str)
             if days_not_thresh != 0:
                 if verbose:
@@ -2758,16 +2788,21 @@ def Sodrun(**kwargs):
             days_missing+= jd_end - jd
 
         if days_missing != 0:
-            print_str = write_str_missing(str(days_missing), convert_date(stn_data[-1][0]))
-            results[i].append(print_str)
+            if verbose:
+                print_str = write_str_missing(str(days_missing), convert_date(stn_data[-1][0]))
+                results[i].append(print_str)
 
         #Summarize runs
         ###############
-        results[i].append('RUN LENGTH  NUMBER')
+        smry = 'RUN LENGTH, DAYS: '
+
+        #results[i].append('RUN LENGTH, DAYS')
         key_list =  sorted(run_cnt)
         key_list.sort()
         for key in key_list:
-            results[i].append('%10s%8s' % (key, run_cnt[key]))
+            smry+='%10s, %8s' % (key, run_cnt[key])
+            #results[i].append('%10s%8s' % (key, run_cnt[key]))
+        results[i].append(smry)
     return results
 
 def Sodlist(**kwargs):

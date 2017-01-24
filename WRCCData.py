@@ -79,11 +79,11 @@ DISPLAY_PARAMS = {
     'station_ID': 'Station ID',
     'station_ids': 'Station IDs',
     'station_IDs':'Station IDs',
-    'location': 'Gridpoint (lon,lat)',
-    'locations':'Gridpointss (lon, lat)',
-    'loc': 'Gridpoint (lon,lat)',
-    'locs':'Gridpoints (lon, lat)',
-    'point': 'Gridpoint (lon,lat)',
+    'location': 'Gridpoint',
+    'locations':'Gridpoints',
+    'loc': 'Gridpoint',
+    'locs':'Gridpoints',
+    'point': 'Gridpoint',
     'lat': 'Latitude',
     'lon': 'Longitude',
     'shape': 'Custom Shape',
@@ -92,8 +92,8 @@ DISPLAY_PARAMS = {
     'circle':'Circle',
     'climate_division': 'Climate Division',
     'climdiv': 'Climate Division',
-    'county_warning_area': 'County Warning Area',
-    'cwa': 'County Warning Area',
+    'county_warning_area': 'Cnty Warn. Area',
+    'cwa': 'Cnty Warn. Area',
     'county': 'County',
     'basin': 'Drainage Basin',
     'state': 'State',
@@ -102,7 +102,7 @@ DISPLAY_PARAMS = {
     'bbox': 'Bounding Box',
     'custom_shape': 'Custom Shape',
     'shape': 'Custom Shape',
-    #dates and elements
+    #dates and variables
     'start_date': 'Start Date',
     'end_date': 'End Date',
     'start_window': 'Start Window',
@@ -121,18 +121,18 @@ DISPLAY_PARAMS = {
     'graph_start_year': 'Graph Start Year',
     'graph_end_year': 'Graph End Year',
     'dates_constraints': '',
-    'element':'Variable',
-    'elements':'Variables',
+    'variable':'Variable',
+    'variables':'Variables',
     'elems_long':'Variables',
-    'elements_string': 'Variables String',
+    'variables_string': 'Variables String',
     'add_degree_days':'Add special degree days',
     'degree_days':'Degree Days',
-    'element_selection': 'Variable Selection',
+    'variable_selection': 'Variable Selection',
     'el_type':'Climate Variable Type',
     'units': 'Units',
     'metric': 'Metric',
     'english': 'English',
-    'elements_constraints':'',
+    'variables_constraints':'',
     'base_temperature': 'Base Temperature',
     'maxt': 'Maximum Temperature',
     'mly_maxt':'Maximum Monthly Temperature',
@@ -143,7 +143,7 @@ DISPLAY_PARAMS = {
     'avgt': 'Average Temperature',
     'mly_avgt': 'Average Monthly Temperature',
     'yly_avgt': 'Average Yearly Temperature',
-    'obst': 'Observation Time Temperature',
+    'obst': 'Temperature at Observation',
     'pcpn': 'Precipitation',
     'mly_pcpn': 'Monthly Precipitation',
     'yly_pcpn': 'Yearly Precipitation',
@@ -159,6 +159,13 @@ DISPLAY_PARAMS = {
     'wdmv': 'Wind Movement',
     'evap': 'Pan Evaporation',
     'pet': 'Potential ET',
+    #Sodsumm tables
+    'all': 'Temps/Precip/Snow/Degree Days',
+    'both':'Temps/Precip',
+    'temp':'Temps',
+    'prsn': 'Precip/Snow',
+    'hc':'Heating/Cooling Degree Days',
+    'g':'Growing Degree Days',
     #Other
     'calculation':'Calculation',
     'temporal_resolution': 'Temporal Resolution',
@@ -665,7 +672,7 @@ CMAPS = [ 'Accent','Blues','BrBG','BuGn','BuPu','CMRmap','Dark2','GnBu','Greens'
 ###########################
 #Thresholds
 ############################
-#CLIM_SUM_MAPS element, min, max
+#CLIM_SUM_MAPS variable, min, max
 CLIM_SUM_MAPS_DAILY_THRESHES = {
     'maxt':[-10,140],
     'mint':[-50,80],
@@ -823,7 +830,7 @@ STATION_LIST_META_KEYS_TO_STN_JSON_KEYS = {
     'elev':'elevation',
     'networks':'stn_network',
     'ids':'sids_str',
-    'valid_daterange':'available_elements_str'
+    'valid_daterange':'available_variables_str'
 }
 #DELETE?
 SEARCH_AREA_FORM_TO_ACIS = {
@@ -1142,10 +1149,10 @@ SHAPE_NAMES = {
     'circle': 'Circle (lat, lon, radius (meter)) ',
     'county': 'County ',
     'climate_division':'Climate Division ',
-    'county_warning_area':'County Warning Area ',
+    'county_warning_area':'Cnty Warn. Area ',
     'basin':'Drainage Basin ',
-    'location':'Point Location ',
-    'locations': 'Point Locations '
+    'location':'Gridpoint ',
+    'locations': 'Gridpoint '
 }
 
 
@@ -1361,18 +1368,18 @@ COLUMN_HEADERS = {
 }
 
 PARAMS_HEADER_KEYS = {
-    'station_finder':['area_type','elements', 'elements_constraints','start_date','end_date', 'dates_constraints'],
+    'station_finder':['area_type','variables', 'variables_constraints','start_date','end_date', 'dates_constraints'],
     'sf_download':[],
-    'sf_station_list':['area_type','elements', 'elements_constraints','start_date','end_date', 'dates_constraints'],
+    'sf_station_list':['area_type','variables', 'variables_constraints','start_date','end_date', 'dates_constraints'],
     'single_lister':['area_type','data_summary','start_date','end_date'],
-    'monthly_summary':['area_type','element','start_year','end_year'],
-    'seasonal_summary':['element','start_month','start_day'],
-    'intraannual':['element','start_month','start_day'],
-    'data_comparison':['area_type','start_date','end_date'],
-    'climatology':['area_type','element','start_year','end_year'],
+    'monthly_summary':['area_type','variable','start_year','end_year'],
+    'seasonal_summary':['variable','start_month','start_day'],
+    'intraannual':['variable','start_month','start_day'],
+    'data_comparison':['location','grid','start_date','end_date'],
+    'climatology':['area_type','summary_type','start_year','end_year'],
     'multi_lister':['area_type','data_summary','start_date','end_date'],
     'spatial_summary':['area_type','spatial_summary','start_date','end_date'],
-    'monthly_spatial_summary':['year','season','state','area_type','area_reduce','area_statistic','temporal_summary','element','units'],
+    'monthly_spatial_summary':['year','season','state','area_type','area_reduce','area_statistic','temporal_summary','variable','units'],
     'temporal_summary':['area_type','temporal_summary','start_date','end_date'],
     'climate_engine':[]
 }
@@ -1380,13 +1387,13 @@ PARAMS_HEADER_KEYS = {
 CSV_HEADER_KEYS = {
     'station_finder':[],
     'sf_download':[],
-    'sf_station_list':['area_type','elements', 'elements_constraints','start_date','end_date', 'dates_constraints'],
+    'sf_station_list':['area_type','variables', 'variables_constraints','start_date','end_date', 'dates_constraints'],
     'single_lister':['area_type','data_summary','start_date','end_date'],
-    'monthly_summary':['area_type','element','start_year','end_year'],
-    'seasonal_summary':['element','start_month','start_day'],
-    'intraannual':['element','start_month','start_day'],
+    'monthly_summary':['area_type','variable','start_year','end_year'],
+    'seasonal_summary':['variable','start_month','start_day'],
+    'intraannual':['variable','start_month','start_day'],
     'data_comparison':['area_type','start_date','end_date'],
-    'climatology':['area_type','element','start_year','end_year'],
+    'climatology':['area_type','variable','start_year','end_year'],
     'multi_lister':['data_type','area_type','data_summary','start_date','end_date'],
     'spatial_summary':['data_type','area_type','spatial_summary','start_date','end_date'],
     'temporal_summary':['data_type','area_type','temporal_summary','start_date','end_date'],
@@ -1582,6 +1589,11 @@ for area in area_options:
 BOOLEAN_TUPLE = (
     ('T','Yes'),
     ('F', 'No')
+)
+
+DEPARTURES_FROM_AVERAGES_TUPLE = (
+    ('F','Values'),
+    ('T','Departures from Averages')
 )
 
 DATA_SUMMARY_TUPLE=(
@@ -1785,10 +1797,10 @@ SCENIC_FORM_OPTIONS = {
         'area_type':STATION_FINDER_AREA_TUPLE,
         'data_type':DATA_TYPE_TUPLE,
         'grid':GRID_CHOICES_TUPLE,
-        'elements':ACIS_ELEMENTS_TUPLE,
+        'variables':ACIS_ELEMENTS_TUPLE,
         'units':UNIT_TUPLE,
         'add_degree_days':BOOLEAN_TUPLE,
-        'elements_constraints':(
+        'variables_constraints':(
             ('all','All of the variables'),
             ('any','Any of the variables')
         ),
@@ -1811,8 +1823,8 @@ SCENIC_FORM_OPTIONS = {
     'sf_download':{
         'state':STATE_TUPLE,
         'area_type':STATION_FINDER_AREA_TUPLE,
-        'elements':ACIS_ELEMENTS_TUPLE,
-        'elements_constraints':(
+        'variables':ACIS_ELEMENTS_TUPLE,
+        'variables_constraints':(
             ('all','All of the variables'),
             ('any','Any of the variables')
         ),
@@ -1833,8 +1845,8 @@ SCENIC_FORM_OPTIONS = {
     'station_finder': {
         'state':STATE_TUPLE,
         'area_type':STATION_FINDER_AREA_TUPLE,
-        'elements':ACIS_ELEMENTS_TUPLE,
-        'elements_constraints':(
+        'variables':ACIS_ELEMENTS_TUPLE,
+        'variables_constraints':(
             ('all','All of the variables'),
             ('any','Any of the variables')
         ),
@@ -1856,7 +1868,7 @@ SCENIC_FORM_OPTIONS = {
         'area_type':SINGLE_AREA_TUPLE,
         'grid':GRID_CHOICES_TUPLE,
         'temporal_resolution':TEMPORAL_RESOLUTION_TUPLE,
-        'elements':ACIS_ELEMENTS_TUPLE,
+        'variables':ACIS_ELEMENTS_TUPLE,
         'add_degree_days':BOOLEAN_TUPLE,
         'units':UNIT_TUPLE,
         'data_summary':DATA_SUMMARY_TUPLE,
@@ -1874,7 +1886,7 @@ SCENIC_FORM_OPTIONS = {
         'data_type':DATA_TYPE_TUPLE,
         'grid':GRID_CHOICES_TUPLE,
         'temporal_resolution':TEMPORAL_RESOLUTION_TUPLE,
-        'elements':ACIS_ELEMENTS_TUPLE,
+        'variables':ACIS_ELEMENTS_TUPLE,
         'add_degree_days':BOOLEAN_TUPLE,
         'units':UNIT_TUPLE,
         'data_summary':DATA_SUMMARY_TUPLE,
@@ -1889,11 +1901,11 @@ SCENIC_FORM_OPTIONS = {
     'monthly_summary':{
         'area_type':SINGLE_AREA_TUPLE,
         'grid':GRID_CHOICES_TUPLE,
-        'element':ACIS_ELEMENTS_TUPLE,
+        'variable':ACIS_ELEMENTS_TUPLE,
         'statistic':SXTR_ANALYSIS_CHOICES,
         'units':UNIT_TUPLE,
         'start_month':MONTH_TUPLE,
-        'departures_from_averages':BOOLEAN_TUPLE,
+        'departures_from_averages':DEPARTURES_FROM_AVERAGES_TUPLE,
         'frequency_analysis':BOOLEAN_TUPLE,
         'less_greater_or_between':(
             ('l','Less Than'),
@@ -1911,7 +1923,7 @@ SCENIC_FORM_OPTIONS = {
     'seasonal_summary':{
         'area_type':SINGLE_AREA_TUPLE,
         'grid':GRID_CHOICES_TUPLE,
-        'element':ACIS_ELEMENTS_TUPLE,
+        'variable':ACIS_ELEMENTS_TUPLE,
         'units':UNIT_TUPLE,
         'start_month':MONTH_TUPLE,
         'start_day':DAY_TUPLE,
@@ -1925,7 +1937,7 @@ SCENIC_FORM_OPTIONS = {
     'intraannual':{
         'area_type':SINGLE_AREA_TUPLE,
         'grid':GRID_CHOICES_TUPLE,
-        'element':ACIS_ELEMENTS_TUPLE,
+        'variable':ACIS_ELEMENTS_TUPLE,
         'calculation':CALCULATION_TUPLE,
         'units':UNIT_TUPLE,
         'start_month':MONTH_TUPLE,
@@ -1936,9 +1948,11 @@ SCENIC_FORM_OPTIONS = {
     },
     'data_comparison':{
         'grid':GRID_CHOICES_TUPLE,
-        'element':ACIS_ELEMENTS_TUPLE,
+        'variable':ACIS_ELEMENTS_TUPLE,
+        'units':UNIT_TUPLE,
         'data_format':DATA_FORMAT_CHOICES,
-        'delimiter':DELIMITER_TUPLE
+        'delimiter':DELIMITER_TUPLE,
+        'chart_type':CHART_TYPE
     },
     'climatology':{
         'area_type':SINGLE_AREA_TUPLE,
@@ -1959,7 +1973,7 @@ SCENIC_FORM_OPTIONS = {
         'state':STATE_TUPLE,
         'area_type':MULTI_AREA_TUPLE,
         'grid':GRID_CHOICES_TUPLE,
-        'elements':ACIS_ELEMENTS_TUPLE,
+        'variables':ACIS_ELEMENTS_TUPLE,
         'add_degree_days':BOOLEAN_TUPLE,
         'units':UNIT_TUPLE,
         'spatial_summary':STATISTIC,
@@ -1975,14 +1989,14 @@ SCENIC_FORM_OPTIONS = {
         'area_reduce':AREA_REDUCE_TUPLE,
         'area_statistic':STATISTIC,
         'grid':GRID_CHOICES_TUPLE,
-        'element':ACIS_ELEMENTS_TUPLE,
+        'variable':ACIS_ELEMENTS_TUPLE,
         'units':UNIT_TUPLE,
         'temporal_summary':STATISTIC,
     },
     'temporal_summary':{
         'state':STATE_TUPLE,
         'area_type':TEMPORAL_SUMMARY_AREA_TUPLE,
-        'elements':ACIS_ELEMENTS_TUPLE,
+        'variables':ACIS_ELEMENTS_TUPLE,
         'add_degree_days':BOOLEAN_TUPLE,
         'units':UNIT_TUPLE,
         'temporal_summary':STATISTIC,
@@ -2032,8 +2046,8 @@ SCENIC_DATA_PARAMS = {
     'station_finder': {
         'area_type':'state',
         'state':'Nv',
-        'elements':['maxt', 'mint', 'pcpn'],
-        'elements_constraints':'all',
+        'variables':['maxt', 'mint', 'pcpn'],
+        'variables_constraints':'all',
         'start_date':fourtnight,
         'end_date':yesterday,
         'dates_constraints':'all'
@@ -2041,7 +2055,7 @@ SCENIC_DATA_PARAMS = {
     'single_lister':{
         'area_type':'station_id',
         'station_id':'RENO TAHOE INTL AP, 266779',
-        'elements':['maxt', 'mint', 'pcpn'],
+        'variables':['maxt', 'mint', 'pcpn'],
         'add_degree_days':'F',
         'start_date':'POR',
         'end_date':'POR',
@@ -2054,7 +2068,7 @@ SCENIC_DATA_PARAMS = {
         'area_type':'state',
         'state':'NV',
         'data_type':'station',
-        'elements':['maxt', 'mint', 'pcpn'],
+        'variables':['maxt', 'mint', 'pcpn'],
         'add_degree_days':'F',
         'start_date':fourtnight,
         'end_date': yesterday,
@@ -2066,7 +2080,7 @@ SCENIC_DATA_PARAMS = {
         'station_id':'RENO TAHOE INTL AP, 266779',
         'start_year':'POR',
         'end_year':'POR',
-        'element':'pcpn',
+        'variable':'pcpn',
         'statistic':'msum',
         'units':'english',
         'max_missing_days':'5',
@@ -2075,7 +2089,7 @@ SCENIC_DATA_PARAMS = {
     'seasonal_summary':{
         'area_type':'station_id',
         'station_id':'RENO TAHOE INTL AP, 266779',
-        'element':'pcpn',
+        'variable':'pcpn',
         'units':'english',
         'start_month':'01',
         'start_day':'01',
@@ -2088,7 +2102,7 @@ SCENIC_DATA_PARAMS = {
     'intraannual':{
         'area_type':'station_id',
         'station_id':'RENO TAHOE INTL AP, 266779',
-        'element':'pcpn',
+        'variable':'pcpn',
         'calculation':'cumulative',
         'units':'english',
         'start_month':'01',
@@ -2099,7 +2113,7 @@ SCENIC_DATA_PARAMS = {
     'data_comparison':{
         'location':'',
         'grid':'',
-        'element':'',
+        'variable':'',
         'start_date':'',
         'end_date':''
     },
@@ -2117,7 +2131,7 @@ SCENIC_DATA_PARAMS = {
         'area_type':'',
         'state':'',
         'data_type':'',
-        'elements':'',
+        'variables':'',
         'add_degree_days':'',
         'degree_days':'',
         'units':'',
@@ -2128,7 +2142,7 @@ SCENIC_DATA_PARAMS = {
     'temporal_summary':{
         'area_type':'',
         'state':'',
-        'elements':'',
+        'variables':'',
         'add_degree_days':'',
         'degree_days':'',
         'units':'',
@@ -2155,28 +2169,28 @@ WRAPPER_DATA_PARAMS = {
         'sid':'266779',
         'start_date':'POR',
         'end_date':'POR',
-        'element':'pcpn',
+        'variable':'pcpn',
         'units':'english'
     },
     'sodsum':{
         'sid': '266779',
         'start_date': 'POR',
         'end_date': 'POR',
-        'element': 'multi'
+        'variable': 'multi'
     },
     'sodsumm':{
         'sid':'266779',
         'units':'english',
         'start_date':'POR',
         'end_date':'POR',
-        'element':'all'
+        'variable':'all'
     },
     'soddyrec':{
         'sid':'266779',
         'units':'english',
         'start_date':'POR',
         'end_date':'POR',
-        'element':'all'
+        'variable':'all'
     },
     'soddynorm':{
         'sid':'266779',

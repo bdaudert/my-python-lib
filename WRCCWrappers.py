@@ -46,7 +46,7 @@ param_check_function = {
     'end_user':'check_date',
     'start_year':'check_year',
     'end_year':'check_year',
-    'element':'check_element',
+    'variable':'check_variable',
     'start_month':'check_start_month',
     'base_temperature':'check_base_temp',
     'statistic':'check_sx_stat',
@@ -121,7 +121,7 @@ def check_year_range(start_year, end_year):
         return 'DateError: End year needs to be later than start year!'
     return err
 
-def check_element(element, app_name):
+def check_variable(variable, app_name):
     err = None
     el_list = {
         'sodsum':['snow','snwd','maxt','mint', 'obst','pcpn','multi'],
@@ -130,8 +130,8 @@ def check_element(element, app_name):
         'soddyrec':['all','tmp','wtr','pcpn','snow','snwd','maxt','mint','hdd','cdd'],
         'soddynorm':[]
     }
-    if element not in el_list[app_name]:
-        return 'ElementError: %s is not a valid element for the %s application!' %(element, app_name)
+    if variable not in el_list[app_name]:
+        return 'ElementError: %s is not a valid variable for the %s application!' %(variable, app_name)
     return err
 
 def check_max_missing_days(mmd):
@@ -244,12 +244,12 @@ class Wrapper:
         self.app_specific_params = app_specific_params
         self.app_name = app_name
         self.data = []; self.dates = []
-        self.elements  = [];self.station_ids = []
+        self.variables  = [];self.station_ids = []
         self.station_names  = []
         self.station_states = []
 
     def get_data(self):
-        #(self.data, self.dates, self.elements, self.station_ids, self.station_names) = \
+        #(self.data, self.dates, self.variables, self.station_ids, self.station_names) = \
         #AcisWS.get_sod_data(self.params, self.app_name)
         DJ = WRCCClasses.SODDataJob(self.app_name,self.params)
         #self.station_ids, self.station_names = DJ.get_station_ids_names()
@@ -279,10 +279,10 @@ def sodxtrmts_wrapper(argv, offline = False):
     '''
     NOTES: Runs without frequency analysis,
            ndays analysis not implemented here
-    argv -- station_id start_year end_year element base_temperature statistic
+    argv -- station_id start_year end_year variable base_temperature statistic
             max_missing_days start_month departure_from_averages
     Input Options:
-            element choices:
+            variable choices:
                 pcpn, snow, snwd, maxt, mint, avgt, dtr, hdd, cdd, gdd
             base_temperature: for hdd, cdd, gdd
             statistic choices:
@@ -311,7 +311,7 @@ def sodxtrmts_wrapper(argv, offline = False):
         'station_id':str(argv[0]),
         'start_year':str(argv[1]),
         'end_year':str(argv[2]),
-        'element':str(argv[3]),
+        'variable':str(argv[3]),
         'base_temperature':str(argv[4]),
         'statistic':str(argv[5]),
         'max_missing_days':argv[6],
@@ -323,7 +323,7 @@ def sodxtrmts_wrapper(argv, offline = False):
     err = None
     for param in args.keys():
         param_check = getattr(thismodule,param_check_function[param])
-        if param in ['element']:
+        if param in ['variable']:
             err = param_check(args[param],app_name)
         else:
             err = param_check(args[param])
@@ -355,7 +355,7 @@ def sodxtrmts_wrapper(argv, offline = False):
     #Define parameters
     data_params = {
         'sid':args['station_id'],
-        'element':args['element'],
+        'variable':args['variable'],
         'start_date':args['start_year'],
         'end_date':args['end_year'],
 
@@ -384,10 +384,10 @@ def sodxtrmts_wrapper(argv, offline = False):
 
 def sodsum_wrapper(argv, offline = False):
     '''
-    argv -- sid start_date end_date element
+    argv -- sid start_date end_date variable
 
     Input Options:
-            element choices:
+            variable choices:
                 One of:
                 pcpn, snow, snwd, maxt, mint, obst, multi (all 6)
             output format choices:
@@ -407,13 +407,13 @@ def sodsum_wrapper(argv, offline = False):
         'station_id':str(argv[0]),
         'start_date':format_date(str(argv[1])),
         'end_date':format_date(str(argv[2])),
-        'element':str(argv[3])
+        'variable':str(argv[3])
     }
     #Sanity check on input parameters
     err = None
     for param in args.keys():
         param_check = getattr(thismodule,param_check_function[param])
-        if param in ['element']:
+        if param in ['variable']:
             err = param_check(args[param],app_name)
         else:
             err = param_check(args[param])
@@ -426,7 +426,7 @@ def sodsum_wrapper(argv, offline = False):
                 'sid':args['station_id'],
                 'start_date':args['start_date'],
                 'end_date':args['end_date'],
-                'element':args['element']
+                'variable':args['variable']
                 }
     app_params = {}
     SS_wrapper = Wrapper('Sodsum', data_params, app_specific_params=app_params)
@@ -498,7 +498,7 @@ def sodsumm_wrapper(argv,offline=False):
     err = None
     for param in args.keys():
         param_check = getattr(thismodule,param_check_function[param])
-        if param in ['element']:
+        if param in ['variable']:
             err = param_check(args[param],app_name)
         else:
             err = param_check(args[param])
@@ -525,7 +525,7 @@ def sodsumm_wrapper(argv,offline=False):
         'units':'english',
         'start_date':args['start_year'],
         'end_date':args['end_year'],
-        'element':'all'
+        'variable':'all'
     }
     app_params = {
         'el_type':tbls,
@@ -558,12 +558,12 @@ def sodsumm_wrapper(argv,offline=False):
 
 def soddyrec_wrapper(argv, offline=False):
     '''
-    argv -- sid element_type start_date end_date
+    argv -- sid variable_type start_date end_date
 
     Input Options:
             sid -- station identifier
             start/end date are 8 digits long, e.g 20100102
-            element_type choices:
+            variable_type choices:
                 all  -- generates tables for  maxt, mint, pcpn, snow, snwd, hdd, cdd,
                 tmp  -- generates tables for maxt, mint, pcpn,
                 wtr  -- generates tables for pcpn, snow, snwd,
@@ -597,7 +597,7 @@ def soddyrec_wrapper(argv, offline=False):
     #Assign input parameters:
     args = {
         'station_id':str(argv[0]),
-        'element':str(argv[1]),
+        'variable':str(argv[1]),
         'start_date':str(argv[2]),
         'end_date':str(argv[3]),
         'start_user':str(argv[2]),
@@ -607,7 +607,7 @@ def soddyrec_wrapper(argv, offline=False):
     err = None
     for param in args.keys():
         param_check = getattr(thismodule,param_check_function[param])
-        if param in ['element']:
+        if param in ['variable']:
             err = param_check(args[param],app_name)
         else:
             err = param_check(args[param])
@@ -634,7 +634,7 @@ def soddyrec_wrapper(argv, offline=False):
                 'end_date':args['end_date'],
                 'start_user':args['start_user'],
                 'end_user':args['end_user'],
-                'element':args['element'],
+                'variable':args['variable'],
                 }
     SR_wrapper = Wrapper('Soddyrec', data_params)
     #Get data
@@ -676,7 +676,7 @@ def soddynorm_wrapper(argv, offline = False):
     err = None
     for param in args.keys():
         param_check = getattr(thismodule,param_check_function[param])
-        if param in ['element']:
+        if param in ['variable']:
             err = param_check(args[param],app_name)
         else:
             err = param_check(args[param])
@@ -800,7 +800,7 @@ def format_soddyrec_results_txt(results, wrapper,data_params):
     else:
         print ' Daily Records for station %s  %s                  state: %s' %(data_params['sid'], wrapper.station_names[0], wrapper.station_states[0].lower())
         print ''
-        if data_params['element'] in ['all', 'tmp','wtr', 'pcpn','maxt', 'mint']:
+        if data_params['variable'] in ['all', 'tmp','wtr', 'pcpn','maxt', 'mint']:
             print ' For temperature and precipitation, multi-day accumulations'
             print '   are not considered either for records or averages.'
             print ' The year given is the year of latest occurrence.'
@@ -828,14 +828,14 @@ def format_soddyrec_results_txt(results, wrapper,data_params):
         print '      Units: English (inches and degrees F)'
         print ''
         header_row = '    '
-        if data_params['element'] == 'all':
+        if data_params['variable'] == 'all':
             el_list = ['maxt', 'mint', 'pcpn', 'snow', 'snwd', 'hdd', 'cdd']
-        elif data_params['element'] == 'tmp':
+        elif data_params['variable'] == 'tmp':
             el_list = ['maxt', 'mint', 'pcpn']
-        elif data_params['element'] == 'wtr':
+        elif data_params['variable'] == 'wtr':
             el_list = ['pcpn', 'snow', 'snwd']
         else:
-            el_list =[data_params['element']]
+            el_list =[data_params['variable']]
         table_header = '      '
         table_header_2 = 'MO DY'
         for el_idx, el in enumerate(el_list):
@@ -1364,7 +1364,7 @@ def format_sodxtrmts_results_txt(results, data, data_params, app_params, wrapper
     Generates sodxtrmts text output that matches Kelly's commandline output
     '''
     #Header
-    print 'STATION NUMBER %s  ELEMENT : %s           QUANTITY :        %s' %(data_params['sid'], WRCCData.ACIS_ELEMENTS_DICT[element]['name_long'],WRCCData.SXTR_ANALYSIS_CHOICES[app_params['statistic']])
+    print 'STATION NUMBER %s  ELEMENT : %s           QUANTITY :        %s' %(data_params['sid'], WRCCData.ACIS_ELEMENTS_DICT[variable]['name_long'],WRCCData.SXTR_ANALYSIS_CHOICES[app_params['statistic']])
     try:
         print ' STATION : %s' %wrapper.station_names[0]
     except:
@@ -1409,7 +1409,7 @@ def format_sodxtrmts_results_web(results, data, data_params, app_params, wrapper
         print_error(data_params['error'])
     else:
         print '<HEAD><TITLE>' + WRCCData.SXTR_ANALYSIS_CHOICES_DICT[app_params['statistic']] + ' of ' + \
-        WRCCData.DISPLAY_PARAMS[data_params['element']] +', Station id: ' + data_params['sid'] +'</TITLE></HEAD>'
+        WRCCData.DISPLAY_PARAMS[data_params['variable']] +', Station id: ' + data_params['sid'] +'</TITLE></HEAD>'
         print '<BODY BGCOLOR="#FFFFFF">'
         print '<CENTER>'
         if  wrapper.station_names and wrapper.station_states:
@@ -1417,13 +1417,13 @@ def format_sodxtrmts_results_web(results, data, data_params, app_params, wrapper
         else:
             print '<H1> No Station Name</H1>'
 
-        header2 = '<H2>' + WRCCData.SXTR_ANALYSIS_CHOICES_DICT[app_params['statistic']] +  ' of '+ WRCCData.DISPLAY_PARAMS[data_params['element']]
-        if WRCCData.UNITS_ENGLISH[data_params['element']]!= '':
-            header2+=' ('+ WRCCData.UNITS_LONG[WRCCData.UNITS_ENGLISH[data_params['element']]] +')'
+        header2 = '<H2>' + WRCCData.SXTR_ANALYSIS_CHOICES_DICT[app_params['statistic']] +  ' of '+ WRCCData.DISPLAY_PARAMS[data_params['variable']]
+        if WRCCData.UNITS_ENGLISH[data_params['variable']]!= '':
+            header2+=' ('+ WRCCData.UNITS_LONG[WRCCData.UNITS_ENGLISH[data_params['variable']]] +')'
         header2+= '</H2>'
         print header2
         print '<H3> (<B>' + data_params['sid'] + '</B>) </H3>'
-        if data_params['element'] in ['hdd', 'cdd', 'gdd']:
+        if data_params['variable'] in ['hdd', 'cdd', 'gdd']:
             print '<H4>   Base Temperature = ' + str(app_params['base_temperature'])+' F</H4>'
         if not results or not results[0]:
             print '<H1>No Data found!</H1>'
@@ -1552,7 +1552,7 @@ def format_sodsum_results_web(results, data, data_params,wrapper,station_dates=N
             print '</TABLE></CENTER>'
             print '<HR>'
             print '<CENTER>'
-            print '<H1> Statistics by element </H1>'
+            print '<H1> Statistics by variable </H1>'
             print '(From ACIS data archives)<BR>'
             print 'Last updated ' + today_michelle
             print '. Dates are format of YYYYMMDD. Numbers are total Number of observations<BR>'
@@ -1560,7 +1560,7 @@ def format_sodsum_results_web(results, data, data_params,wrapper,station_dates=N
             el_header = '<TR><TH>STATION </TH><TH>START </TH><TH> END </TH>'
             h_lines = '<TR><TH>======= </TH><TH>======== </TH><TH> ======== </TH>'
             el_data = '<TR><TD>' + wrapper.station_ids[0] + '</TD><TD>' + results[0]['start'] + '</TD><TD>' + results[0]['end'] + '</TD>'
-            for el in data['elements']:
+            for el in data['variables']:
                 el_header+= '<TH>' + el.upper() + '</TH>'
                 h_lines+='<TH> ===== </TH>'
                 el_data+='<TD>' + str(results[0][el]) + '</TD>'

@@ -77,14 +77,14 @@ class setUp(object):
 
     def run_station_finder(self, form_cleaned):
         vX_list = []
-        for el_idx, element in enumerate(form_cleaned['elements']):
-            el,base_temp = WRCCUtils.get_el_and_base_temp(element)
+        for el_idx, variable in enumerate(form_cleaned['variables']):
+            el,base_temp = WRCCUtils.get_el_and_base_temp(variable)
             vX_list.append(str(WRCCData.ACIS_ELEMENTS_DICT[el]['vX']))
 
         by_type = WRCCData.ACIS_TO_SEARCH_AREA[form_cleaned['area_type']]
         val = form_cleaned[WRCCData.ACIS_TO_SEARCH_AREA[form_cleaned['area_type']]]
         dr = [form_cleaned['start_date'],form_cleaned['end_date']]
-        ec = form_cleaned['elements_constraints']
+        ec = form_cleaned['variables_constraints']
         dc = form_cleaned['dates_constraints']
         edc  = ec + '_' + dc
         station_json, f_name = AcisWS.station_meta_to_json(by_type, val, el_list=vX_list,time_range=dr, constraints=edc)
@@ -291,7 +291,7 @@ class setUp(object):
         data_params = {
             'start_date':form_cleaned['start_year'],
             'end_date':form_cleaned['end_year'],
-            'element':form_cleaned['element']
+            'variable':form_cleaned['variable']
         }
         if 'location' in form_cleaned.keys():
             data_params['location'] = form_cleaned['location']
@@ -470,15 +470,15 @@ class Test_single_lister(unittest.TestCase):
         results, err = self.setUp.run_single_lister(params)
         self.setUp.test_single_lister_results(self,results,err)
 
-    def test_elements(self):
-        msg = 'Testing single lister elements'
+    def test_variables(self):
+        msg = 'Testing single lister variables'
         logger.info(msg + '\n')
         params = copy.deepcopy(self.params)
-        elements = ['maxt','mint','avgt','obst','pcpn','snow','snwd','gdd50','hdd65','cdd65']
-        for el in elements:
+        variables = ['maxt','mint','avgt','obst','pcpn','snow','snwd','gdd50','hdd65','cdd65']
+        for el in variables:
             msg = 'Element: ' + el
             logger.info(msg + '\n')
-            params['element'] = el
+            params['variable'] = el
             logger.info(str(params) + '\n')
             results, err = self.setUp.run_single_lister(params)
             self.setUp.test_single_lister_results(self,results,err)
@@ -570,15 +570,15 @@ class Test_multi_lister(unittest.TestCase):
             results, err = self.setUp.run_multi_lister(params)
             self.setUp.test_multi_lister_results(self,results,err)
 
-    def test_elements(self):
-        msg = 'Testing multi lister elements'
+    def test_variables(self):
+        msg = 'Testing multi lister variables'
         logger.info(msg + '\n')
         params = copy.deepcopy(self.params)
-        elements = ['maxt','mint','avgt','obst','pcpn','snow','snwd','gdd50','hdd65','cdd65']
-        for el in elements:
+        variables = ['maxt','mint','avgt','obst','pcpn','snow','snwd','gdd50','hdd65','cdd65']
+        for el in variables:
             msg = 'Element: ' + el
             logger.info(msg + '\n')
-            params['element'] = el
+            params['variable'] = el
             logger.info(str(params) + '\n')
             results, err = self.setUp.run_multi_lister(params)
             self.setUp.test_multi_lister_results(self,results,err)
@@ -718,13 +718,13 @@ class Test_monthly_summary(unittest.TestCase):
         except AssertionError as err:
             logger.error('AssertionError ' + str(err) + '\n')
 
-    def test_elements(self):
-        msg = 'Testing Monthly Summaries elements'
+    def test_variables(self):
+        msg = 'Testing Monthly Summaries variables'
         logger.info(msg + '\n')
         for el in ['maxt', 'mint', 'avgt','dtr', 'hdd', 'cdd', 'gdd','pet']:
             logger.info('Element: ' + el + '\n')
             params = copy.deepcopy(self.params)
-            params['element'] = el
+            params['variable'] = el
             #Shorten time range
             params['start_date'] = '2010'
             params['end_date'] = '2005'

@@ -21,143 +21,6 @@ try:
     import my_acis.settings as settings
 except ImportError:
     import my_acis_settings as settings
-#############################
-#CSC DATA PORTAL APPLICATIONS
-#############################
-
-def state_aves_stn(state, month, elements):
-    '''
-    Routine computes monthly averages of stn data in a state
-    for a given month over date range (default 1900 - present)
-    element, start end date and state are chosen by user
-    '''
-    mon = int(month)
-    if mon not in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]:
-        sys.exit(0)
-
-    mon_lens = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
-    today = datetime.date.today()
-    year = today.year
-    start_year = 1900
-    year_list = []
-    if len(str(mon)) == 1:
-        mon = '0%s' % mon
-    if WRCCUtils.is_leap_year(year) and mon == 2:
-        start_date = "%s%s%s" %(str(start_year), str(mon), str(29))
-        end_date = "%s%s%s" % (str(year), str(mon), str(29))
-    else:
-        end_date = "%s%s%s" % (str(year), str(mon), str(mon_lens[int(mon) - 1]))
-        start_date = "%s%s%s" %(str(start_year), str(mon), str(mon_lens[int(mon) - 1]))
-
-    dur = mon_lens[int(mon) - 1]
-    el_list = [{"name":el, "interval":[1,0,0],"duration":dur,"reduce":"mean","smry":"mean"} for el in elements]
-    params = {"state":state,"sdate":start_date,"edate":end_date, "elems":el_list}
-    request = AcisWS.MultiStnData(params)
-
-    if not request:
-        request = {'error':'bad request, check params: %s'  % str(params)}
-
-    state_aves = defaultdict(dict)
-    if 'error' in request:
-        state_ave_temp = []
-        state_ave_pcpn = []
-    try:
-        for k, el in enumerate(elements):
-            state_aves[k] = {'element': el, 'state_ave': [999 for yr in range(len(request['data'][0]['data']))]}
-        state_ave_temp = [999 for yr in range(len(request['data'][0]['data']))]
-        state_ave_pcpn = [999 for yr in range(len(request['data'][0]['data']))]
-    except:
-        state_ave_temp = []
-        state_ave_pcpn = []
-
-    for yr in range(len(request['data'][0]['data'])):
-        year_list.append("%s" % str(start_year + yr))
-        for k,el in enumerate(elements):
-            ave_list = []
-            for stn in request['data']:
-                try:
-                    ave_list.append(float(stn['data'][yr][k]))
-                except:
-                    pass
-            state_aves[k]['state_ave'][yr] = numpy.mean(ave_list)
-    return year_list, state_aves
-
-def state_aves_grid(state, month, elements):
-    '''
-    Routine computes monthly averages of Acis gridded data in a state
-    for a given month over date range (default 1900 - present)
-    element, start end date and state are chosen by user
-    '''
-    state_aves = defaultdict(dict)
-    mon = int(month)
-    if mon not in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]:
-        sys.exit(0)
-
-    mon_lens = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
-    today = datetime.date.today()
-    year = today.year - 1
-    start_year = 1950
-    year_list = []
-    if len(str(mon)) == 1:
-        mon = '0%s' % mon
-    if WRCCUtils.is_leap_year(year) and mon == 2:
-        start_date = "%s%s%s" %(str(start_year), str(mon), str(29))
-        end_date = "%s%s%s" % (str(year), str(mon), str(29))
-    else:
-        end_date = "%s%s%s" % (str(year), str(mon), str(mon_lens[int(mon) - 1]))
-        start_date = "%s%s%s" %(str(start_year), str(mon), str(mon_lens[int(mon) - 1]))
-
-    dur = mon_lens[int(mon) - 1]
-    el_list = [{"name":el, "interval":[1,0,0],"duration":dur,"reduce":"mean","smry":"mean"} for el in elements]
-    params = {"state":state,"sdate":start_date,"edate":end_date, "meta":"elev,ll", "elems":el_list, "grid":"1"}
-    request = AcisWS.GridData(params)
-    if not request:
-        request = {'error':'bad request, check params: %s'  % str(params)}
-
-    try:
-        for k, el in enumerate(elements):
-            state_aves[k] = {'element': el, 'state_ave': [999.0 for yr in range(len(request['data']))], \
-            'moving_ave': [999.0 for yr in range(len(request['data']))]}
-    except:
-        state_aves = {}
-
-    if 'error' in request:
-        year_list = []
-        state_aves = {'error': request['error']}
-    else:
-        for yr in range(len(request['data'])):
-            year_list.append("%s" % str(start_year + yr))
-            for k,el in enumerate(elements):
-                ave_list = []
-                for grid_idx, lat_grid in enumerate(request['meta']['lat']):
-                    for lat_idx, lat in enumerate(lat_grid):
-                        #Averages
-                        try:
-                            float(request['data'][yr][k+1][grid_idx][lat_idx])
-                        except:
-                            continue
-
-                        if abs(float(request['data'][yr][k+1][grid_idx][lat_idx]) + 999.0) < 0.01:
-                            continue
-                        elif abs(float(request['data'][yr][k+1][grid_idx][lat_idx]) - 999.0) < 0.01:
-                            continue
-                        else:
-                            ave_list.append(float(request['data'][yr][k+1][grid_idx][lat_idx]))
-                if ave_list:
-                    state_aves[k]['state_ave'][yr] = numpy.mean(ave_list)
-                #9yr Moving Averages
-                mov_ave_list = []
-                if yr >= 4 and yr <= len(request['data']) - 5:
-                    for l in range(yr - 4, yr + 5):
-                        if abs(state_aves[k]['state_ave'][l] - 999.0) > 0.01:
-                            mov_ave_list.append(state_aves[k]['state_ave'][l])
-                else:
-                    mov_ave_list.append(state_aves[k]['state_ave'][yr])
-                if mov_ave_list:
-                    state_aves[k]['moving_ave'][yr] = numpy.mean(mov_ave_list)
-    return year_list, state_aves
-
-
 #####################################################
 #KELLY's DATA APPLICATION
 #Mostly copied straight from Kelly's Fortran programs
@@ -240,12 +103,12 @@ def Sodpiii(**kwargs):
                 piii[skew].append(int(line[5*k:5*k+5]))
     #Loop over stations
     for i, stn in enumerate(kwargs['station_ids']):
-        elements = kwargs['elements']
+        variables = kwargs['variables']
         el_type = kwargs['el_type'] # maxt, mint, avgt, dtr (daily temp range)
         el_data = kwargs['data'][i]
         num_yrs = len(el_data)
         #el_data[el_idx][yr] ;
-        #if element_type is hdd, cdd, dtr or gdd: el_data[0] = maxt, el_data[1]=mint
+        #if variable_type is hdd, cdd, dtr or gdd: el_data[0] = maxt, el_data[1]=mint
 
         #Check for empty data and initialize results directory
         if not any(el_data[j] for j in range(len(el_data))):
@@ -704,7 +567,7 @@ def SodxtrmtsSCENIC(**kwargs):
     if 'location_list' in kwargs.keys():l = kwargs['location_list']
     if 'station_ids' in kwargs.keys():l = kwargs['station_ids']
     for i, stn in enumerate(l):
-        element = kwargs['elements'][0]
+        variable = kwargs['variables'][0]
         el_data = kwargs['data'][i]
         num_yrs = len(el_data)
 
@@ -764,7 +627,7 @@ def SodxtrmtsSCENIC(**kwargs):
                         doy = WRCCUtils.compute_doy_leap(str(p_idx + 1),str(nda + 1))
                     if kwargs['statistic_period'] == 'weekly':
                         doy = p_idx * 7 + nda + 1
-                    if element in ['maxt', 'mint', 'obst','wdmv']:
+                    if variable in ['maxt', 'mint', 'obst','wdmv']:
                         dat = el_data[nyeart][0][doy-1]
                         val, flag = WRCCUtils.strip_data(dat)
                         if flag == 'M':
@@ -776,7 +639,7 @@ def SodxtrmtsSCENIC(**kwargs):
                                     value = xmiss
                             except:
                                 value = xmiss
-                    elif element in ['pcpn', 'snow', 'snwd', 'evap']:
+                    elif variable in ['pcpn', 'snow', 'snwd', 'evap']:
                         dat = el_data[nyeart][0][doy-1]
                         val, flag = WRCCUtils.strip_data(dat)
                         if flag == 'M':
@@ -820,11 +683,11 @@ def SodxtrmtsSCENIC(**kwargs):
                                 elif abs(float(nval_n) + 9999.0)<0.001 or abs(float(nval_x) + 9999.0)<0.001:
                                     value = xmiss
                                 else:
-                                    if element == 'dtr':
+                                    if variable == 'dtr':
                                         value = nval_x - nval_n
-                                    elif element == 'avgt':
+                                    elif variable == 'avgt':
                                         value = (nval_x + nval_n)/2.0
-                                    elif element == 'pet':
+                                    elif variable == 'pet':
                                         #Maybe needs to be doy -1
                                         if len(kwargs['lls'][i]) == 2:
                                             lat = kwargs['lls'][i][0]
@@ -833,9 +696,9 @@ def SodxtrmtsSCENIC(**kwargs):
                                             lat = kwargs['lls'][i][0].split(',')[1]
                                             lon = kwargs['lls'][i][0].split(',')[0]
                                         value = round(WRCCUtils.compute_pet(lat,lon,nval_x,nval_n,doy,'english'),2)
-                                    elif element in ['hdd','cdd', 'gdd']:
+                                    elif variable in ['hdd','cdd', 'gdd']:
                                         ave = (nval_x + nval_n)/2.0
-                                        if element == 'hdd':
+                                        if variable == 'hdd':
                                             value = float(kwargs['base_temperature']) - ave
                                         else:
                                             value = ave - float(kwargs['base_temperature'])
@@ -846,9 +709,9 @@ def SodxtrmtsSCENIC(**kwargs):
                     if kwargs['statistic'] in ['mmax', 'mmin']:
                         if value > -9998.0:
                             sumda+=1
-                            if element in ['snow', 'pcpn', 'evap'] and abs(value - 245.0) < 0.01: #S flag
+                            if variable in ['snow', 'pcpn', 'evap'] and abs(value - 245.0) < 0.01: #S flag
                                 value = 0.0
-                            elif element in ['snow', 'pcpn', 'evap'] and value > 99.99 and value < 240.0: #A flag
+                            elif variable in ['snow', 'pcpn', 'evap'] and value > 99.99 and value < 240.0: #A flag
                                 value -=100.0
                             if kwargs['statistic'] == 'mmax' and value > xmax:
                                 xmax = value
@@ -861,9 +724,9 @@ def SodxtrmtsSCENIC(**kwargs):
                             table_2[yr][p_idx] = per_len - sumda
 
                     elif kwargs['statistic'] == 'mave':
-                        if element in ['snow', 'pcpn', 'evap'] and abs(value - 245.0) < 0.01: #S flag
+                        if variable in ['snow', 'pcpn', 'evap'] and abs(value - 245.0) < 0.01: #S flag
                             value = 0.0
-                        elif element in ['snow', 'pcpn', 'evap'] and value > 99.99 and value < 240.0: #A flag
+                        elif variable in ['snow', 'pcpn', 'evap'] and value > 99.99 and value < 240.0: #A flag
                             value-=100.0
 
                         if value > -9998.0:
@@ -875,9 +738,9 @@ def SodxtrmtsSCENIC(**kwargs):
                                 table_2[yr][p_idx] = per_len - sumda
 
                     elif kwargs['statistic'] == 'sd':
-                        if element in ['snow', 'pcpn', 'evap'] and abs(value - 245.0) < 0.01: #S flag
+                        if variable in ['snow', 'pcpn', 'evap'] and abs(value - 245.0) < 0.01: #S flag
                             value = 0
-                        elif element in ['snow', 'pcpn','evap'] and value > 99.99 and value < 240.0: #A flag
+                        elif variable in ['snow', 'pcpn','evap'] and value > 99.99 and value < 240.0: #A flag
                             value-=100.0
                             annfl[p_idx] = 'A'
 
@@ -896,20 +759,20 @@ def SodxtrmtsSCENIC(**kwargs):
 
                     elif kwargs['statistic'] == 'ndays':
                         flag = ' '
-                        if element in ['snow', 'pcpn', 'evap'] and abs(value - 245.0) < 0.01: #S flag
+                        if variable in ['snow', 'pcpn', 'evap'] and abs(value - 245.0) < 0.01: #S flag
                             value = 0
-                        elif element in ['snow', 'pcpn', 'evap'] and value > 99.99 and value < 240.0: #A flag
+                        elif variable in ['snow', 'pcpn', 'evap'] and value > 99.99 and value < 240.0: #A flag
                             value-=100
                             flag = 'A'
 
                         if value > -9998.0:
                             sumda+=1
-                            if kwargs['less_greater_or_between'] == 'l' and ucv(element,value) < float(kwargs['threshold_for_less_or_greater']):
+                            if kwargs['less_greater_or_between'] == 'l' and ucv(variable,value) < float(kwargs['threshold_for_less_or_greater']):
                                 summ+=1
-                            elif kwargs['less_greater_or_between'] == 'g' and ucv(element,value) > float(kwargs['threshold_for_less_or_greater']):
+                            elif kwargs['less_greater_or_between'] == 'g' and ucv(variable,value) > float(kwargs['threshold_for_less_or_greater']):
                                 summ+=1
                                 if flag != ' ':annflg[p_idx] = flag
-                            elif kwargs['less_greater_or_between'] == 'b' and ucv(element, value) > float(kwargs['threshold_low_for_between']) and ucv(element, value) <= float(kwargs['threshold_high_for_between']):
+                            elif kwargs['less_greater_or_between'] == 'b' and ucv(variable, value) > float(kwargs['threshold_low_for_between']) and ucv(variable, value) <= float(kwargs['threshold_high_for_between']):
                                 summ+=1
                                 if flag != ' ':annflg[p_idx] = flag
 
@@ -918,9 +781,9 @@ def SodxtrmtsSCENIC(**kwargs):
                             table_2[yr][p_idx] = per_len - sumda
 
                     elif kwargs['statistic'] == 'rmon':
-                        if element in ['snow', 'pcpn', 'evap'] and abs(value - 245.0) < 0.01: #S flag
+                        if variable in ['snow', 'pcpn', 'evap'] and abs(value - 245.0) < 0.01: #S flag
                             value = 0
-                        elif element in ['snow', 'pcpn', 'evap'] and value > 99.99 and value < 240.0: #A flag
+                        elif variable in ['snow', 'pcpn', 'evap'] and value > 99.99 and value < 240.0: #A flag
                             value-=100
                             flag = 'A'
 
@@ -941,10 +804,10 @@ def SodxtrmtsSCENIC(**kwargs):
 
                     elif kwargs['statistic'] == 'msum':
                         flag = ' '
-                        if element in ['snow', 'pcpn', 'evap'] and abs(value - 245.0) < 0.01: #S flag
+                        if variable in ['snow', 'pcpn', 'evap'] and abs(value - 245.0) < 0.01: #S flag
                             value = 0.0
                             if nda == per_len -1:flag = 'S'
-                        elif element in ['snow', 'pcpn', 'evap'] and value > 99.99 and value < 240.0: #A flag
+                        elif variable in ['snow', 'pcpn', 'evap'] and value > 99.99 and value < 240.0: #A flag
                             value-=100
 
                         if value > -9998.0:
@@ -953,7 +816,7 @@ def SodxtrmtsSCENIC(**kwargs):
                         #Estimate missing sum for degree days, using the mean of the other days
                         nummsg = per_len - sumda
                         if nda  == per_len -1:
-                            if element in ['hdd', 'cdd', 'gdd']:
+                            if variable in ['hdd', 'cdd', 'gdd']:
                                 if nummsg != 0 and nummsg <= kwargs['max_missing_days'] and sumda > 0.5:
                                     summ = float(summ)/sumda * float(per_len -1)
 
@@ -973,13 +836,13 @@ def SodxtrmtsSCENIC(**kwargs):
             annminh = 9999.001
             sumann = 0.0
             for p_idx in range(periods):
-                if element in ['snow', 'pcpn', 'snwd', 'evap']:
+                if variable in ['snow', 'pcpn', 'snwd', 'evap']:
                     valmon = round(table_1[yr][p_idx],2)
                 else:
                     valmon = table_1[yr][p_idx]
                 summon = table_2[yr][p_idx]
                 if kwargs['statistic'] == 'mmax':
-                    if element in ['snow', 'pcpn', 'evap']:
+                    if variable in ['snow', 'pcpn', 'evap']:
                         if valmon > 99.99 and valmon <= 240.0:
                             continue
                         else:
@@ -1020,7 +883,7 @@ def SodxtrmtsSCENIC(**kwargs):
                 table_1[yr][periods] = float(sumann)
                 table_2[yr][periods] = round(float(periods),1) - count
             elif kwargs['statistic'] == 'rmon':
-                if element != 'dtr':
+                if variable != 'dtr':
                     table_1[yr][periods] = annmax - annmin
                 table_2[yr][periods] = sumann
         #End of Year loop! Phew...
@@ -1033,7 +896,7 @@ def SodxtrmtsSCENIC(**kwargs):
             count = 0.0
 
             for yr in range(num_yrs):
-                if  p_idx == periods and element in ['snow', 'pcpn', 'snwd', 'evap']:
+                if  p_idx == periods and variable in ['snow', 'pcpn', 'snwd', 'evap']:
                     value = round(table_1[yr][p_idx],2)
                 else:
                     value = table_1[yr][p_idx]
@@ -1062,8 +925,8 @@ def SodxtrmtsSCENIC(**kwargs):
                     results[i][num_yrs].append(int(round(mean_out[p_idx])))
                     #results[i][num_yrs].append('%d' % int(round(mean_out[p_idx])))
                 else:
-                    results[i][num_yrs].append(round(ucv(element, mean_out[p_idx]),2))
-                    #results[i][num_yrs].append('%.2f' % round(ucv(element, mean_out[p_idx]),2))
+                    results[i][num_yrs].append(round(ucv(variable, mean_out[p_idx]),2))
+                    #results[i][num_yrs].append('%.2f' % round(ucv(variable, mean_out[p_idx]),2))
                 #New
                 results[i][num_yrs].append(' ')
             else:
@@ -1080,15 +943,15 @@ def SodxtrmtsSCENIC(**kwargs):
                         results[i][num_yrs+1].append(int(round(numpy.sqrt((summ2 - summ**2/count)/(count -1)))))
                        #results[i][num_yrs+1].append('%d' % int(round(numpy.sqrt((summ2 - summ**2/count)/(count -1)))))
                     else:
-                        results[i][num_yrs+1].append(round(ucv(element, numpy.sqrt((summ2 - summ**2/count)/(count -1))),2))
-                        #results[i][num_yrs+1].append('%.2f' % round(ucv(element, numpy.sqrt((summ2 - summ**2/count)/(count -1))),2))
+                        results[i][num_yrs+1].append(round(ucv(variable, numpy.sqrt((summ2 - summ**2/count)/(count -1))),2))
+                        #results[i][num_yrs+1].append('%.2f' % round(ucv(variable, numpy.sqrt((summ2 - summ**2/count)/(count -1))),2))
                     #New
                     results[i][num_yrs+1].append(' ')
                 except:
                     pass
-                h1 = float(ucv(element,summ))/float(count)
-                h2 = float(ucv(element, summ2))/float(count)
-                h3 = float(ucv(element, summ3))/float(count)
+                h1 = float(ucv(variable,summ))/float(count)
+                h2 = float(ucv(variable, summ2))/float(count)
+                h3 = float(ucv(variable, summ3))/float(count)
                 xm2 = h2 - h1*h1
                 xm3 = h3 - 3.0*h1*h2 + 2.0*h1*h1*h1
                 if abs(xm2) > 0.00001:
@@ -1118,16 +981,16 @@ def SodxtrmtsSCENIC(**kwargs):
                 results[i][num_yrs+3].append(int(round(xmax)))
                 #results[i][num_yrs+3].append('%d' % int(round(xmax)))
             else:
-                results[i][num_yrs+3].append(round(ucv(element, xmax),2))
-                #results[i][num_yrs+3].append('%.2f' % ucv(element, xmax))
+                results[i][num_yrs+3].append(round(ucv(variable, xmax),2))
+                #results[i][num_yrs+3].append('%.2f' % ucv(variable, xmax))
             #New
             results[i][num_yrs+3].append(' ')
             if kwargs['statistic'] == 'ndays':
                 results[i][num_yrs+4].append(int(round(xmin)))
                 #results[i][num_yrs+4].append('%d' % int(round(xmin)))
             else:
-                results[i][num_yrs+4].append(round(ucv(element, xmin),2))
-                #results[i][num_yrs+4].append('%.2f' % round(ucv(element, xmin),2))
+                results[i][num_yrs+4].append(round(ucv(variable, xmin),2))
+                #results[i][num_yrs+4].append('%.2f' % round(ucv(variable, xmin),2))
             #New
             results[i][num_yrs+4].append(' ')
             results[i][num_yrs+5].append(int(round(count)))
@@ -1147,7 +1010,7 @@ def SodxtrmtsSCENIC(**kwargs):
                     outchr[p_idx] = annsav[yr][p_idx]
                 #if (abs(table_1[yr][p_idx] -  9999) < 0.001 or abs(table_1[yr][p_idx] + 9999.0) <0.001 or outchr[p_idx] =='z'):
                 if (abs(table_1[yr][p_idx] -  9999) < 0.001 or abs(table_1[yr][p_idx] + 9999.0) <0.001):
-                    if kwargs['statistic'] == 'msum' and element == 'hdd' and table_1[yr][p_idx]> 9998.5:
+                    if kwargs['statistic'] == 'msum' and variable == 'hdd' and table_1[yr][p_idx]> 9998.5:
                         continue
                     else:
                         results[i][yr].append('')
@@ -1155,17 +1018,17 @@ def SodxtrmtsSCENIC(**kwargs):
                         continue
 
                 if kwargs['departures_from_averages']  == 'F':
-                    #results[i][yr].append('%.2f%s' % (ucv(element, table_1[yr][p_idx]), outchr[p_idx]))
+                    #results[i][yr].append('%.2f%s' % (ucv(variable, table_1[yr][p_idx]), outchr[p_idx]))
                     if kwargs['statistic'] == 'ndays':
                         results[i][yr].append(int(table_1[yr][p_idx]))
                         #results[i][yr].append('%d' % int(table_1[yr][p_idx]))
                     else:
-                        results[i][yr].append(round(ucv(element, table_1[yr][p_idx]),2))
-                        #results[i][yr].append('%.2f' % ucv(element, table_1[yr][p_idx]))
+                        results[i][yr].append(round(ucv(variable, table_1[yr][p_idx]),2))
+                        #results[i][yr].append('%.2f' % ucv(variable, table_1[yr][p_idx]))
                     results[i][yr].append('%s' % outchr[p_idx])
                 else:
-                    results[i][yr].append(round(ucv(element, (table_1[yr][p_idx] - mean_out[p_idx])),2))
-                    #results[i][yr].append('%.2f' % (ucv(element, (table_1[yr][p_idx] - mean_out[p_idx]))))
+                    results[i][yr].append(round(ucv(variable, (table_1[yr][p_idx] - mean_out[p_idx])),2))
+                    #results[i][yr].append('%.2f' % (ucv(variable, (table_1[yr][p_idx] - mean_out[p_idx]))))
                     results[i][yr].append('%s' % outchr[p_idx])
             #End p_idx loop
         #End of year loop
@@ -1248,12 +1111,12 @@ def Sodxtrmts(**kwargs):
     if 'station_ids' in kwargs.keys():l = kwargs['station_ids']
     #STATION/LOCATION loop
     for i, stn in enumerate(l):
-        elements = kwargs['elements']
-        element = kwargs['elements'][0] # maxt, mint, avgt, dtr (daily temp range)
+        variables = kwargs['variables']
+        variable = kwargs['variables'][0] # maxt, mint, avgt, dtr (daily temp range)
         el_data = kwargs['data'][i]
         num_yrs = len(el_data)
         #el_data[el_idx][yr] ;
-        #if element_type is hdd, cdd, dtr or gdd: el_data[0] = maxt, el_data[1]=mint
+        #if variable_type is hdd, cdd, dtr or gdd: el_data[0] = maxt, el_data[1]=mint
 
         #Check for empty data and initialize results directory
         if not any(el_data[j] for j in range(len(el_data))):
@@ -1320,7 +1183,7 @@ def Sodxtrmts(**kwargs):
                 for nda in range(mon_len):
                     #Find day of year
                     doy = WRCCUtils.compute_doy_leap(str(mon + 1),str(nda + 1))
-                    if element in ['maxt', 'mint', 'obst','wdmv']:
+                    if variable in ['maxt', 'mint', 'obst','wdmv']:
                         dat = el_data[nyeart][0][doy-1]
                         val, flag = WRCCUtils.strip_data(dat)
                         if flag == 'M':
@@ -1332,7 +1195,7 @@ def Sodxtrmts(**kwargs):
                                     value = xmiss
                             except:
                                 value = xmiss
-                    elif element in ['pcpn', 'snow', 'snwd', 'evap']:
+                    elif variable in ['pcpn', 'snow', 'snwd', 'evap']:
                         dat = el_data[nyeart][0][doy-1]
                         val, flag = WRCCUtils.strip_data(dat)
                         if flag == 'M':
@@ -1371,11 +1234,11 @@ def Sodxtrmts(**kwargs):
                                 if abs(float(nval_n) + 999.0)<0.001 or abs(float(nval_x) + 999.0)<0.001:
                                     value = xmiss
                                 else:
-                                    if element == 'dtr':
+                                    if variable == 'dtr':
                                         value = nval_x - nval_n
-                                    elif element == 'avgt':
+                                    elif variable == 'avgt':
                                         value = (nval_x + nval_n)/2.0
-                                    elif element == 'pet':
+                                    elif variable == 'pet':
                                         #Maybe needs to be doy -1
                                         if len(kwargs['lls'][i]) == 2:
                                             lat = kwargs['lls'][i][0]
@@ -1384,9 +1247,9 @@ def Sodxtrmts(**kwargs):
                                             lat = kwargs['lls'][i][0].split(',')[1]
                                             lon = kwargs['lls'][i][0].split(',')[0]
                                         value = round(WRCCUtils.compute_pet(lat,lon,nval_x,nval_n,doy,'english'),2)
-                                    elif element in ['hdd','cdd', 'gdd']:
+                                    elif variable in ['hdd','cdd', 'gdd']:
                                         ave = (nval_x + nval_n)/2.0
-                                        if element == 'hdd':
+                                        if variable == 'hdd':
                                             value = float(kwargs['base_temperature']) - ave
                                         else:
                                             value = ave - float(kwargs['base_temperature'])
@@ -1397,9 +1260,9 @@ def Sodxtrmts(**kwargs):
                     if kwargs['statistic'] in ['mmax', 'mmin']:
                         if value > -9998.0:
                             sumda+=1
-                            if element in ['snow', 'pcpn', 'evap'] and abs(value - 245.0) < 0.01: #S flag
+                            if variable in ['snow', 'pcpn', 'evap'] and abs(value - 245.0) < 0.01: #S flag
                                 value = 0.0
-                            elif element in ['snow', 'pcpn', 'evap'] and value > 99.99 and value < 240.0: #A flag
+                            elif variable in ['snow', 'pcpn', 'evap'] and value > 99.99 and value < 240.0: #A flag
                                 value -=100.0
                             if kwargs['statistic'] == 'mmax' and value > xmax:
                                 xmax = value
@@ -1415,9 +1278,9 @@ def Sodxtrmts(**kwargs):
                             table_2[yr][mon] = mon_len - sumda
 
                     elif kwargs['statistic'] == 'mave':
-                        if element in ['snow', 'pcpn', 'evap'] and abs(value - 245.0) < 0.01: #S flag
+                        if variable in ['snow', 'pcpn', 'evap'] and abs(value - 245.0) < 0.01: #S flag
                             value = 0.0
-                        elif element in ['snow', 'pcpn', 'evap'] and value > 99.99 and value < 240.0: #A flag
+                        elif variable in ['snow', 'pcpn', 'evap'] and value > 99.99 and value < 240.0: #A flag
                             value-=100.0
 
                         if value > -9998.0:
@@ -1429,9 +1292,9 @@ def Sodxtrmts(**kwargs):
                                 table_2[yr][mon] = mon_len - sumda
 
                     elif kwargs['statistic'] == 'sd':
-                        if element in ['snow', 'pcpn', 'evap'] and abs(value - 245.0) < 0.01: #S flag
+                        if variable in ['snow', 'pcpn', 'evap'] and abs(value - 245.0) < 0.01: #S flag
                             value = 0
-                        elif element in ['snow', 'pcpn','evap'] and value > 99.99 and value < 240.0: #A flag
+                        elif variable in ['snow', 'pcpn','evap'] and value > 99.99 and value < 240.0: #A flag
                             value-=100.0
                             annfl[mon] = 'A'
 
@@ -1450,20 +1313,20 @@ def Sodxtrmts(**kwargs):
 
                     elif kwargs['statistic'] == 'ndays':
                         flag = ' '
-                        if element in ['snow', 'pcpn', 'evap'] and abs(value - 245.0) < 0.01: #S flag
+                        if variable in ['snow', 'pcpn', 'evap'] and abs(value - 245.0) < 0.01: #S flag
                             value = 0
-                        elif element in ['snow', 'pcpn', 'evap'] and value > 99.99 and value < 240.0: #A flag
+                        elif variable in ['snow', 'pcpn', 'evap'] and value > 99.99 and value < 240.0: #A flag
                             value-=100
                             flag = 'A'
 
                         if value > -9998.0:
                             sumda+=1
-                            if kwargs['less_greater_or_between'] == 'l' and ucv(element,value) < float(kwargs['threshold_for_less_or_greater']):
+                            if kwargs['less_greater_or_between'] == 'l' and ucv(variable,value) < float(kwargs['threshold_for_less_or_greater']):
                                 summ+=1
-                            elif kwargs['less_greater_or_between'] == 'g' and ucv(element,value) > float(kwargs['threshold_for_less_or_greater']):
+                            elif kwargs['less_greater_or_between'] == 'g' and ucv(variable,value) > float(kwargs['threshold_for_less_or_greater']):
                                 summ+=1
                                 if flag != ' ':annflg[mon] = flag
-                            elif kwargs['less_greater_or_between'] == 'b' and ucv(element, value) > float(kwargs['threshold_low_for_between']) and ucv(element, value) <= float(kwargs['threshold_high_for_between']):
+                            elif kwargs['less_greater_or_between'] == 'b' and ucv(variable, value) > float(kwargs['threshold_low_for_between']) and ucv(variable, value) <= float(kwargs['threshold_high_for_between']):
                                 summ+=1
                                 if flag != ' ':annflg[mon] = flag
 
@@ -1472,9 +1335,9 @@ def Sodxtrmts(**kwargs):
                             table_2[yr][mon] = mon_len - sumda
 
                     elif kwargs['statistic'] == 'rmon':
-                        if element in ['snow', 'pcpn', 'evap'] and abs(value - 245.0) < 0.01: #S flag
+                        if variable in ['snow', 'pcpn', 'evap'] and abs(value - 245.0) < 0.01: #S flag
                             value = 0
-                        elif element in ['snow', 'pcpn', 'evap'] and value > 99.99 and value < 240.0: #A flag
+                        elif variable in ['snow', 'pcpn', 'evap'] and value > 99.99 and value < 240.0: #A flag
                             value-=100
                             flag = 'A'
 
@@ -1492,10 +1355,10 @@ def Sodxtrmts(**kwargs):
 
                     elif kwargs['statistic'] == 'msum':
                         flag = ' '
-                        if element in ['snow', 'pcpn', 'evap'] and abs(value - 245.0) < 0.01: #S flag
+                        if variable in ['snow', 'pcpn', 'evap'] and abs(value - 245.0) < 0.01: #S flag
                             value = 0.0
                             if nda == mon_len -1:flag = 'S'
-                        elif element in ['snow', 'pcpn', 'evap'] and value > 99.99 and value < 240.0: #A flag
+                        elif variable in ['snow', 'pcpn', 'evap'] and value > 99.99 and value < 240.0: #A flag
                             value-=100
 
                         if value > -9998.0:
@@ -1504,7 +1367,7 @@ def Sodxtrmts(**kwargs):
                         #Estimate missing sum for degree days, using the mean of the other days
                         nummsg = mon_len - sumda
                         if nda  == mon_len -1:
-                            if element in ['hdd', 'cdd', 'gdd']:
+                            if variable in ['hdd', 'cdd', 'gdd']:
                                 if nummsg != 0 and nummsg <= kwargs['max_missing_days'] and sumda > 0.5:
                                     summ = float(summ)/sumda * float(mon_len -1)
 
@@ -1524,14 +1387,14 @@ def Sodxtrmts(**kwargs):
             annminh = 9999.001
             sumann = 0.0
             for mon in range(12):
-                if element in ['snow', 'pcpn', 'snwd', 'evap']:
+                if variable in ['snow', 'pcpn', 'snwd', 'evap']:
                     valmon = round(table_1[yr][mon],2)
                 else:
                     valmon = table_1[yr][mon]
                 #valmon = table_1[yr][mon]
                 summon = table_2[yr][mon]
                 if kwargs['statistic'] == 'mmax':
-                    if element in ['snow', 'pcpn', 'evap']:
+                    if variable in ['snow', 'pcpn', 'evap']:
                         if valmon > 99.99 and valmon <= 240.0:
                             continue
                         else:
@@ -1572,7 +1435,7 @@ def Sodxtrmts(**kwargs):
                 table_1[yr][12] = float(sumann)
                 table_2[yr][12] = 12.0 - count
             elif kwargs['statistic'] == 'rmon':
-                if element != 'dtr':
+                if variable != 'dtr':
                     table_1[yr][12] = annmax - annmin
                 table_2[yr][12] = sumann
         #End of Year loop! Phew...
@@ -1591,7 +1454,7 @@ def Sodxtrmts(**kwargs):
             count = 0.0
 
             for yr in range(num_yrs):
-                if  mon == 12 and element in ['snow', 'pcpn', 'snwd', 'evap']:
+                if  mon == 12 and variable in ['snow', 'pcpn', 'snwd', 'evap']:
                     value = round(table_1[yr][mon],2)
                 else:
                     value = table_1[yr][mon]
@@ -1620,7 +1483,7 @@ def Sodxtrmts(**kwargs):
                 if kwargs['statistic'] == 'ndays':
                     results[i][num_yrs].append('%d' % int(round(mean_out[monind])))
                 else:
-                    results[i][num_yrs].append('%.2f' % round(ucv(element, mean_out[monind]),2))
+                    results[i][num_yrs].append('%.2f' % round(ucv(variable, mean_out[monind]),2))
                 #New
                 results[i][num_yrs].append(' ')
             else:
@@ -1636,14 +1499,14 @@ def Sodxtrmts(**kwargs):
                     if kwargs['statistic'] == 'ndays':
                         results[i][num_yrs+1].append('%d' % int(round(numpy.sqrt((summ2 - summ**2/count)/(count -1)))))
                     else:
-                        results[i][num_yrs+1].append('%.2f' % round(ucv(element, numpy.sqrt((summ2 - summ**2/count)/(count -1))),2))
+                        results[i][num_yrs+1].append('%.2f' % round(ucv(variable, numpy.sqrt((summ2 - summ**2/count)/(count -1))),2))
                     #New
                     results[i][num_yrs+1].append(' ')
                 except:
                     pass
-                h1 = float(ucv(element,summ))/float(count)
-                h2 = float(ucv(element, summ2))/float(count)
-                h3 = float(ucv(element, summ3))/float(count)
+                h1 = float(ucv(variable,summ))/float(count)
+                h2 = float(ucv(variable, summ2))/float(count)
+                h3 = float(ucv(variable, summ3))/float(count)
                 xm2 = h2 - h1*h1
                 xm3 = h3 - 3.0*h1*h2 + 2.0*h1*h1*h1
                 if abs(xm2) > 0.00001:
@@ -1670,13 +1533,13 @@ def Sodxtrmts(**kwargs):
             if kwargs['statistic'] == 'ndays':
                 results[i][num_yrs+3].append('%d' % int(round(xmax)))
             else:
-                results[i][num_yrs+3].append('%.2f' % ucv(element, xmax))
+                results[i][num_yrs+3].append('%.2f' % ucv(variable, xmax))
             #New
             results[i][num_yrs+3].append(' ')
             if kwargs['statistic'] == 'ndays':
                 results[i][num_yrs+4].append('%d' % int(round(xmin)))
             else:
-                results[i][num_yrs+4].append('%.2f' % round(ucv(element, xmin),2))
+                results[i][num_yrs+4].append('%.2f' % round(ucv(variable, xmin),2))
             #New
             results[i][num_yrs+4].append(' ')
             results[i][num_yrs+5].append(int(round(count)))
@@ -1705,22 +1568,22 @@ def Sodxtrmts(**kwargs):
                     outchr[monind] = annsav[yr][mon]
                 if (abs(table_1[yr][mon] -  9999) < 0.001 or abs(table_1[yr][mon] + 9999.0) <0.001 or outchr[monind] =='z'):
                     #if (abs(table_1[yr][mon] -  9999) < 0.001 or abs(table_1[yr][mon] + 9999.0) <0.001):
-                    if kwargs['statistic'] == 'msum' and element == 'hdd' and table_1[yr][mon]> 9998.5:
+                    if kwargs['statistic'] == 'msum' and variable == 'hdd' and table_1[yr][mon]> 9998.5:
                         continue
                     else:
                         results[i][yr].append('-----')
                         results[i][yr].append('z')
                         continue
                 if kwargs['departures_from_averages']  == 'F':
-                    #results[i][yr].append('%.2f%s' % (ucv(element, table_1[yr][mon]), outchr[monind]))
+                    #results[i][yr].append('%.2f%s' % (ucv(variable, table_1[yr][mon]), outchr[monind]))
                     if kwargs['statistic'] == 'ndays':
                         results[i][yr].append('%d' % int(table_1[yr][mon]))
                     else:
-                        results[i][yr].append('%.2f' % ucv(element, table_1[yr][mon]))
+                        results[i][yr].append('%.2f' % ucv(variable, table_1[yr][mon]))
                     results[i][yr].append('%s' % outchr[monind])
                 else:
-                    #results[i][yr].append('%.2f%s' % (ucv(element, (table_1[yr][mon] - mean_out[monind])), outchr[monind]))
-                    results[i][yr].append('%.2f' % (ucv(element, (table_1[yr][mon] - mean_out[monind]))))
+                    #results[i][yr].append('%.2f%s' % (ucv(variable, (table_1[yr][mon] - mean_out[monind])), outchr[monind]))
+                    results[i][yr].append('%.2f' % (ucv(variable, (table_1[yr][mon] - mean_out[monind]))))
                     results[i][yr].append('%s' % outchr[monind])
             #End month loop
         #End of year loop
@@ -1764,11 +1627,11 @@ def Sodxtrmts(**kwargs):
 
             #Set some bouns for certain types of analyses to avoid obvious
             #problems like negative precip or threshold excedances.
-            #Also don't perform certain analyses for some element/analysis combinations.
-            if element in ['maxt', 'mint', 'avgt']:
+            #Also don't perform certain analyses for some variable/analysis combinations.
+            if variable in ['maxt', 'mint', 'avgt']:
                 vmin = -999.9
                 vmax = 999.0
-            elif element == 'dtr':
+            elif variable == 'dtr':
                 vmin = 0.0
                 vmax = 999.0
             else:
@@ -1862,12 +1725,12 @@ def Sodthr(**kwargs):
     end_year = int(dates[-1][0:4])
     #Loop over stations
     for i, stn in enumerate(kwargs['station_ids']):
-        elements = kwargs['elements']
+        variables = kwargs['variables']
         el_type = kwargs['el_type'] # maxt, mint, avgt, dtr (daily temp range)
         el_data = kwargs['data'][i]
         num_yrs = len(el_data)
         #el_data[el_idx][yr] ;
-        #if element_type is hdd, cdd, dtr or gdd: el_data[0] = maxt, el_data[1]=mint
+        #if variable_type is hdd, cdd, dtr or gdd: el_data[0] = maxt, el_data[1]=mint
 
         #Check for empty data
         if not any(el_data[j] for j in range(len(el_data))):
@@ -2179,7 +2042,7 @@ def Sodthr(**kwargs):
 def Sodpct(**kwargs):
     '''
     This program determines percentiles of distributions of
-    climate elements.  These elements include max, min and
+    climate variables.  These variables include max, min and
     mean temperature, degree days, daily temperature range
     precipitation, snowfall and snowdepth.  The user selects
     the starting and ending year.  Distributions are
@@ -2190,7 +2053,7 @@ def Sodpct(**kwargs):
     quantity).  (The use of additional days increases the
     sample size, and smooths the day-to-day variations.)
     Furthermore, these values can be based on individual
-    daily values, or on averages (or sums, for some elements)
+    daily values, or on averages (or sums, for some variables)
     for the next (n) days.
     '''
     results = defaultdict(list)
@@ -2209,14 +2072,14 @@ def Sodpct(**kwargs):
         ncom = kwargs['number_days_ahead']
     #Loop over stations
     for i, stn in enumerate(kwargs['station_ids']):
-        elements = kwargs['elements']
+        variables = kwargs['variables']
         if el_type in ['dtr', 'hdd', 'cdd', 'gdd', 'avgt']:
             el_data = kwargs['data'][i]
             num_yrs = len(el_data[0])
         else:
             el_data = kwargs['data'][i][0]
             num_yrs = len(el_data)
-        #el_data[el_idx][yr] ; if element_type is hdd, cdd, dtr or gdd: el_data[0] = maxt, el_data[1]=mint
+        #el_data[el_idx][yr] ; if variable_type is hdd, cdd, dtr or gdd: el_data[0] = maxt, el_data[1]=mint
         #Check for empty data
         if not any(el_data[j] for j in range(len(el_data))):
             results[i] = {}
@@ -2513,16 +2376,16 @@ def Sodrun(**kwargs):
 
     results = defaultdict(list)
     station_ids = kwargs['station_ids']
-    elements = kwargs['elements']
+    variables = kwargs['variables']
     dates = kwargs['dates']
     jd_start = WRCCUtils.JulDay(int(dates[0][0:4]), int(dates[0][4:6]), int(dates[0][6:8]))#Julian day of start date
     jd_end = WRCCUtils.JulDay(int(dates[-1][0:4]), int(dates[-1][4:6]), int(dates[-1][6:8]))#Julian day of end date
     app_name = kwargs['app_name']
     op = kwargs['op']
-    if elements == ['maxt', 'mint']:
+    if variables == ['maxt', 'mint']:
         el = 'range'
     else:
-        el = elements[0]
+        el = variables[0]
     thresh = kwargs['thresh']
     min_run = kwargs['minimum_run']
     verbose = kwargs['verbose']
@@ -2811,14 +2674,14 @@ def Sodlist(**kwargs):
     '''
     results = defaultdict(list)
     station_ids = kwargs['station_ids']
-    elements = kwargs['elements']
+    variables = kwargs['variables']
     dates = kwargs['dates']
     #Loop over stations
     for i, stn in enumerate(station_ids):
         stn_data = kwargs['data'][i]
         #first format data to include dates
         for k, date in enumerate(dates):
-            for j, el in enumerate(elements):
+            for j, el in enumerate(variables):
                 stn_data[k][j].insert(0,date)
         results[i]=stn_data
     return results
@@ -2832,8 +2695,8 @@ def Sodmonline_new(kwargs):
     results =  {}
     params = {
         'sid':str(kwargs['station_id']),
-        #'elems':[{'name':str(kwargs['element']),'add':'f'}],
-        'elems':[{'name':str(kwargs['element'])}],
+        #'elems':[{'name':str(kwargs['variable']),'add':'f'}],
+        'elems':[{'name':str(kwargs['variable'])}],
         'sdate':str(kwargs['start_date']) + '01-01',
         'edate':str(kwargs['end_date']) + '12-31',
         'meta':'name,state,sids,ll,elev,uid,valid_daterange'
@@ -2866,10 +2729,10 @@ def Sodmonline_new(kwargs):
         mon = str(int(date[4:6]))
         day = str(int(date[6:8]))
         try:
-            val = ucv(kwargs['element'],int(date_data[1]))
+            val = ucv(kwargs['variable'],int(date_data[1]))
         except:
             try:
-                val = ucv(kwargs['element'],float(date_data[1]))
+                val = ucv(kwargs['variable'],float(date_data[1]))
             except:
                 val = str(date_data[1])
         if day == '1':
@@ -2892,8 +2755,8 @@ def Sodmonlinemy_new(kwargs):
     results =  {}
     params = {
         'sid':str(kwargs['station_id']),
-        #'elems':[{'name':str(kwargs['element']),'add':'f'}],
-        'elems':[{'name':str(kwargs['element'])}],
+        #'elems':[{'name':str(kwargs['variable']),'add':'f'}],
+        'elems':[{'name':str(kwargs['variable'])}],
         'sdate':str(kwargs['start_date']) + '01-01',
         'edate':str(kwargs['end_date']) + '12-31',
         'meta':'name,state,sids,ll,elev,uid,valid_daterange'
@@ -2929,10 +2792,10 @@ def Sodmonlinemy_new(kwargs):
         mon = int(date[4:6])
         day = str(int(date[6:8]))
         try:
-            val = ucv(kwargs['element'],int(date_data[1]))
+            val = ucv(kwargs['variable'],int(date_data[1]))
         except:
             try:
-                val = ucv(kwargs['element'],float(date_data[1]))
+                val = ucv(kwargs['variable'],float(date_data[1]))
             except:
                 val = str(date_data[1])
         if day == '1':
@@ -2956,7 +2819,7 @@ def Sodlist_new(kwargs):
     '''
     Summary of the day data lister
     '''
-    #Find element list
+    #Find variable list
     if kwargs['include_tobs_evap']:
         vx_list = [4,10,11,1,2,3,7]
         el_list = ['pcpn','snow','snwd','maxt','mint','obst','evap']
@@ -3016,7 +2879,7 @@ def Sodlist_new(kwargs):
                 idx = start_idx
                 end = end_indices[idx_idx]
                 while idx <= end:
-                    #fix me: what's tobs?? different for each element
+                    #fix me: what's tobs?? different for each variable
                     #FIXED: upon Greg's request, we choose tmin tobs
                     #dat =[stn_id[0:2], stn_id[2:6],dates[idx][0:4],dates[idx][4:6],dates[idx][6:8]]
                     dat = [stn_id,dates[idx]]
@@ -3084,7 +2947,7 @@ def Sodmonline(**kwargs):
     '''
     results = defaultdict(list)
     station_ids = kwargs['station_ids']
-    elements = kwargs['elements']
+    variables = kwargs['variables']
     dates = kwargs['dates']
     #Loop over stations
     for i, stn in enumerate(station_ids):
@@ -3107,7 +2970,7 @@ def Sodsumm(**kwargs):
         max_missing_days = 0
     else:
         max_missing_days = int(kwargs['max_missing_days'])
-    elements = kwargs['elements']
+    variables = kwargs['variables']
     ucv = getattr(WRCCUtils, 'convert_nothing')
     if units == 'metric':
         ucv = getattr(WRCCUtils, 'convert_to_metric')
@@ -3184,7 +3047,7 @@ def Sodsumm(**kwargs):
 
         #Sort data
         dd_acc = 0 #for degree days sum
-        x_miss = defaultdict(dict) #counts missing days: x_miss[cat_idx][element]=[miss_yr1, miss_yr2, ..., miss_yrlast]
+        x_miss = defaultdict(dict) #counts missing days: x_miss[cat_idx][variable]=[miss_yr1, miss_yr2, ..., miss_yrlast]
 
         #Loop over time categories and compute stats
         for cat_idx, cat in enumerate(time_cats):
@@ -3216,11 +3079,11 @@ def Sodsumm(**kwargs):
                 idx_start = 245
                 idx_end = 336
             #Read in data, for ease of statistical computation, data and dates for each category are
-            #ordered chronolocically in two indexed list: el_data[element], el_dates[element].
-            for el_idx, element in enumerate(elements):
-                el_data[element] = []
-                el_dates[element] = []
-                x_miss[cat_idx][element] = []
+            #ordered chronolocically in two indexed list: el_data[variable], el_dates[variable].
+            for el_idx, variable in enumerate(variables):
+                el_data[variable] = []
+                el_dates[variable] = []
+                x_miss[cat_idx][variable] = []
                 current_year = int(start_year) - 1
                 for yr in range(num_yrs):
                     current_year+=1
@@ -3228,21 +3091,21 @@ def Sodsumm(**kwargs):
                     #Winter jumps year
                     if cat_idx == 13:
                         for idx in range(idx_start, 366):
-                            el_data[element].append(kwargs['data'][i][yr][el_idx][idx])
+                            el_data[variable].append(kwargs['data'][i][yr][el_idx][idx])
                             date_idx  = yr * 366 + idx
-                            el_dates[element].append(kwargs['dates'][date_idx])
+                            el_dates[variable].append(kwargs['dates'][date_idx])
                         if yr < num_yrs - 1:
                             for idx in range(0,idx_end):
-                                el_data[element].append(kwargs['data'][i][yr+1][el_idx][idx])
+                                el_data[variable].append(kwargs['data'][i][yr+1][el_idx][idx])
                                 date_idx  = (yr+1) * 366 + idx
-                                el_dates[element].append(kwargs['dates'][date_idx])
+                                el_dates[variable].append(kwargs['dates'][date_idx])
                         mon_l = [11,0,1]
                         for ct in mon_l:
                             if ct == 11:
-                                xm = x_miss[ct][element][yr]
+                                xm = x_miss[ct][variable][yr]
                             else:
                                 try:
-                                    xm = x_miss[ct][element][yr+1]
+                                    xm = x_miss[ct][variable][yr+1]
                                 except:
                                     xm = 0
                             if xm > max_missing_days:
@@ -3250,20 +3113,20 @@ def Sodsumm(**kwargs):
                                 break
                         if flag:
                             #found a month with too many missing days
-                            x_miss[cat_idx][element].append(max_missing_days + 1)
+                            x_miss[cat_idx][variable].append(max_missing_days + 1)
                         else:
-                            x_miss[cat_idx][element].append(0)
+                            x_miss[cat_idx][variable].append(0)
                     else:
                         data_list = []
                         for idx in range(idx_start, idx_end):
                             data_list.append(kwargs['data'][i][yr][el_idx][idx])
-                            el_data[element].append(kwargs['data'][i][yr][el_idx][idx])
+                            el_data[variable].append(kwargs['data'][i][yr][el_idx][idx])
                             date_idx  = yr * 366 + idx
-                            el_dates[element].append(kwargs['dates'][date_idx])
+                            el_dates[variable].append(kwargs['dates'][date_idx])
                         #Count missing days for all categories
                         if cat_idx < 12:
                             days_miss = len([dat for dat in data_list if dat == 'M'])
-                            x_miss[cat_idx][element].append(days_miss)
+                            x_miss[cat_idx][variable].append(days_miss)
                         else:
                             if cat_idx == 12:mon_l = range(0,12)
                             if cat_idx == 13:mon_l = [11,0,1]
@@ -3271,33 +3134,33 @@ def Sodsumm(**kwargs):
                             if cat_idx == 15:mon_l = [5,6,7]
                             if cat_idx == 16:mon_l = [8,9,10]
                             for ct in mon_l:
-                                if x_miss[ct][element][yr] > max_missing_days:
+                                if x_miss[ct][variable][yr] > max_missing_days:
                                     flag = True
                                     break
                             if flag:
                                 #found a month with too many missing days
-                                x_miss[cat_idx][element].append(max_missing_days + 1)
+                                x_miss[cat_idx][variable].append(max_missing_days + 1)
                             else:
-                                x_miss[cat_idx][element].append(0)
+                                x_miss[cat_idx][variable].append(0)
                 #strip data of flags and convert unicode to floats for stats calculations
-                for idx, dat in enumerate(el_data[element]):
+                for idx, dat in enumerate(el_data[variable]):
                     val, flag = WRCCUtils.strip_data(dat)
                     #take care of flags: missing data, s,a flags data are ignored, traces count as 0.0
                     # trace behavior needs checking
                     if val == 'M' or val == ' ' or val == '':
-                        el_data[element][idx] = -9999.0
+                        el_data[variable][idx] = -9999.0
                     if flag == 'M':
-                        el_data[element][idx] = -9999.0
+                        el_data[variable][idx] = -9999.0
                     elif flag == 'S':
-                        #el_data_Mon[element][idx] = 245
-                        el_data[element][idx] = 0.0
+                        #el_data_Mon[variable][idx] = 245
+                        el_data[variable][idx] = 0.0
                     elif flag == 'A':
-                        #el_data_Mon[element][idx] = float(val) +100
-                        el_data[element][idx] = float(val)
+                        #el_data_Mon[variable][idx] = float(val) +100
+                        el_data[variable][idx] = float(val)
                     elif flag == 'T':
-                        el_data[element][idx] = 0.0
+                        el_data[variable][idx] = 0.0
                     else:
-                        el_data[element][idx] = float(val)
+                        el_data[variable][idx] = float(val)
 
             #Compute monthly Stats for the different tables
 
@@ -3894,7 +3757,7 @@ def Soddd(**kwargs):
             header+=[MON,'']
     #Loop over stations
     for i, stn in enumerate(kwargs['station_ids']):
-        yrs = max(len(kwargs['data'][i][j]) for j in range(len(kwargs['elements'])))
+        yrs = max(len(kwargs['data'][i][j]) for j in range(len(kwargs['variables'])))
         dd = [[-9999.0 for day in range(366)] for yr in range(yrs)]
         year = int(kwargs['dates'][0][0:4]) -1
         for yr in range(yrs):
@@ -4026,7 +3889,7 @@ def Soddd(**kwargs):
             results[i].insert(1,header2)
     return results
 
-#def Soddynorm(data, dates, elements, station_ids, station_names, filter_type, filter_days):
+#def Soddynorm(data, dates, variables, station_ids, station_names, filter_type, filter_days):
 def Soddynorm(**kwargs):
     '''
     FINDS DAILY NORMALS FOR EACH DAY OF THE YEAR FOR EACH STATION
@@ -4037,22 +3900,22 @@ def Soddynorm(**kwargs):
     results = defaultdict(list)
     #Loop over stations
     for i, stn in enumerate(kwargs['station_ids']):
-        #Find long-term daily averages of each element
+        #Find long-term daily averages of each variable
         #for each day of the year, el_data_list will hold [average, yrs_in record, standard deviation]
-        el_data_list = [[] for el in kwargs['elements']]
-        el_data_list2 = [[] for el in kwargs['elements']]
-        for j, el in enumerate(kwargs['elements']):
+        el_data_list = [[] for el in kwargs['variables']]
+        el_data_list2 = [[] for el in kwargs['variables']]
+        for j, el in enumerate(kwargs['variables']):
             if el == 'pcpn':
                 el_data_list2[j] = [['0.0', '0'] for day in range(366)] #holds filtered data
             else:
                 el_data_list2[j] = [['0.0','0.0','0'] for day in range(366)]
-        #el_data_list_f = [[] for el in elements] #filtered data
-        #results[i] = [[] for el in kwargs['elements']]
+        #el_data_list_f = [[] for el in variables] #filtered data
+        #results[i] = [[] for el in kwargs['variables']]
         results[i]=[['DOY','MON','DAY','MAXT AVE','MAXT STD','MAXT YRS','MINT AVE','MINT STD','MINT YRS','PCPN AVE','PCPN YRS']]
         #Check for empty data
         if kwargs['data'][i] == [[],[],[]]:
             continue
-        for j,el in enumerate(kwargs['elements']):
+        for j,el in enumerate(kwargs['variables']):
             if not kwargs['data'][i][j]:
                 continue
             el_data = kwargs['data'][i][j]
@@ -4208,7 +4071,7 @@ def Soddynorm(**kwargs):
         for doy in range(366):
             mon, day = WRCCUtils.compute_mon_day(doy+1)
             results[i].append([str(doy+1), str(mon), str(day)])
-            for j, el in enumerate(kwargs['elements']):
+            for j, el in enumerate(kwargs['variables']):
                 for k in el_data_list2[j][doy]:
                     results[i][-1].append(k)
     return results
@@ -4218,13 +4081,13 @@ def Soddyrec(**kwargs):
     FINDS DAILY AVERAGES AND RECORD FOR EACH DAY OF THE YEAR
     FOR EACH STATION OVER A MULTI YEAR PERIOD
     '''
-    #data[stn_id][el] = smry for station stn_id, element el = [ave, high_or_low, date,yrs_missing]
+    #data[stn_id][el] = smry for station stn_id, variable el = [ave, high_or_low, date,yrs_missing]
     #result[stn_id][el] = [[month=1, day=1, ave, no, high_or_low, yr], [month=1, day=2, ave,..]..]
     #for all 365 days a year
     results = defaultdict(dict)
     for i, stn in enumerate(kwargs['station_ids']):
-        #results[i] = [[] for el in elements]
-        for j, el in enumerate(kwargs['elements']):
+        #results[i] = [[] for el in variables]
+        for j, el in enumerate(kwargs['variables']):
             smry_start_idx = 3*j
             smry_end_idx = 3*j +3
             results[i][j] = []
@@ -4274,7 +4137,7 @@ def Soddyrec(**kwargs):
 def Sodsum(**kwargs):
     '''
     Executes Sodsum on multiple stations
-    element in elements correspond to data values in data, i.e data[i][j] is value corresponding to elements[j]
+    variable in variables correspond to data values in data, i.e data[i][j] is value corresponding to variables[j]
     Results.keys():
         station_id, stn_name, start, end, pcpn, snow, snwd, maxt, mint, tobs, evap, wdmv, wesf, posbl, prsnt, lngpr, missg, lngms
     '''
@@ -4284,7 +4147,7 @@ def Sodsum(**kwargs):
         results[i]['station_id'] = stn
         results[i]['station_name'] = kwargs['station_names'][i]
         results_list = []
-        for j in kwargs['elements']:
+        for j in kwargs['variables']:
             results_list.append(j)
             results[i][j] = 0
         for j in ['PSBL','PRSNT','LNGPR', 'MISSG', 'LNGMS']:
@@ -4295,7 +4158,7 @@ def Sodsum(**kwargs):
         s_date = kwargs['dates'][0];e_date = kwargs['dates'][-1]
         results[i]['start'] = s_date
         results[i]['end'] = e_date
-        for el in kwargs['elements']:
+        for el in kwargs['variables']:
             results[i][el] = 0
         #Find number of records possible:
         #FIX ME: Acis_WS MultiStndata calls do not return dates
@@ -4322,9 +4185,9 @@ def Sodsum(**kwargs):
                 c_missg+= jd - jd_old -1
                 c_lngms+= jd - jd_old -1
 
-            #Loop over each element for date
-            for k, el in enumerate(kwargs['elements']):
-                if len(kwargs['data'][i][j])>=len(kwargs['elements']):
+            #Loop over each variable for date
+            for k, el in enumerate(kwargs['variables']):
+                if len(kwargs['data'][i][j])>=len(kwargs['variables']):
                     val = str(kwargs['data'][i][j][k])
                 else:
                     val = 'M'

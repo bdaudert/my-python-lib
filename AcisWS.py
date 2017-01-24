@@ -169,7 +169,7 @@ def get_acis_bbox_of_area(search_area, val):
 def get_meta_data(search_area, val,vX_list=None):
         '''
         Find meta data for  search_area = val
-        If vX_list is given, find valid_dateranges for these elements
+        If vX_list is given, find valid_dateranges for these variables
         '''
         meta_opts = 'name,state,sids,ll,elev,uid'
         meta_params = {
@@ -197,14 +197,14 @@ def station_meta_to_json(by_type, val, el_list=None, time_range=None, constraint
                   station selection is one of: county, climate_division, bounding box
                   county_warning_area, basin, state, states or custom shapes
     val        -- Value of station selection argument, e.g, AL if by_type = state
-    el_list    -- List of var_majors of climate elements
-                  (default None --> we look for for any of the 11 common elements)
+    el_list    -- List of var_majors of climate variables
+                  (default None --> we look for for any of the 11 common variables)
     time_range -- User form start and end dates [start_date, end_date]
                   (default None --> we take valid_daterange of el_list)
-    contraints -- specifies element contsraints and date contsraints:
+    contraints -- specifies variable contsraints and date contsraints:
                   any_any, all_all, any_all, all_any
 
-    If el_list and time_range are given, only stations that have elements
+    If el_list and time_range are given, only stations that have variables
     for the given time range are listed.
     '''
     def stn_in_poly(by_type, shape_type, shape,stn_meta):
@@ -223,7 +223,7 @@ def station_meta_to_json(by_type, val, el_list=None, time_range=None, constraint
         else:return True
 
     def station_invalid(el_list, vX_list, time_range, stn, contraints):
-        #Check if constraints are met for element list and date range
+        #Check if constraints are met for variable list and date range
         if constraints in ['any_any', 'any_all']:
             flag_invalid_station = True
         elif constraints in ['all_all', 'all_any']:
@@ -241,13 +241,13 @@ def station_meta_to_json(by_type, val, el_list=None, time_range=None, constraint
                     continue
             #Sanity Check
             if not stn['valid_daterange'][idx] and (constraints == 'all_all'  or constraints == 'all_any' or constraints is None):
-                #data for this element does not exist at station
+                #data for this variable does not exist at station
                 flag_invalid_station = True
                 break
             elif not stn['valid_daterange'][idx] and (constraints == 'any_any' or constraints == 'any_all'):
                 continue
 
-            #Find period of record for this element and station
+            #Find period of record for this variable and station
             por_start = WRCCUtils.date_to_datetime(stn['valid_daterange'][idx][0])
             por_end = WRCCUtils.date_to_datetime(stn['valid_daterange'][idx][1])
             if time_range[0].lower() != 'por':
@@ -258,26 +258,26 @@ def station_meta_to_json(by_type, val, el_list=None, time_range=None, constraint
                 user_end = WRCCUtils.date_to_datetime(time_range[1])
             else:
                 user_end = por_end
-            #Check constraints logic for this element and station
+            #Check constraints logic for this variable and station
             if constraints == 'all_all' or constraints is None:
-                #all  elements have data records for all dates within start and end date given by user
+                #all  variables have data records for all dates within start and end date given by user
                 if user_start < por_start or user_end > por_end:
                     flag_invalid_station =  True
                     break
             elif constraints == 'any_any':
-                #At least one element has one data record within user given time_range
+                #At least one variable has one data record within user given time_range
                 if (user_end >= por_start and user_start <= por_end) or (user_start <= por_end and user_end >=por_start):
                     flag_invalid_station = False
                     break
             elif constraints == 'all_any':
-                #All elements have at least one data record within user given time_range
+                #All variables have at least one data record within user given time_range
                 if (user_end >= por_start and user_start <= por_end) or (user_start <= por_end and user_end >=por_start):
                     continue
                 else:
                     flag_invalid_station =  True
                     break
             elif constraints == 'any_all':
-                #At least one elements has data records for all dates within given date_range
+                #At least one variables has data records for all dates within given date_range
                 if user_start >= por_start and user_end <= por_end:
                     flag_invalid_station = False
                     break
@@ -342,9 +342,9 @@ def station_meta_to_json(by_type, val, el_list=None, time_range=None, constraint
         #sanity check
         if not stn['valid_daterange']:
             continue
-        #check if we are looking for stations with particular elements
+        #check if we are looking for stations with particular variables
         if el_list is not None and time_range is not None:
-            #Check if ACIS produced correct output, i.e. one valid_daterange per element
+            #Check if ACIS produced correct output, i.e. one valid_daterange per variable
             if len(stn['valid_daterange']) < len(el_list):
                 continue
             #Check if station is valid, if not, proceed to next station
@@ -417,10 +417,10 @@ def station_meta_to_json(by_type, val, el_list=None, time_range=None, constraint
                 'stn_network':','.join(stn_networks),
                 'stn_network_codes': stn_network_codes
             }
-            #check which elements are available at the stations[valid_daterange is not empty]
+            #check which variables are available at the stations[valid_daterange is not empty]
             valid_date_range_list = stn['valid_daterange']
-            available_elements = []
-            available_elements_str = ''
+            available_variables = []
+            available_variables_str = ''
             for j,rnge in enumerate(valid_date_range_list):
                 if rnge and len(rnge) >=2:
                     vd = [str(rnge[0]), str(rnge[1])]
@@ -429,11 +429,11 @@ def station_meta_to_json(by_type, val, el_list=None, time_range=None, constraint
                         el_name = WRCCData.ACIS_ELEMENTS['-44']['name_long']
                     else:
                         el_name = WRCCData.ACIS_ELEMENTS[vX_list[j]]['name_long']
-                    available_elements.append([el_name,vd])
-                    available_elements_str+=el_name + ': ' + vd_str + ', '
-            if available_elements:
-                stn_dict['available_elements'] = available_elements
-                stn_dict['available_elements_str'] = available_elements_str[0:-2]
+                    available_variables.append([el_name,vd])
+                    available_variables_str+=el_name + ': ' + vd_str + ', '
+            if available_variables:
+                stn_dict['available_variables'] = available_variables
+                stn_dict['available_variables_str'] = available_variables_str[0:-2]
             #find index in alphabetically ordered list of station names
             sorted_list.append(name.split(' ')[0])
             try:
@@ -468,11 +468,11 @@ def get_station_data(form_input, program):
         resultsdict['error'] = error
         return resultsdict
 
-    elements = WRCCUtils.get_element_list(form_input, program)
+    variables = WRCCUtils.get_variable_list(form_input, program)
     elems_list = []
     elems_list_short  = []
     resultsdict = {}
-    for el in elements:
+    for el in variables:
         el_strip, base_temp = WRCCUtils.get_el_and_base_temp(el)
         elems_list_short.append(el_strip)
         if el_strip in ['gdd', 'hdd', 'cdd'] and base_temp is not None:
@@ -544,17 +544,17 @@ def get_grid_data(form_input, program):
     #datalist[date_idx] = [[date1,lat1, lon1, elev1, el1_val1, el2_val1, ...],
     #[date2, lat2, ...], ...]
     s_date, e_date = WRCCUtils.start_end_date_to_eight(form_input)
-    #grid data calls do not except list of elements, need to be string of comma separated values
-    el_list = WRCCUtils.get_element_list(form_input, program)
+    #grid data calls do not except list of variables, need to be string of comma separated values
+    el_list = WRCCUtils.get_variable_list(form_input, program)
     if 'data_summary' in form_input.keys() and form_input['data_summary'] == 'temporal_summary':
-        elements = [{'name':str(el),'smry':str(form_input['temporal_summary']),'smry_only':1} for el in el_list]
+        variables = [{'name':str(el),'smry':str(form_input['temporal_summary']),'smry_only':1} for el in el_list]
     else:
-        elements = ','.join(el_list)
+        variables = ','.join(el_list)
     params = {
         'sdate': s_date,
         'edate': e_date,
         'grid': form_input['grid'],
-        'elems': elements,
+        'elems': variables,
         'meta': 'll,elev'
     }
     #Set area parameter
@@ -682,8 +682,8 @@ def get_sod_data(form_input, program):
         e_date = str(int(e_date[0:4]) + 1) + e_date[4:]
     '''
     dates = WRCCUtils.get_dates(s_date, e_date, program)
-    elements = WRCCUtils.get_element_list(form_input, program)
-    els = [dict(name='%s' % el) for el in elements]
+    variables = WRCCUtils.get_variable_list(form_input, program)
+    els = [dict(name='%s' % el) for el in variables]
     if 'station_id' in form_input.keys():
         station_ids =[form_input['station_id']]
     elif 'station_ids' in form_input.keys():
@@ -709,35 +709,35 @@ def get_sod_data(form_input, program):
     datadict = defaultdict(list)
     for i, stn in enumerate(station_ids):
         if program == 'Soddyrec':
-            #yr_list = [[['#', '#', '#', '#', '#', '#','#', '#'] for k in range(366)] for el in elements]
-            #yr_list = [[['#', '#', '#', '#', '#', '#','#', '#'] for k in range(366)] for i in range(3*len(elements))]
+            #yr_list = [[['#', '#', '#', '#', '#', '#','#', '#'] for k in range(366)] for el in variables]
+            #yr_list = [[['#', '#', '#', '#', '#', '#','#', '#'] for k in range(366)] for i in range(3*len(variables))]
             #datadict[i] = yr_list
             datadict[i] = []
         elif program in ['Sodrun', 'Sodrunr']:
             datadict[i] = []
         else:
-            datadict[i] = [[] for el in elements]
+            datadict[i] = [[] for el in variables]
 
     if program == 'Soddyrec':
         smry_opts = [{'reduce':'mean', 'add':'date,mcnt'}, {'reduce':'max', 'add':'date,mcnt'}, {'reduce':'min', 'add':'date,mcnt'}]
         elts = []
-        for el in elements:
+        for el in variables:
             for sry in smry_opts:
                 #elts.append(dict(name=str(el),smry=sry, groupby='year'))
                 elts.append(dict(vX=WRCCData.ACIS_ELEMENTS_DICT[el]['vX'],smry=sry, groupby='year'))
         params = dict(sids=station_ids, sdate=s_date, edate=e_date, elems=elts)
     elif program in ['Soddynorm', 'Soddd', 'Sodpad', 'Sodsumm', 'Sodpct', 'Sodthr', 'Sodxtrmts', 'Sodpiii']:
         params = dict(sids=station_ids, sdate=s_date, edate=e_date, \
-        #elems=[dict(name=el,interval='dly',duration='dly',groupby='year')for el in elements])
-        elems=[dict(vX=WRCCData.ACIS_ELEMENTS_DICT[el]['vX'],interval='dly',duration='dly',groupby='year') for el in elements])
+        #elems=[dict(name=el,interval='dly',duration='dly',groupby='year')for el in variables])
+        elems=[dict(vX=WRCCData.ACIS_ELEMENTS_DICT[el]['vX'],interval='dly',duration='dly',groupby='year') for el in variables])
     elif program in ['Sodlist', 'Sodcnv']:
         params = dict(sids=station_ids, sdate=s_date, edate=e_date, \
-        #elems=[dict(name=el,add='t')for el in elements])
-        elems=[dict(vX=WRCCData.ACIS_ELEMENTS_DICT[el]['vX'],add='t') for el in elements])
+        #elems=[dict(name=el,add='t')for el in variables])
+        elems=[dict(vX=WRCCData.ACIS_ELEMENTS_DICT[el]['vX'],add='t') for el in variables])
     else:
         params = dict(sids=station_ids, sdate=s_date, edate=e_date, \
-        #elems=[dict(name=el)for el in elements])
-        elems=[dict(vX=WRCCData.ACIS_ELEMENTS_DICT[el]['vX']) for el in elements])
+        #elems=[dict(name=el)for el in variables])
+        elems=[dict(vX=WRCCData.ACIS_ELEMENTS_DICT[el]['vX']) for el in variables])
     request = MultiStnData(params)
     if not request:
         request = {'error':'bad request, check params: %s'  % str(params)}
@@ -746,12 +746,12 @@ def get_sod_data(form_input, program):
         request['data']#list of data for the stations
     except:
         if request['error']:
-            return datadict, dates, elements, station_ids, station_names
+            return datadict, dates, variables, station_ids, station_names
             #sys.exit(1)
         else:
             #Unknown error ocurred when getting data
             #sys.exit(1)
-            return datadict, dates, elements, station_ids, station_names
+            return datadict, dates, variables, station_ids, station_names
 
     for stn, stn_data in enumerate(request['data']):
         if not 'meta' in stn_data.keys():continue
@@ -773,7 +773,7 @@ def get_sod_data(form_input, program):
                 datadict[index] = stn_data['smry']
             except:
                 datadict[index] = []
-        #sort data by element
+        #sort data by variable
         elif program in ['Soddynorm', 'Soddd', 'Sodpct']:
             try:
                 stn_data['data']
@@ -812,7 +812,7 @@ def get_sod_data(form_input, program):
                         datadict[index] = stn_data['smry']
                     except:
                         datadict[index] = []
-                #sort data by element
+                #sort data by variable
                 elif program in ['Soddynorm', 'Soddd', 'Sodpct']:
                     try:
                         stn_data['data']
@@ -837,7 +837,7 @@ def get_sod_data(form_input, program):
     if program == 'Soddyrec':
         #need to get averages separately; add: date, mcnt fails if we ask for mean, max together
         elts_x = [dict(name='%s' % el, interval='dly', duration='dly', smry={'reduce':'mean'}, \
-        groupby="year") for el in elements]
+        groupby="year") for el in variables]
         params_x = dict(sids=station_ids, sdate=s_date, edate=e_date, elems=elts_x)
         request_x = MultiStnData(params_x)
         if not request_x:
@@ -881,7 +881,7 @@ def get_sod_data(form_input, program):
                 'Unknown error ocurred when getting data'
                 sys.exit(1)
         '''
-    return datadict, dates, elements, station_ids, station_names
+    return datadict, dates, variables, station_ids, station_names
 
 
 def get_sodsum_data(form_input):
@@ -891,11 +891,11 @@ def get_sodsum_data(form_input):
     Keyword arguments:
     form_input -- parameter file for data request obtained from user of WRCC SOD pages
     '''
-    if 'element' not in form_input.keys() or 'station_ids' not in form_input.keys():
-        print 'element and station_id options required!'
+    if 'variable' not in form_input.keys() or 'station_ids' not in form_input.keys():
+        print 'variable and station_id options required!'
         sys.exit(0)
-    if not form_input['element'] or not form_input['station_ids']:
-        print 'element and station_id options required!'
+    if not form_input['variable'] or not form_input['station_ids']:
+        print 'variable and station_id options required!'
         sys.exit(0)
     s_date, e_date = WRCCUtils.start_end_date_to_eight(form_input)
     station_ids = form_input['station_ids'] #list of stn ids (converted to list in form)
@@ -903,18 +903,18 @@ def get_sodsum_data(form_input):
     station_ids = WRCCUtils.strip_n_sort(station_ids)
     datadict = defaultdict(list)
     station_names=[' ' for i in range(len(station_ids))]
-    if form_input['element']!= 'multi':
-        elements = [form_input['element']]
+    if form_input['variable']!= 'multi':
+        variables = [form_input['variable']]
         #evap, wdmv, wesf not fully implemented into Acis_WS yet
-        if form_input['element'] in ['evap', 'wdmv', 'wesf']:
-            print 'Evaporation, wind and water equivalent not implemented yet. Please chose another element!'
+        if form_input['variable'] in ['evap', 'wdmv', 'wesf']:
+            print 'Evaporation, wind and water equivalent not implemented yet. Please chose another variable!'
             sys.exit(0)
     else:
-        elements = ['pcpn', 'snow', 'snwd', 'maxt', 'mint', 'obst']
+        variables = ['pcpn', 'snow', 'snwd', 'maxt', 'mint', 'obst']
     #request data on a station by station basis
     for i, stn_id in enumerate(station_ids):
-        if form_input['element']!= 'multi':
-            params = dict(sid=stn_id, sdate=s_date, edate=e_date, elems=[dict(name='%s' % form_input['element'])])
+        if form_input['variable']!= 'multi':
+            params = dict(sid=stn_id, sdate=s_date, edate=e_date, elems=[dict(name='%s' % form_input['variable'])])
         else:
             params = dict(sid=stn_id, sdate=s_date, edate=e_date, elems=[dict(name='pcpn'), \
             dict(name='snow'), dict(name='snwd'), dict(name='maxt'), dict(name='mint'), dict(name='obst')])
@@ -936,7 +936,7 @@ def get_sodsum_data(form_input):
         except:
             datadict[i]=[]
 
-    return datadict, elements, station_ids, station_names
+    return datadict, variables, station_ids, station_names
 
 
 def get_sodlist_data(form_input, program):
@@ -969,19 +969,19 @@ def get_sodlist_data(form_input, program):
         #sodmonline(my) only available for full years
         s_date = '%s%s' % (s_date[0:4], '0101')
         e_date = '%s%s' % (e_date[0:4], '1231')
-        if form_input['element'] == 'evap':
+        if form_input['variable'] == 'evap':
             vXvN = 7
-        elif form_input['element'] == 'wdmv':
+        elif form_input['variable'] == 'wdmv':
             vXvN = 12
-        elif form_input['element'] in ['wesf']:
+        elif form_input['variable'] in ['wesf']:
             vXvN = 13
 
-        if form_input['element'] in ['evap','wdmv', 'wesf' ]: #need to work with var major (vX) and var minor (vN)
+        if form_input['variable'] in ['evap','wdmv', 'wesf' ]: #need to work with var major (vX) and var minor (vN)
             params = dict(sid='%s' % station_id, sdate=s_date, edate=e_date, elems=[vXvN])
-        elif form_input['element'] in ['dtr', 'mmt']:
+        elif form_input['variable'] in ['dtr', 'mmt']:
             params = dict(sid='%s' % station_id, sdate=s_date, edate=e_date, elems=[dict(name='maxt'), dict(name='mint')])
         else:
-            params = dict(sid='%s' % station_id, sdate=s_date, edate=e_date, elems=[dict(name='%s' % form_input['element'])])
+            params = dict(sid='%s' % station_id, sdate=s_date, edate=e_date, elems=[dict(name='%s' % form_input['variable'])])
     else:
         print 'Program %s not supported in get_sodlist_data. Program should be one out of [sodlist, sodcnv, sodmonline, sodmonlinemy]!' % program
         sys.exit(0)

@@ -166,13 +166,13 @@ class WrapperTest(object):
         except AssertionError as err:
             logger.error('ERROR: station_name AssertionError' + str(err) + '\n')
 
-    def test_Sodsumm_results(self, utClass,results, err, element):
+    def test_Sodsumm_results(self, utClass,results, err, variable):
         self.test_error(utClass, err)
         try:
             utClass.assertIsInstance(results, dict)
         except AssertionError as err:
             logger.error('ERROR: AssertionError' + str(err) + '\n')
-        for table in WRCCData.TAB_LIST_NO_GRAPHICS[element]:
+        for table in WRCCData.TAB_LIST_NO_GRAPHICS[variable]:
             try:
                 utClass.assertIn(table, results)
             except AssertionError as err:
@@ -235,13 +235,13 @@ class Test_sodxtrmts(unittest.TestCase):
             results, err = WT.run_wrapper()
             WT.test_Sodxtrmts_results(self, results, err)
 
-    def test_elements(self):
-        msg = 'Testing Sodxtrmts elements'
+    def test_variables(self):
+        msg = 'Testing Sodxtrmts variables'
         logger.info(msg + '\n')
         for el in ['maxt', 'mint', 'avgt','dtr', 'hdd', 'cdd', 'gdd','pet']:
             data_params = copy.deepcopy(self.data_params)
             app_params = copy.deepcopy(self.app_params)
-            data_params['element'] = el
+            data_params['variable'] = el
             #Shorten time range
             data_params['start_date'] = '20000101'
             data_params['end_date'] = '20050101'
@@ -319,13 +319,13 @@ class Test_sodsum(unittest.TestCase):
             results, err = WT.run_wrapper()
             WT.test_Sodsum_results(self, results, err)
 
-    def test_elements(self):
-        msg = 'Testing Sodsum elements'
+    def test_variables(self):
+        msg = 'Testing Sodsum variables'
         logger.info(msg + '\n')
         for el in ['pcpn', 'snow', 'snwd', 'maxt', 'mint', 'obst']:
             data_params = copy.deepcopy(self.data_params)
             app_params = copy.deepcopy(self.app_params)
-            data_params['element'] = el
+            data_params['variable'] = el
             #Shorten time range
             data_params['start_date'] = '20000101'
             data_params['end_date'] = '20050101'
@@ -345,7 +345,7 @@ class Test_sodsumm(unittest.TestCase):
         app_params = copy.deepcopy(self.app_params)
         WT = WrapperTest('Sodsumm', data_params, app_params)
         results, err = WT.run_wrapper()
-        WT.test_Sodsumm_results(self, results, err,data_params['element'])
+        WT.test_Sodsumm_results(self, results, err,data_params['variable'])
 
     def test_stations(self):
         msg = 'Testing Sodsumm stations'
@@ -357,24 +357,24 @@ class Test_sodsumm(unittest.TestCase):
             #Shorten time range
             WT = WrapperTest('Sodsumm', data_params, app_params)
             results, err = WT.run_wrapper()
-            WT.test_Sodsumm_results(self, results, err, data_params['element'])
+            WT.test_Sodsumm_results(self, results, err, data_params['variable'])
 
-    def test_elements(self):
-        msg = 'Testing Sodsumm elements'
+    def test_variables(self):
+        msg = 'Testing Sodsumm variables'
         logger.info(msg + '\n')
 
         for el, table_name_list in WRCCData.TAB_LIST_NO_GRAPHICS.iteritems():
-            logger.info('Testing Sodsumm element: ' + str(el) + '\n')
+            logger.info('Testing Sodsumm variable: ' + str(el) + '\n')
             data_params = copy.deepcopy(self.data_params)
             app_params = copy.deepcopy(self.app_params)
-            data_params['element'] = el
+            data_params['variable'] = el
             app_params['el_type'] = el
             #Shorten time range
             data_params['start_date'] = '2000'
             data_params['end_date'] = '2005'
             WT = WrapperTest('Sodsumm', data_params, app_params)
             results, err = WT.run_wrapper()
-            WT.test_Sodsumm_results(self, results, err, data_params['element'])
+            WT.test_Sodsumm_results(self, results, err, data_params['variable'])
 
 class Test_soddyrec(unittest.TestCase):
     def setUp(self):
@@ -406,13 +406,13 @@ class Test_soddyrec(unittest.TestCase):
             WT.test_Soddyrec_results(self, results, err)
 
 
-    def test_elements(self):
-        msg = 'Testing Soddyrec elements'
+    def test_variables(self):
+        msg = 'Testing Soddyrec variables'
         logger.info(msg + '\n')
         for el in ['all','tmp', 'wtr', 'pcpn','snow','snwd', 'cdd', 'hdd', 'maxt','mint']:
             data_params = copy.deepcopy(self.data_params)
             app_params = copy.deepcopy(self.app_params)
-            data_params['element'] = el
+            data_params['variable'] = el
             #Shorten time range
             data_params['start_date'] = '2000'
             data_params['end_date'] = '2005'

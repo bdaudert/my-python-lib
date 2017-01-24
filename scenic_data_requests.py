@@ -74,7 +74,7 @@ def compose_email(params, ftp_server, ftp_dir, out_files):
         now = datetime.datetime.now()
         date = now.strftime( '%Y-%m-%d %H:%M' )
         pick_up_latest = (now + datetime.timedelta(days=25)).strftime( '%Y-%m-%d' )
-        display_keys = [params['area_type'],'elements','units', 'start_date', 'end_date']
+        display_keys = [params['area_type'],'variables','units', 'start_date', 'end_date']
         if 'data_type' in params.keys():
             display_keys.insert(0,'data_type')
         params_display_list = WRCCUtils.form_to_display_list(display_keys, params)
@@ -118,7 +118,7 @@ def compose_failed_request_email(params, params_files_failed, log_file):
     for p in params_files_failed:
         try:
             with open(p,'r') as f:
-                failed_params+= f.read() + '\n'
+                failed_params = failed_params + str(f.read()) + '\n'
         except:
             pass
     mail_server = settings.DRI_MAIL_SERVER

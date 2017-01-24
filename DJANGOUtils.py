@@ -64,11 +64,11 @@ def set_min_max_dates(initial):
         stn_json = settings.MEDIA_DIR + '/json/US_station_id.json'
         stn_id, stn_name = WRCCUtils.find_id_and_name(initial['station_id'],stn_json)
         els = []
-        if 'element' in initial.keys():
-            els = [initial['element']]
-            if initial['element'] in ['dtr','pet']:els = ['maxt','mint']
-        if 'elements' in initial.keys():
-            els = initial['elements']
+        if 'variable' in initial.keys():
+            els = [initial['variable']]
+            if initial['variable'] in ['dtr','pet']:els = ['maxt','mint']
+        if 'variables' in initial.keys():
+            els = initial['variables']
             if 'dtr' in els and 'maxt' not in els:
                 els.append('maxt')
             if 'dtr' in els and 'mint' not in els:
@@ -183,23 +183,23 @@ def set_initial(request,app_name):
     #If station finder set hidden var station_ids_string for results
     if app_name == 'station_finder':
         initial['station_ids_string'] = str(Get('station_ids_string',''))
-    #Set element(s)--> always as list if multiple
+    #Set variable(s)--> always as list if multiple
     if app_name == 'map_overlay':
-        initial['elements'] = Get('elements','maxt,mint,pcpn').split(',')
-        initial['elements_str'] = ','.join(initial['elements'])
+        initial['variables'] = Get('variables','maxt,mint,pcpn').split(',')
+        initial['variables_str'] = ','.join(initial['variables'])
     elif app_name in ['monthly_spatial_summary','monthly_summary','data_comparison', 'seasonal_summary','intraannual']:
-            initial['element'] = Get('element',None)
-            if initial['element'] is not None and len(initial['element'].split(',')) > 1:
-                initial['element'] =  str(initial['element'].split(',')[0])
-            if initial['element'] is None:
+            initial['variable'] = Get('variable',None)
+            if initial['variable'] is not None and len(initial['variable'].split(',')) > 1:
+                initial['variable'] =  str(initial['variable'].split(',')[0])
+            if initial['variable'] is None:
                 #Link from station finder
-                initial['element'] = Get('elements','pcpn')
-                if len(initial['element'].split(',')) > 1:
-                    initial['element'] = str(initial['element'].split(',')[0])
+                initial['variable'] = Get('variables','pcpn')
+                if len(initial['variable'].split(',')) > 1:
+                    initial['variable'] = str(initial['variable'].split(',')[0])
     else:
-        els = Getlist('elements',None)
+        els = Getlist('variables',None)
         if not els:
-            els = Get('elements',None)
+            els = Get('variables',None)
             if not els:
                 els = ['maxt','mint','pcpn']
             elif isinstance(els, basestring):
@@ -208,8 +208,8 @@ def set_initial(request,app_name):
             els = els[0].replace(' ','').split(',')
         elif isinstance(els, basestring):
             els = els.replace(' ','').split(',')
-        initial['elements'] = [str(el) for el in els]
-        initial['elements_str'] = ','.join(initial['elements'])
+        initial['variables'] = [str(el) for el in els]
+        initial['variables_str'] = ','.join(initial['variables'])
     #Set units
     initial['units'] = Get('units','english')
 
@@ -279,7 +279,7 @@ def set_initial(request,app_name):
             initial['target_year'] = Get('target_year_figure', None)
             if initial['target_year'] is None:
                 initial['target_year'] = Get('target_year_form',initial['min_year'])
-            if initial['element'] in ['pcpn','snow','evap','pet']:
+            if initial['variable'] in ['pcpn','snow','evap','pet']:
                 initial['calculation'] = Get('calculation','cumulative')
             else:
                 initial['calculation'] = Get('calculation','values')
@@ -309,7 +309,7 @@ def set_initial(request,app_name):
         initial['data_summary'] = Get('data_summary', 'none')
 
     if app_name in ['temporal_summary', 'monthly_spatial_summary','seasonal_summary', 'sf_download']:
-        if 'element' in initial.keys() and initial['element'] in ['pcpn','snow','evap','pet']:
+        if 'variable' in initial.keys() and initial['variable'] in ['pcpn','snow','evap','pet']:
             initial['temporal_summary'] = Get('temporal_summary', 'sum')
         else:
             initial['temporal_summary'] = Get('temporal_summary', 'mean')
@@ -341,7 +341,7 @@ def set_initial(request,app_name):
     if app_name in ['monthly_summary','climatology','sf_link']:
         initial['max_missing_days']  = Get('max_missing_days', '5')
     if app_name in ['station_finder','map_overlay','sf_download']:
-        initial['elements_constraints'] = Get('elements_constraints', 'all')
+        initial['variables_constraints'] = Get('variables_constraints', 'all')
         initial['dates_constraints']  = Get('dates_constraints', 'all')
         initial['display'] = Get('display', 'map')
         all_meta = ['name','state','ll','elev','ids','networks','valid_daterange']
@@ -351,7 +351,7 @@ def set_initial(request,app_name):
         initial['metadata_names_str'] = ','.join(initial['metadata_names'])
     if app_name in  ['monthly_summary','sf_link']:
         initial['start_month'] = Get('start_month','01')
-        if initial['element'] in ['pcpn','snow','evap','pet']:
+        if initial['variable'] in ['pcpn','snow','evap','pet']:
             initial['statistic'] = Get('statistic','msum')
         else:
             initial['statistic'] = Get('statistic','mave')
@@ -383,7 +383,7 @@ def set_initial(request,app_name):
     if app_name in ['monthly_summary', 'spatial_summary','seasonal_summary', 'intraannual','data_comparison','map_overlay']:
         if app_name in ['spatial_summary','monthly_summary','intraannual','map_overlay']:
             if app_name in ['spatial_summary','monthly_spatial_summary','map_overlay']:
-                shown_indices = ','.join([str(idx) for idx in range(len(initial['elements']))])
+                shown_indices = ','.join([str(idx) for idx in range(len(initial['variables']))])
             elif app_name == 'intraannual':
                 shown_indices = str(int(initial['target_year']) - int(initial['min_year']))
             else:
@@ -419,7 +419,7 @@ def set_form(request, clean=True):
     Coverts request input to usable form input:
     Deals with unicode issues
     and autofill options for identifiers
-    NOTE: elements should always be a list (also when clean = False)
+    NOTE: variables should always be a list (also when clean = False)
     If Clean == True,
     We also clean up some form fields for submission:
         date fields, convert to yyyymmdd
@@ -438,34 +438,34 @@ def set_form(request, clean=True):
     #Convert request object to python dictionary
     if req_method == 'dict':
         form = copy.deepcopy(request)
-        #Special case elements, always needs to be list
-        if 'element' in request.keys() and not 'elements' in request.keys():
-            form['elements'] = [form['element']]
-        if 'elements' in request.keys():
-            form['elements'] = WRCCUtils.convert_elements_to_list(request['elements'])
+        #Special case variables, always needs to be list
+        if 'variable' in request.keys() and not 'variables' in request.keys():
+            form['variables'] = [form['variable']]
+        if 'variables' in request.keys():
+            form['variables'] = WRCCUtils.convert_variables_to_list(request['variables'])
     elif req_method == 'POST':
         for key, val in request.POST.items():
             form[str(key)]= val
         #form = dict((str(x),str(y)) for x,y in request.POST.items())
-        #Special case elements, always needs to be list
-        if 'element' in request.POST.keys() and not 'elements' in request.POST.keys():
-            form['elements'] = [str(request.POST['element'])]
-        if 'elements' in request.POST.keys():
-            #form['elements'] = WRCCUtils.convert_elements_to_list(request.POST['elements'])
-            els = request.POST.getlist('elements',request.POST.get('elements','').split(','))
-            form['elements'] = [str(el) for el in els]
+        #Special case variables, always needs to be list
+        if 'variable' in request.POST.keys() and not 'variables' in request.POST.keys():
+            form['variables'] = [str(request.POST['variable'])]
+        if 'variables' in request.POST.keys():
+            #form['variables'] = WRCCUtils.convert_variables_to_list(request.POST['variables'])
+            els = request.POST.getlist('variables',request.POST.get('variables','').split(','))
+            form['variables'] = [str(el) for el in els]
         if 'metadata_keys' in request.POST.keys():
             form['metadata_keys'] = request.POST.getlist('metadata_keys',request.POST.get('metadata_keys','').split(','))
     elif req_method == 'GET':
         #form = dict((str(x),str(y)) for x,y in request.GET.items())
         for key, val in request.GET.items():
             form[str(key)]= val
-        #Special case elements, always needs to be list
-        if 'element' in request.GET.keys() and not 'elements' in request.GET.keys():
-            form['elements'] = [str(request.GET['element'])]
-        if 'elements' in request.GET.keys():
-            #form['elements'] = WRCCUtils.convert_elements_to_list(request.GET['elements'])
-            form['elements'] = request.GET.get('elements','').split(',')
+        #Special case variables, always needs to be list
+        if 'variable' in request.GET.keys() and not 'variables' in request.GET.keys():
+            form['variables'] = [str(request.GET['variable'])]
+        if 'variables' in request.GET.keys():
+            #form['variables'] = WRCCUtils.convert_variables_to_list(request.GET['variables'])
+            form['variables'] = request.GET.get('variables','').split(',')
         if 'metadata_keys' in request.GET.keys():
             form['metadata_keys'] = request.GET.getlist('metadata_keys',request.GET.get('metadata_keys','').split(','))
     else:
@@ -480,8 +480,8 @@ def set_form(request, clean=True):
         if 'app_name' in form.keys() and form['app_name'] in ['temporal_summary','monthly_spatial_summary']:
             form['data_type'] = 'grid'
     #Convert unicode to string
-    if 'elements' in form.keys():
-        form['elements'] = [str(el) for el in form['elements']]
+    if 'variables' in form.keys():
+        form['variables'] = [str(el) for el in form['variables']]
     if 'csrfmiddlewaretoken' in form.keys():
         del form['csrfmiddlewaretoken']
     if 'formData' in form.keys():
@@ -510,16 +510,16 @@ def set_form(request, clean=True):
                 k='end_date'; idx = 1;ed = 'por'
                 if form['start_year'].lower() == 'por':sd = 'por'
                 else:sd = form['start_year'] + '-01-01'
-            if 'element' in form.keys() and not 'elements' in form.keys():
-                if form['element'] in ['dtr']:
+            if 'variable' in form.keys() and not 'variables' in form.keys():
+                if form['variable'] in ['dtr']:
                     el_list = ['maxt','mint']
-                if form['element'] in ['pet']:
+                if form['variable'] in ['pet']:
                     el_list = ['maxt','mint','pcpn']
-            if 'elements' in form.keys() and not 'element' in form.keys():
-                if isinstance(form['elements'],basestring):
-                    el_list = form['elements'].replace(' ','').split(',')
+            if 'variables' in form.keys() and not 'variable' in form.keys():
+                if isinstance(form['variables'],basestring):
+                    el_list = form['variables'].replace(' ','').split(',')
                 else:
-                    el_list = form['elements']
+                    el_list = form['variables']
             else:
                 el_list = None
 
@@ -571,15 +571,15 @@ def set_form(request, clean=True):
             form['data_summary'] = 'temporal_summary'
         if 'spatial_summary' in form.keys():
             form['data_summary'] = 'spatial_summary'
-    #Combine elements
+    #Combine variables
     if 'add_degree_days' in form.keys() and form['add_degree_days'] == 'T':
         for dd in form['degree_days'].replace(' ','').split(','):
             '''
             if form['units'] == 'metric':
                 el_strip, base_temp = WRCCUtils.get_el_and_base_temp(dd)
-                form['elements'].append(el_strip + str(WRCCUtils.convert_to_english('base_temp',base_temp)))
+                form['variables'].append(el_strip + str(WRCCUtils.convert_to_english('base_temp',base_temp)))
             else:
-                form['elements'].append(dd)
+                form['variables'].append(dd)
             '''
-            form['elements'].append(dd)
+            form['variables'].append(dd)
     return form

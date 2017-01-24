@@ -53,7 +53,7 @@ class GraphDictWriter(object):
     with generateHighartsFigure.js
     Args:
         form: user input dictionary
-        data: element data formatted for highcarts plotting
+        data: variable data formatted for highcarts plotting
     Returns:
         Dictionary with keys:
             data
@@ -64,13 +64,13 @@ class GraphDictWriter(object):
             axis_min
             elUnits
     '''
-    def __init__(self, form, data,element = None, name = None):
+    def __init__(self, form, data,variable = None, name = None):
         self.form = form
         self.data = data
-        self.element = element
+        self.variable = variable
         self.name = name
-        if self.element is None:
-            self.element = form['element']
+        if self.variable is None:
+            self.variable = form['variable']
         if 'start_year' in self.form.keys() and not 'start_date' in self.form.keys():
             self.form['start_date'] = self.form['start_year']
         if 'end_year' in self.form.keys() and not 'end_date' in self.form.keys():
@@ -78,7 +78,7 @@ class GraphDictWriter(object):
 
 
     def set_chartType(self):
-        el_strip, base_temp = WRCCUtils.get_el_and_base_temp(self.element)
+        el_strip, base_temp = WRCCUtils.get_el_and_base_temp(self.variable)
         if el_strip in ['pcpn','snow', 'snwd', 'hdd','cdd','gdd']:
             if 'calculation' in self.form.keys() and self.form['calculation'] == 'cumulative':
                 chartType = 'spline'
@@ -91,7 +91,7 @@ class GraphDictWriter(object):
     def set_elUnits(self):
         if 'statistic' in self.form.keys() and self.form['statistic'] == 'ndays':
             return 'days'
-        el_strip, base_temp = WRCCUtils.get_el_and_base_temp(self.element)
+        el_strip, base_temp = WRCCUtils.get_el_and_base_temp(self.variable)
         if 'units' in self.form.keys() and self.form['units'] == 'metric':
             elUnits = WRCCData.UNITS_METRIC[el_strip]
         else:
@@ -105,8 +105,8 @@ class GraphDictWriter(object):
             return date
 
     def set_title(self):
-        #NOTE: element comes from form_cleaned as english
-        el_strip, base_temp = WRCCUtils.get_el_and_base_temp(self.element)
+        #NOTE: variable comes from form_cleaned as english
+        el_strip, base_temp = WRCCUtils.get_el_and_base_temp(self.variable)
         '''
         if self.form['units'] == 'metric':
             base_temp = WRCCUtils.convert_to_metric('base_temp',base_temp)
@@ -114,8 +114,12 @@ class GraphDictWriter(object):
         unit = self.set_elUnits()
         title = ''
         if 'app_name' in self.form.keys() and self.form['app_name'] == 'seasonal_summary':
-            title += WRCCData.DISPLAY_PARAMS[self.form['temporal_summary']]
-            title += ' of ' + WRCCData.DISPLAY_PARAMS[el_strip]
+            if 'user_area_id' in self.form.keys():
+                title = self.form['user_area_id']
+            elif 'station_id' in self.form.keys():
+                title = 'Station ID: ' + self.form['station_id']
+            elif 'location' in self.form.keys():
+                 title = 'Location: ' + self.form['location']
             return title
 
         if 'data_summary' in self.form.keys() and self.form['data_summary']!='none':
@@ -149,6 +153,7 @@ class GraphDictWriter(object):
             elif 'location' in self.form.keys():
                  title = 'Location: ' + self.form['location']
             title += ', '
+
             if 'data_summary' in self.form.keys() and self.form['data_summary']!='none':
                 if 'temporal_summary' in self.form.keys():
                     title += WRCCData.DISPLAY_PARAMS[self.form['temporal_summary']] + ' of '
@@ -167,7 +172,12 @@ class GraphDictWriter(object):
         return title
 
     def set_subTitle(self):
+        el_strip, base_temp = WRCCUtils.get_el_and_base_temp(self.variable)
         subTitle = ''
+        if 'app_name' in self.form.keys() and self.form['app_name'] == 'seasonal_summary':
+            subTitle += WRCCData.DISPLAY_PARAMS[self.form['temporal_summary']]
+            subTitle += ' of ' + WRCCData.DISPLAY_PARAMS[el_strip] + ', '
+
         if 'spatial_summary' in self.form.keys():
             subTitle = WRCCData.DISPLAY_PARAMS[self.form['area_type']]
             subTitle+= ': ' + self.form[self.form['area_type']]
@@ -182,14 +192,14 @@ class GraphDictWriter(object):
         if 'start_month' in self.form.keys() and 'start_day' in self.form.keys():
             #Yearly Summary/Intraannual
             if 'location' in self.form.keys():
-                subTitle = 'Grid: ' + WRCCData.GRID_CHOICES[str(self.form['grid'])][0] + ', '
+                subTitle+='Grid: ' + WRCCData.GRID_CHOICES[str(self.form['grid'])][0] + ', '
             else:
-                subTitle = ''
+                subTitle+=''
             if 'end_month' in self.form.keys() and 'end_day' in self.form.keys():
                 subTitle+= 'From ' + WRCCData.NUMBER_TO_MONTH_NAME[self.form['start_month']]
-                subTitle+= ', ' + self.form['start_day'] + ' To '
+                subTitle+= ' ' + self.form['start_day'] + ' To '
                 subTitle+= WRCCData.NUMBER_TO_MONTH_NAME[self.form['end_month']]
-                subTitle+= ', ' + self.form['end_day']
+                subTitle+= ' ' + self.form['end_day']
             else:
                 subTitle+= 'Start Month and Day: '
                 subTitle+=WRCCData.NUMBER_TO_MONTH_NAME[self.form['start_month']]
@@ -219,10 +229,10 @@ class GraphDictWriter(object):
 
     def set_yLabel(self):
         if 'app_name' in self.form.keys() and self.form['app_name'] == 'data_comparison':
-            el_strip, base_temp = WRCCUtils.get_el_and_base_temp(self.element)
+            el_strip, base_temp = WRCCUtils.get_el_and_base_temp(self.variable)
             yLabel = WRCCData.DISPLAY_PARAMS[el_strip]
             if base_temp:
-                yLable+= ' (' + str(base_temp) + ')'
+                yLabel+= ' (' + str(base_temp) + ')'
             u = self.set_elUnits()
             yLabel += ' (' + str(u) + ')'
         else:
@@ -234,7 +244,7 @@ class GraphDictWriter(object):
         return legendTitle
 
     def set_axisMin(self):
-        el_strip, base_temp = WRCCUtils.get_el_and_base_temp(self.element)
+        el_strip, base_temp = WRCCUtils.get_el_and_base_temp(self.variable)
         if el_strip in ['snow', 'snwd', 'hdd','cdd','gdd']:
             axisMin = 0
         else:
@@ -270,7 +280,7 @@ class GraphDictWriter(object):
                 pl_color  = self.generate_new_color([],pastel_factor = 0.9)
                 self.plot_colors.append(pl_color)
         else:
-            el_strip, base_temp = WRCCUtils.get_el_and_base_temp(self.element)
+            el_strip, base_temp = WRCCUtils.get_el_and_base_temp(self.variable)
             pl_color = WRCCData.PLOT_COLOR[el_strip]
         return pl_color
 
@@ -281,20 +291,20 @@ class GraphDictWriter(object):
             if self.form['statistic_period'] == 'weekly':
                 rm_color = self.generate_new_color(self.plot_colors,pastel_factor = 0.9)
          else:
-            el_strip, base_temp = WRCCUtils.get_el_and_base_temp(self.element)
+            el_strip, base_temp = WRCCUtils.get_el_and_base_temp(self.variable)
             rm_color =  WRCCData.RM_COLOR[el_strip]
          return rm_color
 
     def set_seriesName(self):
         sname = self.name
         if 'app_name' in self.form.keys() and self.form['app_name'] == 'seasonal_summary':
-            el_strip, base_temp = WRCCUtils.get_el_and_base_temp(self.element)
+            el_strip, base_temp = WRCCUtils.get_el_and_base_temp(self.variable)
             sname = WRCCData.DISPLAY_PARAMS[self.form['temporal_summary']]
             sname += ' of ' + WRCCData.DISPLAY_PARAMS[el_strip]
             return sname
 
         if 'spatial_summary' in self.form.keys():
-            el_strip, base_temp = WRCCUtils.get_el_and_base_temp(self.element)
+            el_strip, base_temp = WRCCUtils.get_el_and_base_temp(self.variable)
             if self.form['units'] == 'metric':
                 base_temp = WRCCUtils.convert_to_metric('base_temp',base_temp)
             sname = WRCCData.DISPLAY_PARAMS[el_strip]
@@ -309,7 +319,7 @@ class GraphDictWriter(object):
         datadict = {
             'chartType':self.set_chartType(),
             'data':self.data,
-            'element':self.element,
+            'variable':self.variable,
             'elUnits':self.set_elUnits(),
             'startDate':self.set_date(self.form['start_date']),
             'endDate': self.set_date(self.form['end_date']),
@@ -823,7 +833,7 @@ class DataComparer(object):
             location: lon, lat
             grid: grid ID
             start_date/end_date of request
-            elements: comma seperated list of element abbreviations
+            variables: comma seperated list of variable abbreviations
             degree_days: comma separated list of degree days with irregular base temperatures
             units: metric or english
     '''
@@ -833,19 +843,18 @@ class DataComparer(object):
         self.grid = form['grid']
         self.start_date = form['start_date']
         self.end_date = form['end_date']
-        self.element = form['element']
-        if isinstance(self.element, list):
-            self.elements = [form['element']]
-            self.element = form['element'][0]
+        self.variable = form['variable']
+        self.units = form['units']
+        if isinstance(self.variable, list):
+            self.variables = [form['variable']]
+            self.variable = form['variable'][0]
         else:
-            self.elements = [form['element']]
-        if isinstance(self.elements,list):
-            self.elements  = ','.join(self.elements)
+            self.variables = [form['variable']]
+        if isinstance(self.variables,list):
+            self.variables  = ','.join(self.variables)
         self.degree_days = None
         if 'degree_days' in form.keys():
             self.degree_days = form['degree_days']
-        #self.units = form['units']
-        self.units = 'english'
 
     def hms_to_seconds(self,date_string):
         #Convert python date string to javascript milliseconds
@@ -868,24 +877,24 @@ class DataComparer(object):
         bbox = lower_left + ',' + upper_right
         return bbox
 
-    def combine_elements(self):
+    def combine_variables(self):
         if not self.degree_days:
-            return self.elements
+            return self.variables
         if self.units == 'english':
-            return self.elements + ',' + self.degree_days
+            return self.variables + ',' + self.degree_days
         dd_els = ''
         for dd_idx, dd in enumerate(self.degree_days.split(',')):
             el = dd[0:3]
             val = dd[3:]
-            new_val = int(round(WRCCUtils.convert_to_english(el,val)))
+            new_val = int(round(WRCCUtils.convert_to_metric(el,val)))
             dd_els+=el+str(new_val)
             if dd_idx < len(self.degree_days.split(',')) - 1:
                 dd_els+=','
-        return self.elements + ',' + dd_els
+        return self.variables + ',' + dd_els
 
     def check_valid_daterange(self,vd):
         '''
-        Checks if valid daterange of station for an element
+        Checks if valid daterange of station for an variable
         lies between start and end date of request
         '''
         sd = self.start_date.replace('-','').replace('/','').replace(':','')
@@ -913,22 +922,22 @@ class DataComparer(object):
     def find_closest_station(self):
         '''
         Finds closest station to lon/lat grid coordinate
-        such that each element's valid daterange is overlapping
+        such that each variable's valid daterange is overlapping
         with start/end date period of request
         '''
         length = 0.01
         stn_meta = {}
-        #els = self.combine_elements()
+        #els = self.combine_variables()
         while not stn_meta:
             bbox = self.get_bbox(length)
             meta_params = {
                 'bbox':bbox,
                 "meta":"name,state,sids,ll,elev,uid,valid_daterange",
             }
-            if self.element == 'pet':
+            if self.variable == 'pet':
                 meta_params['elems'] = 'maxt,mint'
             else:
-                meta_params['elems'] = self.element
+                meta_params['elems'] = self.variable
             try:
                 req = AcisWS.StnMeta(meta_params)
                 req['meta']
@@ -1100,19 +1109,19 @@ class DataComparer(object):
 
     def get_data(self):
         #Grid Data
-        #els =  self.combine_elements()
+        #els =  self.combine_variables()
         data_params = {
             'loc': self.location,
             'grid':self.grid,
-            #'elems': self.element,
+            #'elems': self.variable,
             'sdate': self.start_date,
             'edate': self.end_date,
             'meta':'ll,elev'
         }
-        if self.element == 'pet':
+        if self.variable == 'pet':
             data_params['elems'] = 'maxt,mint'
         else:
-            data_params['elems'] = self.element
+            data_params['elems'] = self.variable
         try:
             gdata = AcisWS.GridData(data_params)
         except Exception, e:
@@ -1134,18 +1143,18 @@ class DataComparer(object):
                 sdata = AcisWS.StnData(data_params)
             except Exception, e:
                 sdata = {'data':[], 'meta': [],'error': str(e)}
-        #If element is pet, compute it
-        if self.element == 'pet':
+        #If variable is pet, compute it
+        if self.variable == 'pet':
             sdata, gdata = self.compute_pet(sdata, gdata)
         return gdata,sdata,stn_meta['dist']
 
     def get_graph_data(self,gdata,sdata):
         '''
-        For each element return series data [date, val] for both grid and station data.
+        For each variable return series data [date, val] for both grid and station data.
         Returns dict {el1:[[Date1, el_val1],[Date,el_val2],...], 'el2':...}
         '''
         graph_data = []
-        #els = self.combine_elements()
+        #els = self.combine_variables()
         gloc = str(round(gdata['meta']['lon'],2)) + ', ' + str(round(gdata['meta']['lat'],2))
         sloc = ','.join([str(round(s,2)) for s in sdata['meta']['ll']])
         sname = str(sdata['meta']['name'])
@@ -1158,7 +1167,7 @@ class DataComparer(object):
         s_graph_title = 'Station: ' + sname + ' (' + sid_1 + ')'
         g_graph_title =  'Location: ' +  gloc
         sid = str(sdata['meta']['sids'][0].split(' ')[0])
-        el_strip, base_temp = WRCCUtils.get_el_and_base_temp(self.element, units=self.units)
+        el_strip, base_temp = WRCCUtils.get_el_and_base_temp(self.variable, units=self.units)
         grid_data = [];station_data = [];
         for date_idx, data in enumerate(gdata['data']):
             try:
@@ -1178,9 +1187,9 @@ class DataComparer(object):
             int_time = self.hms_to_seconds(str(data[0]))
             grid_data.append([int(int_time),gd])
             station_data.append([int(int_time),sd])
-            SGDWriter = GraphDictWriter(self.form, station_data, self.element, name = s_graph_title)
+            SGDWriter = GraphDictWriter(self.form, station_data, self.variable, name = s_graph_title)
             s_graph_dict = SGDWriter.write_dict()
-            GGDWriter =  GraphDictWriter(self.form, grid_data, self.element, name = g_graph_title)
+            GGDWriter =  GraphDictWriter(self.form, grid_data, self.variable, name = g_graph_title)
             g_graph_dict = GGDWriter.write_dict()
             graph_data = [s_graph_dict,g_graph_dict]
         return graph_data
@@ -1245,7 +1254,7 @@ class SODDataJob(object):
     Sodsumm, Sodsum, Sodxtrmts,Soddyrec,Sodpiii, Soddynorm,
     Sodrun, Soddd, Sodpct, Sodpad, Sodthr
     data_params -- parameter dictionary for ACIS-WS call
-                   keys: start_date, end_date, elements
+                   keys: start_date, end_date, variables
                          and a key defining the search area, one of:
                          sid, sids,county, climdiv, cwa, basin, state, bbox
     '''
@@ -1254,7 +1263,7 @@ class SODDataJob(object):
         self.app_specific_params = app_specific_params
         self.app_name = app_name
         self.station_ids = None;self.station_names=None
-        self.el_type_element_dict = {
+        self.el_type_variable_dict = {
             #Sodsumm
             'all_sodsumm':['maxt', 'mint', 'avgt', 'pcpn', 'snow'],
             'all':['maxt', 'mint', 'pcpn', 'snow', 'snwd', 'hdd', 'cdd'],
@@ -1311,11 +1320,11 @@ class SODDataJob(object):
                         {'reduce':'max', 'add':'date,mcnt'}, \
                         {'reduce':'min', 'add':'date,mcnt'}]
 
-    def set_element_param(self):
-        if 'element' in self.params.keys():
-            el = 'element'
-        elif 'elements' in self.params.keys():
-            el= 'elements'
+    def set_variable_param(self):
+        if 'variable' in self.params.keys():
+            el = 'variable'
+        elif 'variables' in self.params.keys():
+            el= 'variables'
         else:
             el = None
         return el
@@ -1416,14 +1425,14 @@ class SODDataJob(object):
         elif len(self.params['end_date']) == 8:
             e_date = self.params['end_date']
         #deal with por input
-        element_list = self.get_element_list()
+        variable_list = self.get_variable_list()
         if self.params['start_date'].lower() == 'por' or self.params['end_date'].lower() == 'por':
             if self.params['start_date'].lower() == 'por' and self.params['end_date'].lower() == 'por':
-                vd = WRCCUtils.find_valid_daterange(self.station_ids[0],el_list=element_list,max_or_min='min')
+                vd = WRCCUtils.find_valid_daterange(self.station_ids[0],el_list=variable_list,max_or_min='min')
             elif self.params['start_date'].lower() == 'por' and self.params['end_date'].lower() != 'por':
-                vd = WRCCUtils.find_valid_daterange(self.station_ids[0],el_list=element_list,max_or_min='min', end_date=e_date)
+                vd = WRCCUtils.find_valid_daterange(self.station_ids[0],el_list=variable_list,max_or_min='min', end_date=e_date)
             elif self.params['start_date'].lower() != 'por' and self.params['end_date'].lower() == 'por':
-                vd = WRCCUtils.find_valid_daterange(self.station_ids[0],el_list=element_list,max_or_min='min', start_date=s_date)
+                vd = WRCCUtils.find_valid_daterange(self.station_ids[0],el_list=variable_list,max_or_min='min', start_date=s_date)
             if vd:
                 s_date = vd[0];e_date=vd[1]
         #FIX ME: MultiStn calls with start dates before 1850 fail
@@ -1558,41 +1567,41 @@ class SODDataJob(object):
                         dates.append(dates[-1][0:4]+'0229')
         return dates
 
-    def get_element_list(self):
+    def get_variable_list(self):
         '''
-        Get element list for data request
+        Get variable list for data request
         Element list depends on self.app_name to be run
         '''
-        el_type = self.set_element_param()
+        el_type = self.set_variable_param()
         if self.app_name == 'Sodsumm' and self.params[el_type] == 'all':
-            el_list = self.el_type_element_dict['all_sodsumm']
+            el_list = self.el_type_variable_dict['all_sodsumm']
             #Grid data dows not have snow
             if 'location' in self.params.keys() or 'loc' in self.params.keys():
-                el_list = self.el_type_element_dict[self.params['element']]
+                el_list = self.el_type_variable_dict[self.params['variable']]
         elif self.app_name == 'Soddynorm':
-             el_list = self.el_type_element_dict['tmp']
+             el_list = self.el_type_variable_dict['tmp']
         elif self.app_name in ['Sodxtrmts','SodxtrmtsSCENIC'] and self.params[el_type] in ['hdd','cdd', 'gdd','dtr']:
-            el_list = self.el_type_element_dict['dd_raw']
+            el_list = self.el_type_variable_dict['dd_raw']
         else:
-            el_list = self.el_type_element_dict[self.params[el_type]]
+            el_list = self.el_type_variable_dict[self.params[el_type]]
         return el_list
 
 
-    def set_request_elements(self):
+    def set_request_variables(self):
         '''
         Function to set elems value needed in ACIS data call
         '''
-        elements = self.get_element_list()
+        variables = self.get_variable_list()
         elems = []
         el_dict = self.app_elems_params[self.app_name]
-        for el in elements:
+        for el in variables:
             el_dict_new = {}
             for key, val in el_dict.iteritems():
                 if key == 'vX':
                     el_dict_new[key] = WRCCData.ACIS_ELEMENTS_DICT[el]['vX']
                 else:
                     el_dict_new[key] = val
-            #We have to add three types of summaries for each element of Soddyrec
+            #We have to add three types of summaries for each variable of Soddyrec
             if self.app_name == 'Soddyrec':
                 for smry in self.soddyrec_smry_opts:
                     e_d = {}
@@ -1603,15 +1612,15 @@ class SODDataJob(object):
             else:
                 elems.append(el_dict_new)
         #FIX ME: should need to treat Sodsumm separately
-        #but somehow the above code jumbles up the elements
+        #but somehow the above code jumbles up the variables
         if self.app_name == 'Sodsumm':
-            elems  = [{'name':el,'interval':'dly','duration':'dly','groupby':'year'} for el in elements]
+            elems  = [{'name':el,'interval':'dly','duration':'dly','groupby':'year'} for el in variables]
         return elems
 
     def set_request_params(self):
         area, val = self.set_area_params()
         sdate, edate = self.set_start_end_date()
-        elems = self.set_request_elements()
+        elems = self.set_request_variables()
         params = {area:val, 'sdate':sdate, 'edate':edate,'elems':elems}
         if 'station_id' not in self.params.keys() and 'sid' not in self.params.keys() and 'sids' not in self.params.keys():
             params['grid'] = self.params['grid']
@@ -1635,7 +1644,7 @@ class SODDataJob(object):
                 leap_indices.append(idx)
         return leap_indices, yrs
 
-    def format_data_grid(self, request, locations,elements):
+    def format_data_grid(self, request, locations,variables):
         '''
         Formats output of data request dependent on
         application
@@ -1653,11 +1662,11 @@ class SODDataJob(object):
             data = [[] for i in locations]
         for i, loc in enumerate(locations):
             if self.app_name == 'Soddyrec':
-                data[i] = [[['#', '#', '#', '#', '#', '#','#', '#'] for k in range(366)] for el in elements]
+                data[i] = [[['#', '#', '#', '#', '#', '#','#', '#'] for k in range(366)] for el in variables]
             elif self.app_name in ['Sodrun', 'Sodrunr', 'Sodsum']:
                 data[i] = []
             else:
-                #data[i] = [[] for el in elements]
+                #data[i] = [[] for el in variables]
                 data[i] = [[] for yr in  year_list]
         #Sanity checks on request object
         if not request:
@@ -1673,15 +1682,15 @@ class SODDataJob(object):
                 continue
             start_idx = 0
             for yr_idx, yr in enumerate(year_list):
-                yr_data = [[] for el in elements]
+                yr_data = [[] for el in variables]
                 length = 365
                 #Grid 1, 3 and 21 record Feb 29
                 if yr_idx in leap_indices and self.params['grid'] in ['1','3','21']:
                     length =  366
                 d = loc_request['data'][start_idx:start_idx + length]
                 start_idx = start_idx + length
-                for el_idx, element in enumerate(elements):
-                    #Only pick relevant element data
+                for el_idx, variable in enumerate(variables):
+                    #Only pick relevant variable data
                     el_data = [day_data[el_idx + 1] for day_data in d]
                     #Add missing leap year value if not leap year
                     if length == 365:el_data.insert(59,'M')
@@ -1689,7 +1698,7 @@ class SODDataJob(object):
                 data[loc_idx][yr_idx] = yr_data
         return data, error
 
-    def format_data_station(self, request, station_ids, elements):
+    def format_data_station(self, request, station_ids, variables):
         '''
         Formats output of data request dependent on
         application
@@ -1703,11 +1712,11 @@ class SODDataJob(object):
             data = [[] for i in station_ids]
         for i, stn in enumerate(station_ids):
             if self.app_name == 'Soddyrec':
-                data[i] = [[['#', '#', '#', '#', '#', '#','#', '#'] for k in range(366)] for el in elements]
+                data[i] = [[['#', '#', '#', '#', '#', '#','#', '#'] for k in range(366)] for el in variables]
             elif self.app_name in ['Sodrun', 'Sodrunr', 'Sodsum']:
                 data[i] = []
             else:
-                data[i] = [[] for el in elements]
+                data[i] = [[] for el in variables]
 
         #Sanity checks on request object
         if not request:
@@ -1751,7 +1760,7 @@ class SODDataJob(object):
         '''
         Request SOD data from ACIS data for a station
         '''
-        elements = self.get_element_list()
+        variables = self.get_variable_list()
         station_ids, station_names = self.get_station_ids_names()
         dates = self.get_dates_list()
         meta_dict = self.get_station_meta()
@@ -1759,25 +1768,25 @@ class SODDataJob(object):
         resultsdict = {
                     'data':[],
                     'dates':dates,
-                    'elements':elements,
+                    'variables':variables,
                     'station_ids':station_ids,
                     'station_names':station_names,
                     'lls':meta_dict['lls']
         }
         #Override el for sodxtrmts, otherwise avgt,dtr don't work
         if self.app_name in ['Sodxtrmts','SodxtrmtsSCENIC']:
-            resultsdict['elements'] = [self.params['element']]
+            resultsdict['variables'] = [self.params['variable']]
         #Make data request
         data_params = self.set_request_params()
         request = AcisWS.MultiStnData(data_params)
-        resultsdict['data'], resultsdict['error'] = self.format_data_station(request, station_ids, elements)
+        resultsdict['data'], resultsdict['error'] = self.format_data_station(request, station_ids, variables)
         return resultsdict
 
     def get_data_grid(self):
         '''
         Request SOD data from ACIS for a gridpoint
         '''
-        elements = self.get_element_list()
+        variables = self.get_variable_list()
         locations_list = self.set_locations_list(self.params)
         dates = self.get_dates_list()
         meta_dict = self.get_grid_meta()
@@ -1785,12 +1794,12 @@ class SODDataJob(object):
         resultsdict = {
                     'data':[],
                     'dates':dates,
-                    'elements':elements,
+                    'variables':variables,
                     'location_list':locations_list,
                     'lls':meta_dict['lls']
         }
         if self.app_name in ['Sodxtrmts','SodxtrmtsSCENIC']:
-            resultsdict['elements'] = [self.params['element']]
+            resultsdict['variables'] = [self.params['variable']]
         #Make data request
         #Each location requires separate request
         #request = {'meta':{'lat':'', 'lon':'','elev':''},'data':[]}
@@ -1806,7 +1815,7 @@ class SODDataJob(object):
                 continue
             data[i]['meta'] = req['meta']
             data[i]['data']= req['data']
-        resultsdict['data'], resultsdict['error'] = self.format_data_grid(data, locations_list, elements)
+        resultsdict['data'], resultsdict['error'] = self.format_data_grid(data, locations_list, variables)
         return resultsdict
 
 class SODApplication(object):
@@ -1819,7 +1828,7 @@ class SODApplication(object):
                     Sodsumm, Sodsum, Sodxtrmts,Soddyrec,Sodpiii,
                     Sodrun, Soddd, Sodpct, Sodpad, Sodthr, Soddynorm
     datadict    --  dictionary containing results of SODDataJob
-                    keys: data, dates, elements, station_ids, station_names
+                    keys: data, dates, variables, station_ids, station_names
     app_specific_params -- application specific parameters
     '''
     def __init__(self, app_name, data, app_specific_params=None):
@@ -1831,7 +1840,7 @@ class SODApplication(object):
         app_params = {
                     'app_name':self.app_name,
                     'data':self.data['data'],
-                    'elements':self.data['elements'],
+                    'variables':self.data['variables'],
                     'dates':self.data['dates'],
                     'lls':self.data['lls']
                     }
@@ -1866,7 +1875,7 @@ class SodGraphicsJob(object):
                     Sodsumm, Sodsum, Sodxtrmts,Soddyrec,Sodpiii,
                     Sodrun, Soddd, Sodpct, Sodpad, Sodthr, Soddynorm
     datadict    --  dictionary containing results of SODDataJob
-                    keys: data, dates, elements, station_ids, station_names
+                    keys: data, dates, variables, station_ids, station_names
     app_specific_params -- application specific parameters
     '''
     def __init__(self, app_name, data, app_specific_params=None):

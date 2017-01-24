@@ -204,18 +204,18 @@ def check_start_date(form):
             return '%s is not a valid option for a multi-station or grid request.' %form['start_date']
 
     if len(s_date)!=8:
-        return '%s is not a valid date.' %form['start_date']
+        return '%s is not a valid date.' %str(form['start_date'])
     try:
         int(s_date)
     except:
-        return '%s is not a valid date.' %form['start_date']
+        return '%s is not a valid date.' %str(form['start_date'])
 
     #Check month
     if int(s_date[4:6]) < 1 or int(s_date[4:6]) > 12:
-        return '%s is not a valid date.' %form['start_date']
+        return '%s is not a valid date.' %str(form['start_date'])
     #Check day
     if int(s_date[6:8]) < 1 or int(s_date[4:6]) > 31:
-        return '%s is not a valid date.' %form['start_date']
+        return '%s is not a valid date.' %str(form['start_date'])
 
     #Check for month lengths
     ml = WRCCData.MONTH_LENGTHS[int(s_date[4:6]) - 1]
@@ -226,11 +226,11 @@ def check_start_date(form):
             else:
                 return '%s only has %s days. You entered: %s' %(WRCCData.NUMBER_TO_MONTH_NAME[str(s_date[4:6])],str(ml),str(s_date[6:8]))
         else:
-            return '%s only has %s days. You entered: %s' %(WRCCData.NUMBER_TO_MONTH_NAME[str(ds_ate[4:6])],str(ml),str(s_date[6:8]))
+            return '%s only has %s days. You entered: %s' %(WRCCData.NUMBER_TO_MONTH_NAME[str(s_date[4:6])],str(ml),str(s_date[6:8]))
 
     #Check for leap year issue
     if not WRCCUtils.is_leap_year(s_date[0:4]) and s_date[4:6] == '02' and s_date[6:8] == '29':
-        return '%s is not a leap year. Change start date to February 28.' %s_date[0:4]
+        return '%s is not a leap year. Change start date to February 28.' %str(s_date[0:4])
 
     #Check that start date is earlier than end date
     if e_date.lower() == 'por':
@@ -238,15 +238,15 @@ def check_start_date(form):
     try:
         sd = datetime.datetime(int(s_date[0:4]), int(s_date[4:6].lstrip('0')), int(s_date[6:8].lstrip('0')))
     except:
-        return '%s is not a valid date.' %form['start_date']
+        return '%s is not a valid date.' %str(form['start_date'])
+
     try:
         ed = datetime.datetime(int(e_date[0:4]), int(e_date[4:6].lstrip('0')), int(e_date[6:8].lstrip('0')))
+        if ed < sd:
+            return 'Start Date is later then End Year.'
     except:
-        return '%s is not a valid date.' %form['start_date']
-
-    if ed < sd:
-        return 'Start Date is later then End Year.'
-
+        #return 'End date %s is not a valid date.' %str(form['end_date'])
+        pass
 
 
     #Check grid data dates
@@ -300,10 +300,10 @@ def check_start_date(form):
         if unreasonable:
             meta_params = {
                 WRCCData.FORM_TO_META_PARAMS[form['area_type']]: form[form['area_type']],
-                'elems':','.join(form['elements']),
+                'elems':','.join(form['variables']),
                 'meta':'valid_daterange'
             }
-            if 'pet' in form['elements'] or 'dtr' in form['elements']:
+            if 'pet' in form['variables'] or 'dtr' in form['variables']:
                 meta_params['elems'].replace('pet','maxt,mint')
                 meta_params['elems'].replace('dtr','maxt,mint')
             #meta_data = AcisWS.StnMeta(meta_params)
@@ -354,22 +354,22 @@ def check_end_date(form):
         if 'station_id' in form.keys():
             return err
         else:
-            return '%s is not a valid Start Date for a multi-station or grid request!' %form['end_date']
+            return '%s is not a valid Start Date for a multi-station or grid request!' %str(form['end_date'])
 
     if len(e_date)!=8:
-        return '%s is not a valid date.' %form['end_date']
+        return '%s is not a valid date.' %str(form['end_date'])
 
     try:
         int(e_date)
     except:
-        return 'Date should be an eight digit entry. You entered %s' %form['end_date']
+        return '%s is not a valid date.' %str(form['end_date'])
 
     #Check month
     if int(e_date[4:6]) < 1 or int(e_date[4:6]) > 12:
-        return '%s is not a valid date.' %form['end_date']
+        return '%s is not a valid date.' %str(form['end_date'])
     #Check day
     if int(e_date[6:8]) < 1 or int(e_date[4:6]) > 31:
-        return '%s is not a valid date.' %form['end_date']
+        return '%s is not a valid date.' %str(form['end_date'])
 
 
     #Ceck for month length
@@ -390,14 +390,15 @@ def check_end_date(form):
     try:
         sd = datetime.datetime(int(s_date[0:4]), int(s_date[4:6].lstrip('0')), int(s_date[6:8].lstrip('0')))
     except:
-        return '%s is not a valid date.' %form['end_date']
+        pass
     try:
         ed = datetime.datetime(int(e_date[0:4]), int(e_date[4:6].lstrip('0')), int(e_date[6:8].lstrip('0')))
     except:
         return '%s is not a valid date.' %form['end_date']
-    if ed < sd:
-        return 'Start Date is later then End Year.'
-
+    try:
+        if ed < sd:
+            return 'Start Date is later then End Year.'
+    except:pass
 
     #Check grid data dates
     if 'location' in form.keys() or ('data_type' in form.keys() and form['data_type'] == 'grid'):
@@ -458,8 +459,10 @@ def check_degree_days(form):
     el_list = form['degree_days'].replace(' ','').split(',')
     for el in el_list:
         #strip degree day digits
-        el_strip = re.sub(r'(\d+)(\d+)', '', el)
+        el_strip = re.sub(r'(\d+(\.\d+)?)', '', el)
         base_temp = el[3:]
+        if el_strip not in ['gdd','hdd','cdd']:
+            return '%s is not a valid degree day variable.' %el_strip
         if len(base_temp) ==1:
             return 'Base temperature should be two digit number. Please prepend 0 if your temperature is a single digit.'
         if len(base_temp) !=2:
@@ -467,29 +470,27 @@ def check_degree_days(form):
         try:
             int(base_temp)
         except:
-            return '%s is not valid base temperature.' %base_temp
-        if el_strip not in ['gdd','hdd','cdd']:
-            return '%s is not a valid degree day element.' %el
+            return '%s is not valid integer base temperature.' %base_temp
 
 
     return err
 
-def check_elements(form):
+def check_variables(form):
     err = None
-    if not 'elements' in form.keys():
-        return 'You must select at least one climate element from the menue.'
+    if not 'variables' in form.keys():
+        return 'You must select at least one climate variable from the menue.'
     try:
-        el_list = form['elements'].replace(' ','').split(',')
+        el_list = form['variables'].replace(' ','').split(',')
     except:
-        el_list = form['elements']
+        el_list = form['variables']
     if not el_list:
-        return 'You must select at least one climate element from the menue.'
+        return 'You must select at least one climate variable from the menue.'
     return err
 
 '''
-def check_elements(form):
+def check_variables(form):
     err = None
-    el_list = form['elements'].replace(' ','').split(',')
+    el_list = form['variables'].replace(' ','').split(',')
     for el in el_list:
         #strip degree day digits
         el_strip = re.sub(r'(\d+)(\d+)', '', el)
@@ -497,12 +498,12 @@ def check_elements(form):
             el_strip = el_strip[4:]
         if 'select_grid_by' in form.keys():
             if el_strip not in ['maxt','mint','avgt','pcpn','gdd','hdd','cdd']:
-                err = '%s is not a valid element. Please consult with the helpful question mark!' %el
+                err = '%s is not a valid variable. Please consult with the helpful question mark!' %el
             if form['grid']=='21' and form['temporal_resolution'] in ['yly','mly'] and el_strip not in ['maxt','mint','avgt','pcpn']:
-                err = '%s is not a valid PRISM element. Please choose from maxt,mint,avgt,pcpn!' %el_strip
+                err = '%s is not a valid PRISM variable. Please choose from maxt,mint,avgt,pcpn!' %el_strip
         else:
             if el_strip not in ['maxt','mint','avgt','pcpn','snow','snwd','evap','wdmv','gdd','hdd','cdd','obst']:
-                err = '%s is not a valid element. Please consult with the helpful question mark!' %el
+                err = '%s is not a valid variable. Please consult with the helpful question mark!' %el
     return err
 '''
 

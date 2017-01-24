@@ -104,7 +104,7 @@ class DownloadDataJob(object):
                 self.header.insert(1,['*', json_data['subtitle']])
         if self.app_name == 'area_time_series':
             self.header = json_data['display_params_list']
-            for el in json_data['search_params']['element_list']:
+            for el in json_data['search_params']['variable_list']:
                 self.column_headers['area_time_series'].append(el)
         if self.app_name == 'spatial_summary':
             self.header = json_data['params_display_list']

@@ -71,13 +71,13 @@ class TestIDNameFind(unittest.TestCase):
 
 class TestGetElAndBaseTemp(unittest.TestCase):
     def setUp(self):
-        self.elements = WRCCData.ACIS_ELEMENTS_DICT.keys()
-        self.elements+=['gdd67','hdd34','cdd65']
+        self.variables = WRCCData.ACIS_ELEMENTS_DICT.keys()
+        self.variables+=['gdd67','hdd34','cdd65']
         self.units = ['english','metric']
 
     def test_get_el_and_base_temp(self):
         for unit in self.units:
-            for el in self.elements:
+            for el in self.variables:
                 el, base_temp = WRCCUtils.get_el_and_base_temp(el,units=unit)
                 self.assertIsInstance(el, basestring)
                 self.assertIn(el,WRCCData.ACIS_ELEMENTS_DICT.keys())
@@ -88,12 +88,12 @@ class TestGetElAndBaseTemp(unittest.TestCase):
 
 class TestElementsToTableHeaders(unittest.TestCase):
     def setUp(self):
-        self.elements = WRCCData.ACIS_ELEMENTS_DICT.keys()
+        self.variables = WRCCData.ACIS_ELEMENTS_DICT.keys()
         self.units = ['english','metric']
 
-    def test_elements_to_headers(self):
+    def test_variables_to_headers(self):
         for unit in self.units:
-            el_list_header = WRCCUtils.elements_to_table_headers(self.elements,unit)
+            el_list_header = WRCCUtils.variables_to_table_headers(self.variables,unit)
             self.assertIsInstance(el_list_header, list)
             self.assertNotEqual(el_list_header,[])
 

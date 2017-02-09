@@ -226,6 +226,8 @@ DISPLAY_PARAMS = {
     'b':'Between',
     'threshold_low_for_between':'Lower Threshold',
     'threshold_high_for_between':'Upper Threshold',
+    'threshold_for_less_than':'Threshold',
+    'threshold_for_greater_than':'Threshold',
     'threshold_for_less_or_greater':'Threshold',
     'less':'Threshold',
     'greater':'Threshold',

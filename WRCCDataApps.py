@@ -3060,6 +3060,9 @@ def Sodsumm(**kwargs):
                 else:
                     idx_start = sum(mon_lens[idx] for idx in range(cat_idx))
                     idx_end = idx_start + mon_lens[cat_idx]
+                    #Special case LOCA does not have data for Feb 29 ever
+                    if cat_idx == 1 and 'grid' in kwargs.keys() and int(kwargs['grid']) in range(22,42):
+                        idx_end = idx_end - 1
             #Note: all indices computed for leap year
             #since we query ACIS bwith group_by=year --> 366 data entries per year
             #Leap years are taken car of below in analysis code
@@ -3186,6 +3189,9 @@ def Sodsumm(**kwargs):
                         idx_start = time_cats_lens[cat_idx] * yr
                         #Feb, if not leap year, omit feb 29
                         if cat_idx == 1 and not WRCCUtils.is_leap_year(current_year):
+                            cat_l = 28
+                        #Special case LOCA does not have data for Feb 29 ever
+                        elif cat_idx == 1 and 'grid' in kwargs.keys() and int(kwargs['grid']) in range(22,42):
                             cat_l = 28
                         #Winter, if not leap year, omit Feb 29
                         elif cat_idx == 13 and not WRCCUtils.is_leap_year(current_year + 1):

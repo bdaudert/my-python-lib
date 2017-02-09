@@ -84,10 +84,12 @@ def set_min_max_dates(initial):
         sd_fut =  sd;ed_fut = ed
     if 'location' in initial.keys() or initial['app_name'] == 'monthly_spatial_summary':
         sd = WRCCData.GRID_CHOICES[str(initial['grid'])][3][0][0]
+        #ed = WRCCUtils.advance_date(sd,10*365,'forward')
         ed = WRCCData.GRID_CHOICES[str(initial['grid'])][3][0][1]
         sd_fut =  sd;ed_fut = ed
         if len(WRCCData.GRID_CHOICES[initial['grid']][3]) == 2:
             sd_fut = WRCCData.GRID_CHOICES[initial['grid']][3][1][0]
+            #ed_fut = WRCCUtils.advance_date(sd,10*365,'forward')
             ed_fut = WRCCData.GRID_CHOICES[initial['grid']][3][1][1]
     return sd, ed, sd_fut, ed_fut
 
@@ -237,7 +239,14 @@ def set_initial(request,app_name):
             #Link from station finder
             initial['end_year'] = Get('end_date', '9999')[0:4]
             if initial['end_year'] == '9999':
-                if 'location' in initial.keys():initial['end_year'] =  ed[0:4]
+                if 'location' in initial.keys():
+                    ey = str(int(initial['start_year']) + 10)
+                    if int(ey) >= int(sd[0:4]) and int(ey) <= int(ed[0:4]):
+                        initial['end_year'] = ey
+                    elif int(ey) >=int(sd_fut[0:4]) and int(ey) < int(ed_fut[0:4]):
+                        initial['end_year'] = ey
+                    else:
+                        initial['end_year'] =  ed[0:4]
                 else:initial['end_year'] = 'POR'
         initial['min_year'] = Get('min_year',sd[0:4])
         initial['max_year'] = Get('max_year', ed[0:4])
@@ -263,6 +272,7 @@ def set_initial(request,app_name):
             initial['end_month']  = Get('end_month', '1')
             initial['end_day']  = Get('end_day', '31')
         if app_name in ['intraannual']:
+            '''
             if initial['start_year'].lower() != 'por':
                 initial['min_year'] = initial['start_year']
             else:
@@ -271,6 +281,9 @@ def set_initial(request,app_name):
                 initial['max_year'] = initial['end_year']
             else:
                 initial['max_year'] = Get('max_year', ed[0:4])
+            '''
+            initial['min_year'] = Get('min_year',sd[0:4])
+            initial['max_year'] = Get('max_year', ed[0:4])
             #Plotting vars
             initial['show_climatology'] = Get('show_climatology','F')
             initial['show_percentile_5'] = Get('show_percentile_5','F')
@@ -278,7 +291,10 @@ def set_initial(request,app_name):
             initial['show_percentile_25'] = Get('show_percentile_25','F')
             initial['target_year'] = Get('target_year_figure', None)
             if initial['target_year'] is None:
-                initial['target_year'] = Get('target_year_form',initial['min_year'])
+                if initial['start_year'].lower()!= 'por':
+                    initial['target_year'] = Get('target_year_form',initial['start_year'])
+                else:
+                    initial['target_year'] = Get('target_year_form',initial['min_year'])
             if initial['variable'] in ['pcpn','snow','evap','pet']:
                 initial['calculation'] = Get('calculation','cumulative')
             else:
@@ -385,7 +401,10 @@ def set_initial(request,app_name):
             if app_name in ['spatial_summary','monthly_spatial_summary','map_overlay']:
                 shown_indices = ','.join([str(idx) for idx in range(len(initial['variables']))])
             elif app_name == 'intraannual':
-                shown_indices = str(int(initial['target_year']) - int(initial['min_year']))
+                try:
+                    shown_indices = str(int(initial['target_year']) - int(initial['min_year']))
+                except:
+                    shown_indices = '0'
             else:
                 shown_indices = '0'
             initial['chart_indices_string'] = Get('chart_indices_string',shown_indices)

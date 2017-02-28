@@ -3431,25 +3431,28 @@ def find_valid_daterange(sid, start_date='por', end_date='por', el_list=None, ma
     e_date = date_to_eight(end_date)
     s_date_dt = date_to_datetime(s_date)
     e_date_dt = date_to_datetime(e_date)
-    if el_list is None:
+    if el_list is None or el_list == '':
         #el_tuple = 'maxt,mint,pcpn,snow,snwd,hdd,gdd,cdd'
         el_tuple = '1,2,4,10,11,45'
     else:
+        if isinstance(el_list,basestring):
+            element_list = el_list.replace(', ',',').split(',')
+        else:
+            element_list = copy.deepcopy(el_list)
         el_tuple =''
-        for idx, el in enumerate(el_list):
+        for idx, el in enumerate(element_list):
             if el in ['pet','dtr']:
-                if 'maxt' not in el_list and 'mint' not in el_list:
+                if 'maxt' not in element_list and 'mint' not in element_list:
                     el_tuple+='maxt,mint'
-                if 'maxt' not in el_list and 'mint' in el_list:
+                if 'maxt' not in element_list and 'mint' in element_list:
                     el_tuple+='maxt'
-                if 'maxt' in el_list and 'mint' not in el_list:
+                if 'maxt' in element_list and 'mint' not in element_list:
                     el_tuple+='mint'
             else:
                 el_tuple+=str(WRCCData.ACIS_ELEMENTS_DICT[el]['vX'])
-            if idx < len(el_list) - 1:
+            if idx < len(element_list) - 1:
                 el_tuple+=','
 
-        #el_tuple = ','.join(el_list)
     meta_params = {'sids':sid, 'elems':el_tuple, 'meta':'name,state,sids,ll,elev,uid,valid_daterange'}
     try:
         request = AcisWS.StnMeta(meta_params)

@@ -226,6 +226,8 @@ def set_initial(request,app_name):
     #Set dates
     #if 'grid' in initial.keys():
     sd, ed, sd_fut, ed_fut = set_min_max_dates(initial)
+    initial['min_date'] = sd; initial['max_date'] = ed
+    initial['min_date_fut'] = sd_fut; initial['max_date_fut'] = ed_fut;
     if app_name in ['monthly_summary','climatology']:
         initial['start_year'] = Get('start_year', None)
         if initial['start_year'] is None:

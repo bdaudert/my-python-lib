@@ -3005,18 +3005,18 @@ def Sodsumm(**kwargs):
             results[i][table] = []
             if table == 'temp':
                 if units == 'metric':
-                    results[i]['temp'].append(['Time','Max', 'Min', 'Mean', 'High', 'Date', 'Low', 'Date', 'High', 'Yr', 'Low', 'Yr', '>=32', '<=0', '<=0', '<=-17'])
+                    results[i]['temp'].append(['Month','Max (C)', 'Min (C)', 'Mean (C)', 'High (C)', 'Date (dd/yyyy)', 'Low (C)', 'Date (dd/yyyy)', 'High (C)', 'Yr', 'Low (C)', 'Yr', 'Days Max>=32C', 'Days Max<=0C', 'Days Min<=0C', 'Days Min<=-17C'])
                 else:
-                    results[i]['temp'].append(['Time','Max', 'Min', 'Mean', 'High', 'Date', 'Low', 'Date', 'High', 'Yr', 'Low', 'Yr', '>=90', '<=32', '<=32', '<=0'])
+                    results[i]['temp'].append(['Month','Max (F)', 'Min (F)', 'Mean (F)', 'High (F)', 'Date (dd/yyyy)', 'Low (F)', 'Date (dd/yyyy)', 'High (F)', 'Yr', 'Low (F)', 'Yr', 'Days Max>=90F', 'Days Max<=32F', 'Days Min<=32F', 'Days Min<=0F'])
             elif table == 'prsn':
                 if units == 'metric':
-                    results[i]['prsn'].append(['Time','Mean', 'High', 'Yr', 'Low', 'Yr', '1-Day Max', 'Date', '>=0.25', '>=2.5', '>=13', '>=25', 'Mean', 'High', 'Yr'])
+                    results[i]['prsn'].append(['Month','Mean (mm)', 'High (mm)', 'Yr', 'Low (mm)', 'Yr', '1-Day Max (mm)', 'Date (dd/yyyy)', 'Days>=0.25mm', 'Days>=2.5mm', 'Days>=13mm', 'Days>=25mm', 'Snow Mean (mm)', 'Snow High (mm)', 'Yr'])
                 else:
-                    results[i]['prsn'].append(['Time','Mean', 'High', 'Yr', 'Low', 'Yr', '1-Day Max', 'Date', '>=0.01', '>=0.10', '>=0.50', '>=1.00', 'Mean', 'High', 'Yr'])
+                    results[i]['prsn'].append(['Month','Mean (In)', 'High (In)', 'Yr', 'Low (In)', 'Yr', '1-Day Max (In)', 'Date (dd/yyyy)', 'Days>=0.01In', 'Days>=0.10In', 'Days>=0.50In', 'Days>=1.00In', 'Snow Mean (In)', 'Snow High (In)', 'Yr'])
             elif table in ['hdd', 'cdd']:
-                results[i][table].append(['Base', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Ann'])
+                results[i][table].append(['Base Temperature (F)', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December', 'Annual'])
             elif table in ['gdd', 'corn']:
-                results[i][table].append(['Base', 'M/S','Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Ann'])
+                results[i][table].append(['Base Temperature (F)', 'Monthly Data (M)/Sum (S)','January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December', 'Annual'])
         num_yrs = len(kwargs['data'][i])
         start_year = dates[0][0:4]
         end_year = dates[-1][0:4]

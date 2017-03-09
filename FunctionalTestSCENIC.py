@@ -224,7 +224,7 @@ class setUp(object):
         except AssertionError as err:
             logger.error('AssertionError ' + str(err) + '\n')
 
-    def run_intraannual(self,params):
+    def run_single_year(self,params):
         results = {};err = None
         initial, err = self.setInitial(params)
         if err is not None:return results, err
@@ -234,7 +234,7 @@ class setUp(object):
         if err is not None:return results, err
         try:
             year_txt_data, year_graph_data, climoData, percentileData =\
-            WRCCUtils.get_single_intraannual_data(form_cleaned)
+            WRCCUtils.get_single_single_year_data(form_cleaned)
         except Exception, e:
             err = 'FAIL get_single_intraanual_data. ERROR: ' + \
             str(e) + ' PARAMS: ' + str(params)
@@ -258,7 +258,7 @@ class setUp(object):
         results['graph_dict'] = graph_dict
         return results, err
 
-    def test_intraannual_results(self,utClass,results,err):
+    def test_single_year_results(self,utClass,results,err):
         if err is not None:
             logger.error(err + '\n')
         try:
@@ -672,18 +672,18 @@ class Test_seasonal_summary(unittest.TestCase):
         results, err = self.setUp.run_seasonal_summary(params)
         self.setUp.test_seasonal_summary_results(self,results,err)
 
-class Test_intraannual(unittest.TestCase):
+class Test_single_year(unittest.TestCase):
     def setUp(self):
-        self.params = copy.deepcopy(WRCCData.SCENIC_DATA_PARAMS['intraannual'])
-        self.setUp = setUp('intraannual')
+        self.params = copy.deepcopy(WRCCData.SCENIC_DATA_PARAMS['single_year'])
+        self.setUp = setUp('single_year')
 
     def test_default(self):
-        msg = 'Testing Intraannual with default values'
+        msg = 'Testing Single-Year with default values'
         logger.info(msg + '\n')
         params = copy.deepcopy(self.params)
         logger.info(str(params) + '\n')
-        results, err = self.setUp.run_intraannual(params)
-        self.setUp.test_intraannual_results(self,results,err)
+        results, err = self.setUp.run_single_year(params)
+        self.setUp.test_single_year_results(self,results,err)
 
 class Test_monthly_summary(unittest.TestCase):
     def setUp(self):

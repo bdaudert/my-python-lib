@@ -235,13 +235,15 @@ def check_start_date(form):
     #Check that start date is earlier than end date
     if e_date.lower() == 'por':
         return err
+    sd = '9999-99-99'
+    ed = '9999-99-99'
     try:
-        sd = datetime.datetime(int(s_date[0:4]), int(s_date[4:6].lstrip('0')), int(s_date[6:8].lstrip('0')))
+        sd = datetime.datetime(int(s_date[0:4]), int(s_date[4:6]), int(s_date[6:8]))
     except:
         return '%s is not a valid date.' %str(form['start_date'])
 
     try:
-        ed = datetime.datetime(int(e_date[0:4]), int(e_date[4:6].lstrip('0')), int(e_date[6:8].lstrip('0')))
+        ed = datetime.datetime(int(e_date[0:4]), int(e_date[4:6]), int(e_date[6:8]))
         if ed < sd:
             return 'Start Date is later then End Year.'
     except:

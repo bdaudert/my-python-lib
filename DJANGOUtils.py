@@ -116,7 +116,7 @@ def set_initial(request,app_name):
     Getlist = set_GET_list(request)
     #Set area type: station_id(s), location, basin,...
     area_type = None
-    if app_name in ['single_lister','climatology','monthly_summary', 'seasonal_summary','intraannual']:
+    if app_name in ['single_lister','climatology','monthly_summary', 'seasonal_summary','single_year']:
         initial['area_type'] = Get('area_type','station_id')
     elif app_name in ['data_comparison']:
         initial['area_type'] = 'location'
@@ -189,7 +189,7 @@ def set_initial(request,app_name):
     if app_name == 'map_overlay':
         initial['variables'] = Get('variables','maxt,mint,pcpn').split(',')
         initial['variables_str'] = ','.join(initial['variables'])
-    elif app_name in ['monthly_spatial_summary','monthly_summary','data_comparison', 'seasonal_summary','intraannual']:
+    elif app_name in ['monthly_spatial_summary','monthly_summary','data_comparison', 'seasonal_summary','single_year']:
             initial['variable'] = Get('variable',None)
             if initial['variable'] is not None and len(initial['variable'].split(',')) > 1:
                 initial['variable'] =  str(initial['variable'].split(',')[0])
@@ -261,7 +261,7 @@ def set_initial(request,app_name):
         initial['min_year_fut'] = sd_fut[0:4]
         initial['max_year_fut'] = ed_fut[0:4]
         initial['season'] = Get('season','1')
-    elif app_name in ['seasonal_summary', 'intraannual']:
+    elif app_name in ['seasonal_summary', 'single_year']:
         initial['start_year'] = Get('start_year','POR')
         initial['end_year'] = Get('end_year','POR')
         initial['start_month']  = Get('start_month', '1')
@@ -273,7 +273,7 @@ def set_initial(request,app_name):
             initial['max_year'] = Get('max_year', ed[0:4])
             initial['end_month']  = Get('end_month', '1')
             initial['end_day']  = Get('end_day', '31')
-        if app_name in ['intraannual']:
+        if app_name in ['single_year']:
             '''
             if initial['start_year'].lower() != 'por':
                 initial['min_year'] = initial['start_year']
@@ -398,11 +398,11 @@ def set_initial(request,app_name):
         initial['interpolation'] = Get('interpolation', 'cspline')
         initial['projection'] = Get('projection', 'lcc')
     #Ploting options for all pages that have charts
-    if app_name in ['monthly_summary', 'spatial_summary','seasonal_summary', 'intraannual','data_comparison','map_overlay']:
-        if app_name in ['spatial_summary','monthly_summary','intraannual','map_overlay']:
+    if app_name in ['monthly_summary', 'spatial_summary','seasonal_summary', 'single_year','data_comparison','map_overlay']:
+        if app_name in ['spatial_summary','monthly_summary','single_year','map_overlay']:
             if app_name in ['spatial_summary','monthly_spatial_summary','map_overlay']:
                 shown_indices = ','.join([str(idx) for idx in range(len(initial['variables']))])
-            elif app_name == 'intraannual':
+            elif app_name == 'single_year':
                 try:
                     shown_indices = str(int(initial['target_year']) - int(initial['min_year']))
                 except:

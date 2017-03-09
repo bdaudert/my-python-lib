@@ -1942,9 +1942,9 @@ def compute_circular_running_mean_bounds(data,num):   #need to consolidate these
 
     return rm_data
 
-def get_single_intraannual_data(form):
+def get_single_single_year_data(form):
     '''
-    Intraannual data
+    Single-Year data
     Args: cleaned form field entries
     Returns: inter-year data and highcarts data for POR or grid range
     '''

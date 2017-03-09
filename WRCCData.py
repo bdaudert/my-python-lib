@@ -1376,7 +1376,7 @@ PARAMS_HEADER_KEYS = {
     'single_lister':['area_type','data_summary','start_date','end_date'],
     'monthly_summary':['area_type','variable','start_year','end_year'],
     'seasonal_summary':['variable','start_month','start_day'],
-    'intraannual':['variable','start_month','start_day'],
+    'single_year':['variable','start_month','start_day'],
     'data_comparison':['location','grid','start_date','end_date'],
     'climatology':['area_type','summary_type','start_year','end_year'],
     'multi_lister':['area_type','data_summary','start_date','end_date'],
@@ -1393,7 +1393,7 @@ CSV_HEADER_KEYS = {
     'single_lister':['area_type','data_summary','start_date','end_date'],
     'monthly_summary':['area_type','variable','start_year','end_year'],
     'seasonal_summary':['variable','start_month','start_day'],
-    'intraannual':['variable','start_month','start_day'],
+    'single_year':['variable','start_month','start_day'],
     'data_comparison':['area_type','start_date','end_date'],
     'climatology':['area_type','variable','start_year','end_year'],
     'multi_lister':['data_type','area_type','data_summary','start_date','end_date'],
@@ -1936,7 +1936,7 @@ SCENIC_FORM_OPTIONS = {
         'delimiter':DELIMITER_TUPLE,
         'chart_type':CHART_TYPE
     },
-    'intraannual':{
+    'single_year':{
         'area_type':SINGLE_AREA_TUPLE,
         'grid':GRID_CHOICES_TUPLE,
         'variable':ACIS_ELEMENTS_TUPLE,
@@ -1963,12 +1963,12 @@ SCENIC_FORM_OPTIONS = {
         'data_format':DATA_FORMAT_CHOICES,
         'delimiter':DELIMITER_TUPLE,
         'summary_type':(
-            ('all','All of those below'),
             ('temp','Temperature'),
             ('prsn','Precipitation'),
             ('both','Temp/Precip/Snow'),
             ('hc','Degree Days'),
-            ('g','Growing Degree Days')
+            ('g','Growing Degree Days'),
+            ('all','All of those above')
         )
     },
     'spatial_summary':{
@@ -2101,7 +2101,7 @@ SCENIC_DATA_PARAMS = {
         'start_year':'1980',
         'end_year':'2000'
     },
-    'intraannual':{
+    'single_year':{
         'area_type':'station_id',
         'station_id':'RENO TAHOE INTL AP, 266779',
         'variable':'pcpn',

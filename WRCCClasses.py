@@ -190,7 +190,7 @@ class GraphDictWriter(object):
             if 'location' in self.form.keys():
                 subTitle = 'Location: ' + self.form['location']
         if 'start_month' in self.form.keys() and 'start_day' in self.form.keys():
-            #Yearly Summary/Intraannual
+            #Yearly Summary/Single-Year
             if 'location' in self.form.keys():
                 subTitle+='Grid: ' + WRCCData.GRID_CHOICES[str(self.form['grid'])][0] + ', '
             else:
@@ -387,7 +387,7 @@ class CsvWriter(object):
                 pass
 
         if self.data_type == 'station' and not self.smry:
-            if 'app_name' in self.form.keys() and self.form['app_name'] in  ['seasonal_summary','intraannual']:
+            if 'app_name' in self.form.keys() and self.form['app_name'] in  ['seasonal_summary','single_year']:
                 pass
             else:
                 row = ['*DataFlags','M=Missing', 'T=Trace', 'S=Subsequent', 'A=Accumulated']
@@ -414,7 +414,7 @@ class CsvWriter(object):
                         row = ['*' + key,str(key_val[1])]
                         self.writer.writerow(row)
             #Write data
-            if 'app_name' in self.form.keys() and self.form['app_name'] in  ['intraannual']:
+            if 'app_name' in self.form.keys() and self.form['app_name'] in  ['single_year']:
                 h = ['*Year: ', p_data[0][0][0:4]]
                 self.writer.writerow(h)
             else:
@@ -424,7 +424,7 @@ class CsvWriter(object):
                 h = [date_data[0]]
                 if d_idx == 0:
                     #Data Header
-                    if self.form['app_name'] not in ['intraannual','seasonal_summary']:
+                    if self.form['app_name'] not in ['single_year','seasonal_summary']:
                         if p_name:h = ['Name'] + h
                         if p_id:h = ['ID'] + h
                     h = ['*'] + h
@@ -518,7 +518,7 @@ class CsvWriterNew(object):
                 pass
 
         if self.data_type == 'station' and not self.smry:
-            if self.form['app_name'] not in ['interannual','intraannual']:
+            if self.form['app_name'] not in ['interannual','single_year']:
                 row = ['*DataFlags','M=Missing', 'T=Trace', 'S=Subsequent', 'A=Accumulated']
                 self.writer.writerow(row)
 
@@ -532,7 +532,7 @@ class CsvWriterNew(object):
     def write_data(self):
         #Override data headers
         h = ['*'] + self.data[0][0]
-        if self.form['app_name'] in  ['intraannual']:
+        if self.form['app_name'] in  ['single_year']:
             h = ['*Year: ', self.data[0][0][0][0:4]]
         else:
             if 'data_type' in self.form.keys() and self.form['data_type'] == 'station':
@@ -638,7 +638,7 @@ class ExcelWriterNew(object):
             ws.write(3,4,'A=Accumulated')
         #Data header
         col_plus = 2
-        if self.form['app_name'] in  ['intraannual']:
+        if self.form['app_name'] in  ['single_year']:
             ws.write(5,0,'Year')
             ws.write(5,1,'Value')
         else:
@@ -758,7 +758,7 @@ class ExcelWriter(object):
         #Loop over data points
         for p_idx, p_data in enumerate(self.data):
             #New sheet for each point
-            if 'app_name' in self.form.keys() and self.form['app_name'] == 'intraannual':
+            if 'app_name' in self.form.keys() and self.form['app_name'] == 'single_year':
                 ws = self.wb.add_sheet('Year' + str(int(self.form['start_year']) + p_idx))
             else:
                 ws = self.wb.add_sheet('Point' + str(p_idx))

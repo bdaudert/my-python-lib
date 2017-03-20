@@ -82,7 +82,7 @@ def get_coop_id(stn_meta):
 
 def set_wrapper_params(stn_id, table_name):
     vd = WRCCUtils.find_valid_daterange(stn_id)
-    if len(vd) == 2 and vd[0] and vd[1]:
+    if len(vd) == 2 and vd[0] != '9999-99-99' and vd[1] != '9999-99-99':
         return [stn_id, table_name,vd[0][0:4],vd[1][0:4],5]
     return []
 

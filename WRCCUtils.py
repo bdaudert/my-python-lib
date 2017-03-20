@@ -3426,6 +3426,7 @@ def find_valid_daterange(sid, start_date='por', end_date='por', el_list=None, ma
     If max_or_min == max, the largest daterange is returned.
     If max_or_min == min, the smallest daterange is returned.
     '''
+    vd_start = '9999-99-99';vd_end = '9999-99-99'
     #Format start/end date into 8 digit strings
     s_date = date_to_eight(start_date)
     e_date = date_to_eight(end_date)
@@ -3454,23 +3455,18 @@ def find_valid_daterange(sid, start_date='por', end_date='por', el_list=None, ma
                 el_tuple+=','
 
     meta_params = {'sids':sid, 'elems':el_tuple, 'meta':'name,state,sids,ll,elev,uid,valid_daterange'}
-    try:
-        request = AcisWS.StnMeta(meta_params)
-    except:
-        return ['', '']
-    if request is None:
-        return ['','']
-    if 'error' in request.keys() or not 'meta' in request.keys():
-        return ['', '']
+    #Request adat
+    try:request = AcisWS.StnMeta(meta_params)
+    except:return [vd_start,vd_end]
+    #Sanity checks
+    if request is None:return [vd_start,vd_end]
+    if 'error' in request.keys() or not 'meta' in request.keys():return [vd_start,vd_end]
 
-    vd_start = None;vd_end = None
     idx_start = 0
-    if not request['meta']:
-        return ['', '']
+    if not request['meta']:return ['9999-99-99', '9999-99-99']
 
     vd_start_dts = []
     vd_end_dts = []
-    vd_start = None;vd_end = None
     #Convert valid date ranges to datetimes
     for el_idx, el_vdr in enumerate(request['meta'][0]['valid_daterange'][idx_start:]):
         if el_vdr and len(el_vdr) == 2:
@@ -3482,17 +3478,14 @@ def find_valid_daterange(sid, start_date='por', end_date='por', el_list=None, ma
     if max_or_min == 'max' and len(vd_end_dts) >=1:
         vd_start = min(vd_start_dts)
         vd_end = max(vd_end_dts)
-    #Check if dateranges were found
-    if vd_start is None or vd_end is None:
-        return ['','']
     #if user input lies within vd, choose those dates
     if s_date.lower() != 'por' and vd_start <= s_date_dt and s_date_dt <= vd_end:
         vd_start = s_date_dt
     if e_date.lower() != 'por' and vd_end >= e_date_dt and e_date_dt >= vd_start:
         vd_end = e_date_dt
     #convert back to date string
-    vd_start = datetime_to_date(vd_start,'')
-    vd_end = datetime_to_date(vd_end,'')
+    vd_start = datetime_to_date(vd_start,'-')
+    vd_end = datetime_to_date(vd_end,'-')
     return [vd_start, vd_end]
 
 def get_dates(s_date, e_date, app_name=None):

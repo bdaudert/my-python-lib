@@ -494,9 +494,9 @@ def get_station_data(form_input, program):
         s = s_date.lower()
         e = e_date.lower()
         l = elems_list_short
-        [s_date, e_date] = WRCCUtils.find_valid_daterange(sid, start_date=s, end_date=e, el_list=l, max_or_min='max')
-        params['sdate'] = s_date; params['edate'] = e_date
-        if not params['sdate'] or not params['edate']:
+        vd = WRCCUtils.find_valid_daterange(sid, start_date=s, end_date=e, el_list=l, max_or_min='max')
+        params['sdate'] = v[0]; params['edate'] = v[1]
+        if params['sdate']  == '9999-99-99' or params['edate'] == '9999-99-99':
             error = 'No start/end date could be found for this station in the metadata database.'
             resultsdict['error'] = error
             return resultsdict

@@ -1433,7 +1433,7 @@ class SODDataJob(object):
                 vd = WRCCUtils.find_valid_daterange(self.station_ids[0],el_list=variable_list,max_or_min='min', end_date=e_date)
             elif self.params['start_date'].lower() != 'por' and self.params['end_date'].lower() == 'por':
                 vd = WRCCUtils.find_valid_daterange(self.station_ids[0],el_list=variable_list,max_or_min='min', start_date=s_date)
-            if vd:
+            if vd and vd[0] != '9999-99-99' and vd[1] != '9999-99-99':
                 s_date = vd[0];e_date=vd[1]
         #FIX ME: MultiStn calls with start dates before 1850 fail
         if int(s_date[0:4]) <1850:

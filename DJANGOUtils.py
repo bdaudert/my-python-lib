@@ -79,10 +79,9 @@ def set_min_max_dates(initial):
                 els.append('mint')
 
         vd = WRCCUtils.find_valid_daterange(stn_id,el_list=els,max_or_min='min')
-        if vd and len(vd) >=1:sd = vd[0]
-        if vd and len(vd) >1:ed = vd[1]
-        sd_fut =  sd;ed_fut = ed
-    if 'location' in initial.keys() or initial['app_name'] == 'monthly_spatial_summary':
+        sd = vd[0];ed = vd[1]
+        #sd_fut =  sd;ed_fut = ed
+    elif 'location' in initial.keys() or initial['app_name'] == 'monthly_spatial_summary' or initial['data_type'] == 'grid':
         sd = WRCCData.GRID_CHOICES[str(initial['grid'])][3][0][0]
         #ed = WRCCUtils.advance_date(sd,10*365,'forward')
         ed = WRCCData.GRID_CHOICES[str(initial['grid'])][3][0][1]
@@ -91,6 +90,9 @@ def set_min_max_dates(initial):
             sd_fut = WRCCData.GRID_CHOICES[initial['grid']][3][1][0]
             #ed_fut = WRCCUtils.advance_date(sd,10*365,'forward')
             ed_fut = WRCCData.GRID_CHOICES[initial['grid']][3][1][1]
+    else:
+        if initial['data_type'] == 'station':
+            sd = '1850-01-01';ed = today
     return sd, ed, sd_fut, ed_fut
 
 def set_initial(request,app_name):
@@ -154,7 +156,7 @@ def set_initial(request,app_name):
     elif initial['area_type'] in ['basin','county_warning_area','county','climate_division','state','shape']:
         initial['autofill_list'] = 'US_' + initial['area_type']
         initial['data_type'] = Get('data_type','station')
-    if app_name in  ['temporal_summary','monthly_spatial_summary']:
+    if app_name in  ['temporal_summary','monthly_spatial_summary','data_comparison']:
         initial['data_type'] = 'grid'
     if app_name in ['station_finder','sf_download']:
         initial['data_type'] = 'station'
@@ -226,8 +228,8 @@ def set_initial(request,app_name):
     #Set dates
     #if 'grid' in initial.keys():
     sd, ed, sd_fut, ed_fut = set_min_max_dates(initial)
-    initial['min_date'] = sd; initial['max_date'] = ed
-    initial['min_date_fut'] = sd_fut; initial['max_date_fut'] = ed_fut;
+    initial['min_date'] = WRCCUtils.format_date_string(sd,'-'); initial['max_date'] = WRCCUtils.format_date_string(ed,'-')
+    initial['min_date_fut'] = WRCCUtils.format_date_string(sd_fut,'-'); initial['max_date_fut'] = WRCCUtils.format_date_string(ed_fut,'-');
     if app_name in ['monthly_summary','climatology']:
         initial['start_year'] = Get('start_year', None)
         if initial['start_year'] is None:
@@ -550,9 +552,9 @@ def set_form(request, clean=True):
                     vd = WRCCUtils.find_valid_daterange(stn_id, start_date=sd, end_date=ed, el_list=el_list, max_or_min='max')
                 form[k] = vd[idx]
                 if key == 'start_year' and form['start_year'].lower() == 'por':
-                    form['start_year'] = vd[0][0:4]
+                    if vd[0] != '9999-99-99':form['start_year'] = vd[0][0:4]
                 if key == 'end_year' and form['end_year'].lower() == 'por':
-                    form['end_year'] = vd[1][0:4]
+                    if vd[1] != '9999-99-99':form['end_year'] = vd[1][0:4]
             else:
                 form[str(key)] = str(form[key]).replace('-','').replace(':','').replace('/','').replace(' ','')
         else:

@@ -235,23 +235,19 @@ def set_initial(request,app_name):
         if initial['start_year'] is None:
             #Link from station finder
             initial['start_year'] = Get('start_date', '9999')[0:4]
-            if initial['start_year'] == '9999':
-                if 'location' in initial.keys():initial['start_year'] =  sd[0:4]
-                else:initial['start_year'] = 'POR'
+            if initial['start_year'] == '9999':initial['start_year'] =  sd[0:4]
         initial['end_year']  = Get('end_year', None)
         if initial['end_year'] is None:
             #Link from station finder
             initial['end_year'] = Get('end_date', '9999')[0:4]
             if initial['end_year'] == '9999':
-                if 'location' in initial.keys():
-                    ey = str(int(initial['start_year']) + 10)
-                    if int(ey) >= int(sd[0:4]) and int(ey) <= int(ed[0:4]):
-                        initial['end_year'] = ey
-                    elif int(ey) >=int(sd_fut[0:4]) and int(ey) < int(ed_fut[0:4]):
-                        initial['end_year'] = ey
-                    else:
-                        initial['end_year'] =  ed[0:4]
-                else:initial['end_year'] = 'POR'
+                ey = str(int(initial['start_year']) + 10)
+                if int(ey) >= int(sd[0:4]) and int(ey) <= int(ed[0:4]):
+                    initial['end_year'] = ey
+                elif int(ey) >=int(sd_fut[0:4]) and int(ey) < int(ed_fut[0:4]):
+                    initial['end_year'] = ey
+                else:
+                    initial['end_year'] =  ed[0:4]
         initial['min_year'] = Get('min_year',sd[0:4])
         initial['max_year'] = Get('max_year', ed[0:4])
         initial['min_year_fut'] = sd_fut[0:4]
@@ -264,8 +260,8 @@ def set_initial(request,app_name):
         initial['max_year_fut'] = ed_fut[0:4]
         initial['season'] = Get('season','1')
     elif app_name in ['seasonal_summary', 'single_year']:
-        initial['start_year'] = Get('start_year','POR')
-        initial['end_year'] = Get('end_year','POR')
+        initial['start_year'] = Get('start_year',sd[0:4])
+        initial['end_year'] = Get('end_year',ed[0:4])
         initial['start_month']  = Get('start_month', '1')
         initial['start_day']  = Get('start_day', '1')
         initial['min_year_fut'] = sd_fut[0:4]

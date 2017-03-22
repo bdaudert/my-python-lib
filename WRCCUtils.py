@@ -2502,6 +2502,8 @@ def find_id_and_name(form_name_field, json_file_path):
     if not os.path.isfile(json_file_path) or os.path.getsize(json_file_path) == 0:
         return '', str(form_name_field)
     #Find id in json file
+    print i, name
+    print json_file_path
     json_data = load_json_data_from_file(json_file_path)
     for entry in json_data:
         #check if i is id
@@ -4308,7 +4310,8 @@ def load_json_data_from_file(path_to_json_file):
     json_data = None
     try:
         with open(path_to_json_file, 'r') as json_f:
-            json_data = u_convert(json.loads(json_f.read()))
+            #json_data = u_convert(json.loads(json_f.read()))
+            json_data = json.loads(json_f.read())
     except:
         pass
     return json_data

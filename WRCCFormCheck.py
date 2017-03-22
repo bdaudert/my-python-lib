@@ -192,17 +192,16 @@ def check_max_year(form):
 
 def check_start_date(form):
     err = None
-    s_date = WRCCUtils.date_to_eight(form['start_date'])
-    e_date = WRCCUtils.date_to_eight(form['end_date'])
-    #Valid daterange check
-    if s_date == '':
-        return 'No valid start date could be found for this station!'
+    s_date = form['start_date']
+    e_date = form['end_date']
     if s_date.lower() == 'por':
         if 'station_id' in form.keys():
             return err
         else:
             return '%s is not a valid option for a multi-station or grid request.' %form['start_date']
-
+    s_date = WRCCUtils.date_to_eight(s_date)
+    e_date = WRCCUtils.date_to_eight(e_date)
+    #Valid daterange check
     if len(s_date)!=8:
         return '%s is not a valid date.' %str(form['start_date'])
     try:
@@ -347,17 +346,16 @@ def check_start_date(form):
 
 def check_end_date(form):
     err = None
-    s_date = form['start_date'].replace('-','').replace('/','').replace(':','')
-    e_date = form['end_date'].replace('-','').replace('/','').replace(':','')
+    s_date = form['start_date']
+    e_date = form['end_date']
     #Check valid daterange error
-    if e_date == '':
-        return 'No valid end date could be found for this station!'
     if e_date.lower() == 'por':
         if 'station_id' in form.keys():
             return err
         else:
             return '%s is not a valid Start Date for a multi-station or grid request!' %str(form['end_date'])
-
+    s_date = WRCCUtils.date_to_eight(s_date)
+    e_date = WRCCUtils.date_to_eight(e_date)
     if len(e_date)!=8:
         return '%s is not a valid date.' %str(form['end_date'])
 

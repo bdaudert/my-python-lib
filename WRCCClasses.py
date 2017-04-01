@@ -2272,20 +2272,7 @@ class FTPClass(object):
             if self.logger:
                 self.logger.error(error)
             return error
-    '''
-    def delete_file(self, base_dir, file_name):
-        self.ftp.cwd(base_dir)
-        try:
-            self.ftp.delete(file_name)
-            return None
-        except:
-            error = 'Can not remove directory: %s on %s.' %(base_dir + dir_name, self.ftp_server)
-            if self.logger:
-                error = 'Can not remove file: %s on %s.' %(base_dir + file_name, self.ftp_server)
-                self.logger.error(error)
-            return error
 
-    '''
     def upload_file(self):
         fname = os.path.basename(self.f)
         ext = os.path.splitext(self.f)[1]
@@ -2321,7 +2308,7 @@ class FTPClass(object):
     def FTPUpload(self):
         error = self.login()
         if not error:error = self.cwd(self.pub_dir)
-        else:return 'ERROR'
+        else:return str(error)
         if not error:
             self.upload_file()
             return None

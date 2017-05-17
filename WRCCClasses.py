@@ -2388,12 +2388,12 @@ class LargeDataRequest(object):
         smaller chunks if needed
         '''
 
-        if resultsdict['data']:
-            data = resultsdict['data']
-            key_data = 'data';key_empty = 'smry'
-        elif resultsdict['smry']:
+        if resultsdict['smry']:
             data = resultsdict['smry']
             key_data = 'smry';key_empty = 'data'
+        elif resultsdict['data']:
+            data = resultsdict['data']
+            key_data = 'data';key_empty = 'smry'
         else:
             self.logger.error('ERROR in split_data: empty data lists')
             return []

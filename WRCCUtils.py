@@ -3318,26 +3318,26 @@ def shapefile_to_ll(app_name, shp_file, feature_id):
     ## Project all coordinates to WGS84
     output_osr = osr.SpatialReference()
     output_osr.ImportFromEPSG(4326)  ## WGS84
-    ##output_osr.ImportFromEPSG(4269)  ## NAD83
-    ## Get the spatial reference
+    # output_osr.ImportFromEPSG(4269)  ## NAD83
+    #  Get the spatial reference
     input_ds = ogr.Open(shp_file)
     if not input_ds:
         return ''
     input_layer = input_ds.GetLayer()
-    ## Get the projection
+    # Get the projection
     input_osr = input_layer.GetSpatialRef()
-    ## Build the tranform object for projecting the coordinates
+    # Build the tranform object for projecting the coordinates
     tx = osr.CoordinateTransformation(input_osr, output_osr)
-    #Get the feature by ID
+    # Get the feature by ID
     input_ftr = input_layer.GetFeature(f_id)
     input_geom = input_ftr.GetGeometryRef()
     input_geom_type = input_geom.GetGeometryName()
-    ## Project a copy of the geometry
+    # Project a copy of the geometry
     proj_geom = input_geom.Clone()
     proj_geom.Transform(tx)
 
-    #Extract lon, lat coordinates from different geometry types
-    #1.POINT and MULTIPOINT -- Not allowed
+    # Extract lon, lat coordinates from different geometry types
+    # 1.POINT and MULTIPOINT -- Not allowed
     if input_geom_type in  ['POINT','MULTIPOINT']:
         '''
         for i in range(0, proj_geom.GetPointCount()):
@@ -3347,29 +3347,29 @@ def shapefile_to_ll(app_name, shp_file, feature_id):
                 poly_ll+=','
         '''
         return poly_ll
-    #2.LINES, MULTILINESTRINGS -- not allowed
+    # 2.LINES, MULTILINESTRINGS -- not allowed
     if input_geom_type in ['LINE','MULTILINESTRING']:
         return poly_ll
-    #3.POLYGONS
+    # 3.POLYGONS
     if input_geom_type in ['POLYGON']:
-        #Check that polygon has no hole
+        # Check that polygon has no hole
         if len(range(proj_geom.GetGeometryCount())) > 1:
             return poly_ll
-        ## POLYGONS are made up of LINEAR RINGS
+        # POLYGONS are made up of LINEAR RINGS
         for i in range(0, proj_geom.GetGeometryCount()):
             sub_geom = proj_geom.GetGeometryRef(i)
-            ## LINEAR RINGS are made up of POINTS
+            # LINEAR RINGS are made up of POINTS
             for j in range(0, sub_geom.GetPointCount()):
                 pt = sub_geom.GetPoint(j)
                 poly_ll+=str(round(pt[0],4)) + ',' + str(round(pt[1],4))
                 if j < sub_geom.GetPointCount() - 1:
                     poly_ll+=','
-    #4.MULTIPOLYGONS
+    # 4.MULTIPOLYGONS
     if input_geom_type in ['MULTIPOLYGON']:
-        #MULTIPOLYGONS are made of polygons
+        # MULTIPOLYGONS are made of polygons
         for i in range(0, proj_geom.GetGeometryCount()):
             poly = proj_geom.GetGeometryRef(i)
-            ## POLYGONS are made up of LINEAR RINGS
+            # POLYGONS are made up of LINEAR RINGS
             for j in range(0, poly.GetGeometryCount()):
                 linear_ring = poly.GetGeometryRef(j)
                 for k in range(0, linear_ring.GetPointCount()):
@@ -3377,10 +3377,10 @@ def shapefile_to_ll(app_name, shp_file, feature_id):
                     poly_ll+=str(round(pt[0],4)) + ',' + str(round(pt[1],4))
                     if k < linear_ring.GetPointCount() - 1:
                         poly_ll+=','
-    ## Get the next feature
-    #input_ftr = input_layer.GetNextFeature()
-    ## Or break after the first one
-    #break
+    # Get the next feature
+    # input_ftr = input_layer.GetNextFeature()
+    # Or break after the first one
+    # break
     return poly_ll
 
 def geoll2ddmmss(lat,lon):

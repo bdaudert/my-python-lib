@@ -60,6 +60,13 @@ def set_GET_list(request):
 def set_min_max_dates(initial):
     sd = '9999-99-99';ed = '9999-99-99'
     sd_fut = sd; ed_fut = ed
+    data_type = 'station'
+    if 'location' in initial.keys():
+        data_type = 'grid'
+    if initial['app_name'] in ['monthly_spatial_summary', 'temporal_summary']:
+        data_type = 'grid'
+    if 'data_type' in initial.keys() and initial['data_type'] == 'grid':
+        data_type = 'grid'
     if 'station_id' in initial.keys():
         stn_json = settings.MEDIA_DIR + '/json/US_station_id.json'
         stn_id, stn_name = WRCCUtils.find_id_and_name(initial['station_id'],stn_json)
@@ -81,7 +88,7 @@ def set_min_max_dates(initial):
         vd = WRCCUtils.find_valid_daterange(stn_id,el_list=els,max_or_min='min')
         sd = vd[0];ed = vd[1]
         #sd_fut =  sd;ed_fut = ed
-    elif 'location' in initial.keys() or initial['app_name'] == 'monthly_spatial_summary' or initial['data_type'] == 'grid':
+    elif data_type == 'grid':
         sd = WRCCData.GRID_CHOICES[str(initial['grid'])][3][0][0]
         #ed = WRCCUtils.advance_date(sd,10*365,'forward')
         ed = WRCCData.GRID_CHOICES[str(initial['grid'])][3][0][1]
@@ -91,8 +98,9 @@ def set_min_max_dates(initial):
             #ed_fut = WRCCUtils.advance_date(sd,10*365,'forward')
             ed_fut = WRCCData.GRID_CHOICES[initial['grid']][3][1][1]
     else:
-        if initial['data_type'] == 'station':
-            sd = '1850-01-01';ed = today
+        if 'data_typ' in initial.keys() and initial['data_type'] == 'station':
+            sd = '1850-01-01'
+            ed = today
     return sd, ed, sd_fut, ed_fut
 
 def set_initial(request,app_name):

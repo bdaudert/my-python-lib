@@ -278,12 +278,13 @@ def check_start_date(form):
             grid_e = WRCCUtils.datetime_to_date(grid_e,'-')
             return 'Valid date range for this grid is: ' +str(grid_s) + ' - ' + str(grid_e)
 
+        '''
         #Limit grid requests to max 10 years for multi point requests
         if not 'location' in form.keys() and (ed - sd).days > 10 * 366:
             err = 'Request for more than one grid point are limited to ten years or less! ' +\
             'Please adjust your dates accordingly.'
             return err
-
+        '''
 
     #Check for unreasonable start and end dates
     #for station data requests
@@ -427,13 +428,13 @@ def check_end_date(form):
             grid_s = WRCCUtils.datetime_to_date(grid_s,'-')
             grid_e = WRCCUtils.datetime_to_date(grid_e,'-')
             return 'Valid date range for this grid is: ' + grid_s + ' - ' + grid_e
-
+        '''
         #Limit grid requests to max 10 years for multi point requests
         if not 'location' in form.keys() and (ed - sd).days > 10 * 366:
             err = 'Request for more than one grid point are limited to ten years or less! ' +\
             'Please adjust your dates accordingly.'
             return err
-
+        '''
     #Check for unreasonable start and end dates
     #for station data requests
     data_type = WRCCUtils.get_data_type(form)

@@ -1170,23 +1170,30 @@ class DataComparer(object):
         el_strip, base_temp = WRCCUtils.get_el_and_base_temp(self.variable, units=self.units)
         grid_data = [];station_data = [];
         for date_idx, data in enumerate(gdata['data']):
+            #Check for missing data
+            gd = None; sd = None
             try:
-                if self.units == 'english':
-                    gd = float(data[1])
-                else:
-                    gd = WRCCUtils.convert_to_metric(el_strip,float(data[1]))
+                gd = float(data[1])
+                #Chekc for missing values
+                if abs(gd + 9999.0) < 0.0001:
+                    gd = None
             except:
-                gd = None
+                pass
+
+            if gd is not None and self.units != 'english':
+                gd = WRCCUtils.convert_to_metric(el_strip,float(data[1]))
             try:
-                if self.units == 'english':
-                    sd = float(sdata['data'][date_idx][1])
-                else:
-                    sd = WRCCUtils.convert_to_metric(el_strip,float(sdata['data'][date_idx][1]))
+                sd = float(sdata['data'][date_idx][1])
             except:
-                sd = None
+                pass
+            if sd is not None and self.units != 'english':
+                sd = WRCCUtils.convert_to_metric(el_strip,float(sdata['data'][date_idx][1]))
+
             int_time = self.hms_to_seconds(str(data[0]))
-            grid_data.append([int(int_time),gd])
-            station_data.append([int(int_time),sd])
+            if gd is not None:
+                grid_data.append([int(int_time),gd])
+            if sd is not None:
+                station_data.append([int(int_time),sd])
             SGDWriter = GraphDictWriter(self.form, station_data, self.variable, name = s_graph_title)
             s_graph_dict = SGDWriter.write_dict()
             GGDWriter =  GraphDictWriter(self.form, grid_data, self.variable, name = g_graph_title)

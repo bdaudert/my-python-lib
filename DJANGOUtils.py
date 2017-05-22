@@ -92,7 +92,7 @@ def set_min_max_dates(initial):
         sd = WRCCData.GRID_CHOICES[str(initial['grid'])][3][0][0]
         #ed = WRCCUtils.advance_date(sd,10*365,'forward')
         ed = WRCCData.GRID_CHOICES[str(initial['grid'])][3][0][1]
-        sd_fut =  sd;ed_fut = ed
+        #sd_fut =  sd;ed_fut = ed
         if len(WRCCData.GRID_CHOICES[initial['grid']][3]) == 2:
             sd_fut = WRCCData.GRID_CHOICES[initial['grid']][3][1][0]
             #ed_fut = WRCCUtils.advance_date(sd,10*365,'forward')
@@ -236,8 +236,10 @@ def set_initial(request,app_name):
     #Set dates
     #if 'grid' in initial.keys():
     sd, ed, sd_fut, ed_fut = set_min_max_dates(initial)
-    initial['min_date'] = WRCCUtils.format_date_string(sd,'-'); initial['max_date'] = WRCCUtils.format_date_string(ed,'-')
-    initial['min_date_fut'] = WRCCUtils.format_date_string(sd_fut,'-'); initial['max_date_fut'] = WRCCUtils.format_date_string(ed_fut,'-');
+    initial['min_date'] = WRCCUtils.format_date_string(sd,'-')
+    initial['max_date'] = WRCCUtils.format_date_string(ed,'-')
+    initial['min_date_fut'] = WRCCUtils.format_date_string(sd_fut,'-')
+    initial['max_date_fut'] = WRCCUtils.format_date_string(ed_fut,'-');
     if app_name in ['monthly_summary','climatology']:
         initial['start_year'] = Get('start_year', None)
         if initial['start_year'] is None:

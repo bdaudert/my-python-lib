@@ -2419,7 +2419,7 @@ def extract_highcarts_data_monthly_summary(data,form):
     for m_idx in range(per_len):
         data_idx = 2 * m_idx + 1
         mon_data = zipped[data_idx]
-        for d_idx, data in enumerate(mon_data[1:-6]):
+        for d_idx, data in enumerate(mon_data[1:]):
             date = years[d_idx+1] + '-01-01'
             d = calendar.timegm(dt.datetime.strptime(date, '%Y-%m-%d').timetuple())
             int_time = 1000 * d

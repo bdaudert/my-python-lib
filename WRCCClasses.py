@@ -1174,8 +1174,8 @@ class DataComparer(object):
             gd = None; sd = None
             try:
                 gd = float(data[1])
-                #Chekc for missing values
-                if abs(gd + 9999.0) < 0.0001:
+                #Check for missing values
+                if abs(gd + 9999.0) < 0.0001 or abs(gd + 999.0) < 0.0001:
                     gd = None
             except:
                 pass
@@ -1184,6 +1184,8 @@ class DataComparer(object):
                 gd = WRCCUtils.convert_to_metric(el_strip,float(data[1]))
             try:
                 sd = float(sdata['data'][date_idx][1])
+                if abs(sd + 9999.0) < 0.0001 or abs(sd + 999.0) < 0.0001:
+                    sd = None
             except:
                 pass
             if sd is not None and self.units != 'english':

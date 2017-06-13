@@ -98,7 +98,7 @@ def set_min_max_dates(initial):
             #ed_fut = WRCCUtils.advance_date(sd,10*365,'forward')
             ed_fut = WRCCData.GRID_CHOICES[initial['grid']][3][1][1]
     else:
-        if 'data_typ' in initial.keys() and initial['data_type'] == 'station':
+        if 'data_type' in initial.keys() and initial['data_type'] == 'station':
             sd = '1850-01-01'
             ed = today
     return sd, ed, sd_fut, ed_fut
@@ -234,7 +234,6 @@ def set_initial(request,app_name):
             initial['degree_days'] = Get('degree_days', 'gdd55,hdd70').replace(', ',',')
 
     #Set dates
-    #if 'grid' in initial.keys():
     sd, ed, sd_fut, ed_fut = set_min_max_dates(initial)
     initial['min_date'] = WRCCUtils.format_date_string(sd,'-')
     initial['max_date'] = WRCCUtils.format_date_string(ed,'-')
@@ -370,7 +369,8 @@ def set_initial(request,app_name):
         initial['variables_constraints'] = Get('variables_constraints', 'all')
         initial['dates_constraints']  = Get('dates_constraints', 'all')
         initial['display'] = Get('display', 'map')
-        all_meta = ['name','state','ll','elev','ids','networks','valid_daterange']
+        #all_meta = ['name','state','ll','elev','ids','networks','valid_daterange']
+        all_meta = ['name','state','ll','elev','ids','networks']
         initial['metadata_keys'] = Getlist('metadata_keys',all_meta)
         initial['metadata_keys_str'] = ','.join(initial['metadata_keys'])
         initial['metadata_names'] = [WRCCData.DISPLAY_PARAMS[meta] for meta in initial['metadata_keys']]

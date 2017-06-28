@@ -781,7 +781,6 @@ def request_and_format_data(form):
         else: request_data = getattr(AcisWS,'MultiStnData')
     if data_type == 'grid':
         request_data = getattr(AcisWS,'GridData')
-
     #Set request parameters
     params = set_acis_params(form)
     #Make data request
@@ -791,7 +790,6 @@ def request_and_format_data(form):
         error = 'Data request failed with error: %s.' %str(e)
         resultsdict['error'].append( error)
         return resultsdict
-
     #Sanity checks'
     if req is None:
         error = 'No data found for these parameters.'

@@ -24,6 +24,7 @@ from xlwt import Workbook
 import logging
 from ftplib import FTP
 import smtplib
+import paramiko
 
 import zipfile
 try:
@@ -2208,6 +2209,88 @@ class Logger(object):
         logger.addHandler(fh)
         #logger.addHandler(sh)
         return logger
+
+class SFTPTransfer(object):
+    '''
+    Uploads file f to ftp_server
+    in directory pub_dir
+    '''
+    def __init__(self, ftp_server, ftp_port, pub_dir, f=None, logger = None):
+        self.ftp_server = ftp_server
+        self.ftp_port = ftp_port
+        self.pub_dir = pub_dir
+        self.f = f
+        self.logger = logger
+        self.username = ''
+        self.password = ''
+    def login(self):
+        error = None
+        try:
+            self.transport = paramiko.Transport((self.ftp_server, self.ftp_port))
+            if self.logger:
+                self.logger.info('Successfully logged in to ftp server %s' %str(self.ftp_server))
+        except Exception, e:
+            error = 'Error logging in to FTP server: %s' %str(e)
+        return error
+
+    def connect(self):
+        error = None
+        try:
+            #self.transport.connect()
+            self.transport.connect(username = self.username, password = self.password)
+        except Exception, e:
+            if self.logger:
+                self.logger.error(self.transport.get_exception)
+            error = 'Error connecting to FTP server: %s' %str(e)
+        return error
+
+    def upload_file(self):
+        error = None
+        fname = os.path.basename(self.f)
+        try:
+            self.sftp = paramiko.SFTPClient.from_transport(self.transport)
+            #Check if file already exists on server
+            try:
+                sftp.stat(self.pub_dir + fname)
+                if self.logger:
+                    self.logger.info('File already exists on server')
+                return None
+            except IOError:
+                pass
+
+            self.sftp.put(self.f, self.pub_dir)
+            if self.logger:
+                self.logger.info('Successfully transfered file to ftp server %s' %str(self.ftp_server))
+        except Exception, e:
+            error = 'Error transfering file to FTP server: %s' %str(e)
+        return error
+
+    def close_sftp(self):
+        error = None
+        try:
+            self.sftp.close()
+        except:
+            error = 'Can not close sftp!'
+        try:
+            self.transport.close()
+        except:
+            error = 'Can not close sftp.TRANSPORT!'
+        return error
+
+    def SFTPUpload(self):
+        error = None
+        error = self.login()
+        if error:
+            return str(error)
+        error = self.connect()
+        if error:
+            return str(error)
+        error = self.upload_file()
+        e = self.close_sftp()
+        if not error:
+            if e:
+                error = e
+        return error
 
 class FTPClass(object):
     '''

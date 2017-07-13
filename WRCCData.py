@@ -1575,8 +1575,8 @@ for area in area_options:
     dp = DISPLAY_PARAMS[area]
     #Custom titles
     if area == 'shape_file':dp ='Upload Shape File'
-    if area == 'station_id':dp = 'Single Station'
-    if area == 'station_ids':dp = 'List of Stations'
+    if area == 'station_id':dp = 'Station'
+    if area == 'station_ids':dp = 'Stations'
     if area in ['bounding_box','state']:
         TEMPORAL_SUMMARY_AREA_TUPLE+=((area, dp),)
     if area not in ['station_id','location','bounding_box']:

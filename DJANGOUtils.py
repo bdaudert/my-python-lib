@@ -73,19 +73,9 @@ def set_min_max_dates(initial):
         els = []
         if 'variable' in initial.keys():
             els = [initial['variable']]
-            if initial['variable'] in ['dtr','pet']:els = ['maxt','mint']
         if 'variables' in initial.keys():
             els = initial['variables']
-            if 'dtr' in els and 'maxt' not in els:
-                els.append('maxt')
-            if 'dtr' in els and 'mint' not in els:
-                els.append('mint')
-            if 'dtr' in els and 'maxt' not in els:
-                els.append('maxt')
-            if 'dtr' in els and 'mint' not in els:
-                els.append('mint')
-
-        vd = WRCCUtils.find_valid_daterange(stn_id,el_list=els,max_or_min='min')
+        vd, no_vd_els = WRCCUtils.find_valid_daterange(stn_id,el_list=els,max_or_min='min')
         sd = vd[0];ed = vd[1]
         #sd_fut =  sd;ed_fut = ed
     elif data_type == 'grid':
@@ -521,8 +511,20 @@ def set_form(request, clean=True):
     if not clean:
         return form
     #Clean up form for submission
+
+    #Get element list for vd
+    el_list = None
+    if 'variable' in form.keys() and not 'variables' in form.keys():
+        el_list = [form['variable']]
+    if 'variables' in form.keys() and not 'variable' in form.keys():
+        if isinstance(form['variables'],basestring):
+            el_list = form['variables'].replace(', ',',').split(',')
+        else:
+            el_list = form['variables']
+
+    #Get valid daterange
+    vd = ['9999-99-99', '9999-99-99']
     #Clean Dates and windows
-    vd = None
     for key in ['start_date', 'end_date', 'start_year', 'end_year','start_window','end_window']:
         if key not in form.keys():
             continue
@@ -539,23 +541,10 @@ def set_form(request, clean=True):
                 k='end_date'; idx = 1;ed = 'por'
                 if form['start_year'].lower() == 'por':sd = 'por'
                 else:sd = form['start_year'] + '-01-01'
-            if 'variable' in form.keys() and not 'variables' in form.keys():
-                if form['variable'] in ['dtr']:
-                    el_list = ['maxt','mint']
-                if form['variable'] in ['pet']:
-                    el_list = ['maxt','mint','pcpn']
-            if 'variables' in form.keys() and not 'variable' in form.keys():
-                if isinstance(form['variables'],basestring):
-                    el_list = form['variables'].replace(' ','').split(',')
-                else:
-                    el_list = form['variables']
-            else:
-                el_list = None
 
             if 'station_id' in form.keys():
-                if vd is None:
-                    stn_id, stn_name = WRCCUtils.find_id_and_name(str(form['station_id']),settings.MEDIA_DIR +'json/US_station_id.json')
-                    vd = WRCCUtils.find_valid_daterange(stn_id, start_date=sd, end_date=ed, el_list=el_list, max_or_min='max')
+                stn_id, stn_name = WRCCUtils.find_id_and_name(str(form['station_id']),settings.MEDIA_DIR +'json/US_station_id.json')
+                vd, no_vd_els = WRCCUtils.find_valid_daterange(stn_id, start_date=sd, end_date=ed, el_list=el_list, max_or_min='max')
                 form[k] = vd[idx]
                 if key == 'start_year' and form['start_year'].lower() == 'por':
                     if vd[0] != '9999-99-99':form['start_year'] = vd[0][0:4]

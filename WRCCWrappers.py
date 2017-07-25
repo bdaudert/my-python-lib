@@ -195,7 +195,7 @@ def check_filter_type(ft):
 # UTILITY FUNCTIONS
 ########################################
 def por_to_valid_daterange(sid):
-    vd = WRCCUtils.find_valid_daterange(sid)
+    vd, no_vd_els = WRCCUtils.find_valid_daterange(sid)
     if not vd or vd == ['9999-99-99','9999-99-99']:
         vd = ['00000000','00000000']
     return vd
@@ -438,7 +438,7 @@ def sodsum_wrapper(argv, offline = False):
     #Run app
     results = SS_wrapper.run_app(data)
     #Format results
-    vd = WRCCUtils.find_valid_daterange(args['station_id'], start_date='por', end_date='por', el_list=['maxt','pcpn','snow','evap','wdmv'], max_or_min='max')
+    vd, no_vd_els = WRCCUtils.find_valid_daterange(args['station_id'], start_date='por', end_date='por', el_list=['maxt','pcpn','snow','evap','wdmv'], max_or_min='max')
     if vd and len(vd)==2 and vd[0] != '9999-99-99' and vd[1] != '9999-99-99':
         station_dates = vd
     else:

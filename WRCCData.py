@@ -329,7 +329,7 @@ KELLY_NETWORK_ICONS = {
             '11': 'red'
             }
 
-
+all_vd_elements = ['maxt','mint','pcpn','snow','snwd','gdd','hdd','cdd','evap','pet','dtr']
 ACIS_ELEMENTS = defaultdict(dict)
 ACIS_ELEMENTS ={
               '1':{'name':'maxt', 'name_long': 'Maximum Temperature (F/C)', 'vX':1},
@@ -409,8 +409,8 @@ ACIS_ELEMENTS_LIST = [['maxt','Maximum Temperature (F)'], ['mint','Minimum Tempe
                       ['pcpn', 'Precipitation (in)'], ['snow', 'Snowfall (in)'], \
                       ['snwd', 'Snow Depth (in)'], ['cdd', 'Cooling Degree Days'], \
                       ['hdd','Heating Degree Days'], ['gdd', 'Growing Degree Days'], \
-                      ['evap', 'Pan Evaporation (in)'], ['gdd', 'Wind Movement (Mi)'],\
-                      ['pet', 'Potential Evapotranspiration'], ['dtr', 'Temperature Range (F)']]
+                      ['evap', 'Pan Evaporation (in)'], ['pet', 'Potential Evapotranspiration'],
+                      ['dtr', 'Temperature Range (F)']]
 
 ELEMENT_THRESHOLDS = {
     'english':{

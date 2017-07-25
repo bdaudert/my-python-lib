@@ -3432,46 +3432,99 @@ def find_valid_daterange(sid, start_date='por', end_date='por', el_list=None, ma
     e_date = date_to_eight(end_date)
     s_date_dt = date_to_datetime(s_date)
     e_date_dt = date_to_datetime(e_date)
+    index_dict = {}
     if el_list is None or el_list == '':
-        #el_tuple = 'maxt,mint,pcpn,snow,snwd,hdd,gdd,cdd'
-        el_tuple = '1,2,4,10,11,45'
+        element_list = ['maxt','mint','pcpn','snow','snwd','hdd','gdd','cdd', 'evap']
+        el_tuple_vx = '1,2,4,10,11,45,44,44,7'
+        element_list_vx = el_tuple_vx.split(',')
+        for i in range(len(element_list)):
+            index_dict[element_list[i]] = i
     else:
         if isinstance(el_list,basestring):
             element_list = el_list.replace(', ',',').split(',')
         else:
             element_list = copy.deepcopy(el_list)
-        el_tuple =''
+        el_tuple_vx =''
+        element_list_vx = []
         for idx, el in enumerate(element_list):
-            if el in ['pet','dtr']:
-                if 'maxt' not in element_list and 'mint' not in element_list:
-                    el_tuple+='maxt,mint'
-                if 'maxt' not in element_list and 'mint' in element_list:
-                    el_tuple+='maxt'
-                if 'maxt' in element_list and 'mint' not in element_list:
-                    el_tuple+='mint'
-            else:
-                el_tuple+=str(WRCCData.ACIS_ELEMENTS_DICT[el]['vX'])
-            if idx < len(element_list) - 1:
-                el_tuple+=','
+            if el not in ['pet','dtr']:
+                el_tuple_vx+=str(WRCCData.ACIS_ELEMENTS_DICT[el]['vX']) + ','
+                element_list_vx.append(str(WRCCData.ACIS_ELEMENTS_DICT[el]['vX']))
+                index_dict[el] = idx
 
-    meta_params = {'sids':sid, 'elems':el_tuple, 'meta':'name,state,sids,ll,elev,uid,valid_daterange'}
+        #Remove last comma
+        el_tuple_vx = el_tuple_vx[:-1]
+        #Deal with derived variables
+        idx = len(element_list_vx)
+        if 'pet' in element_list or 'dtr' in element_list:
+            if 'maxt' not in element_list and 'mint' not in element_list:
+                el_tuple_vx+=',1,2'
+                element_list_vx.append('1')
+                element_list_vx.append('2')
+                index_dict['maxt'] = idx
+                index_dict['mint'] = idx + 1
+            if 'maxt' not in element_list and 'mint' in element_list:
+                el_tuple_vx+=',1'
+                element_list_vx.append('1')
+                index_dict['maxt'] = idx
+            if 'maxt' in element_list and 'mint' not in element_list:
+                el_tuple_vx+=',2'
+                element_list_vx.append('2')
+                index_dict['mint'] = idx
+
+    meta_params = {'sids':sid, 'elems':el_tuple_vx, 'meta':'name,state,sids,ll,elev,uid,valid_daterange'}
     #Request adat
-    try:request = AcisWS.StnMeta(meta_params)
-    except:return [vd_start,vd_end]
+    try:
+        request = AcisWS.StnMeta(meta_params)
+    except:
+        return [vd_start,vd_end]
     #Sanity checks
-    if request is None:return [vd_start,vd_end]
-    if 'error' in request.keys() or not 'meta' in request.keys():return [vd_start,vd_end]
+    if request is None:
+        return [vd_start,vd_end]
+    if 'error' in request.keys() or not 'meta' in request.keys():
+        return [vd_start,vd_end]
 
     idx_start = 0
-    if not request['meta']:return ['9999-99-99', '9999-99-99']
+    if not request['meta']:
+        return [vd_start,vd_end]
 
     vd_start_dts = []
     vd_end_dts = []
+    no_vd_els = []
+    flag = False
     #Convert valid date ranges to datetimes
-    for el_idx, el_vdr in enumerate(request['meta'][0]['valid_daterange'][idx_start:]):
-        if el_vdr and len(el_vdr) == 2:
-            vd_start_dts.append(date_to_datetime(el_vdr[0]))
-            vd_end_dts.append(date_to_datetime(el_vdr[1]))
+    #for el_idx, el_vdr in enumerate(request['meta'][0]['valid_daterange'][idx_start:]):
+    for el_idx, el in enumerate(element_list):
+        if el in ['pet', 'dtr']:
+            #Check maxt
+            index = index_dict['maxt']
+            el_vdr = request['meta'][0]['valid_daterange'][index]
+            if el_vdr and len(el_vdr) == 2:
+                vd_start_dts.append(date_to_datetime(el_vdr[0]))
+                vd_end_dts.append(date_to_datetime(el_vdr[1]))
+            else:
+                no_vd_els.append(el)
+                flag = True
+            #Check mint
+            index = index_dict['mint']
+            el_vdr = request['meta'][0]['valid_daterange'][index]
+            if el_vdr and len(el_vdr) == 2:
+                vd_start_dts.append(date_to_datetime(el_vdr[0]))
+                vd_end_dts.append(date_to_datetime(el_vdr[1]))
+            else:
+                if not flag:
+                    no_vd_els.append(el)
+            flag = False
+        else:
+            #All other variables
+            index = index_dict[el]
+            el_vdr = request['meta'][0]['valid_daterange'][index]
+            if el_vdr and len(el_vdr) == 2:
+                vd_start_dts.append(date_to_datetime(el_vdr[0]))
+                vd_end_dts.append(date_to_datetime(el_vdr[1]))
+            else:
+                no_vd_els.append(el)
+
     if max_or_min == 'min' and len(vd_start_dts) >=1:
         vd_start = max(vd_start_dts)
         vd_end = min(vd_end_dts)
@@ -3486,7 +3539,7 @@ def find_valid_daterange(sid, start_date='por', end_date='por', el_list=None, ma
     #convert back to date string
     vd_start = datetime_to_date(vd_start,'-')
     vd_end = datetime_to_date(vd_end,'-')
-    return [vd_start, vd_end]
+    return [vd_start, vd_end], no_vd_els
 
 def get_dates(s_date, e_date, app_name=None):
     '''

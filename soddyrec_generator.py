@@ -84,7 +84,7 @@ def set_wrapper_params(stn_id):
     yesterday = WRCCUtils.set_back_date(1)
     w_params = [stn_id, 'all','18000101',yesterday]
     '''
-    vd = WRCCUtils.find_valid_daterange(stn_id)
+    vd, no_vd_els = WRCCUtils.find_valid_daterange(stn_id)
     if len(vd) == 2 and vd[0] != '9999-99-99' and vd[1] != '9999-99-99':
         return [stn_id, 'all',vd[0],vd[1]]
     return []

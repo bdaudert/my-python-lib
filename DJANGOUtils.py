@@ -359,8 +359,8 @@ def set_initial(request,app_name):
         initial['variables_constraints'] = Get('variables_constraints', 'all')
         initial['dates_constraints']  = Get('dates_constraints', 'all')
         initial['display'] = Get('display', 'map')
-        #all_meta = ['name','state','ll','elev','ids','networks','valid_daterange']
-        all_meta = ['name','state','ll','elev','ids','networks']
+        all_meta = ['name','state','ll','elev','ids','networks','valid_daterange']
+        #all_meta = ['name','state','ll','elev','ids','networks']
         initial['metadata_keys'] = Getlist('metadata_keys',all_meta)
         initial['metadata_keys_str'] = ','.join(initial['metadata_keys'])
         initial['metadata_names'] = [WRCCData.DISPLAY_PARAMS[meta] for meta in initial['metadata_keys']]

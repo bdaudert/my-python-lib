@@ -228,7 +228,6 @@ def station_meta_to_json(by_type, val, el_list=None, time_range=None, constraint
             flag_invalid_station = True
         elif constraints in ['all_all', 'all_any']:
             flag_invalid_station = False
-
         for el_idx, el_vX in enumerate(el_list):
             #Find correct index in vX_list
             try:
@@ -246,7 +245,6 @@ def station_meta_to_json(by_type, val, el_list=None, time_range=None, constraint
                 break
             elif not stn['valid_daterange'][idx] and (constraints == 'any_any' or constraints == 'any_all'):
                 continue
-
             #Find period of record for this variable and station
             por_start = WRCCUtils.date_to_datetime(stn['valid_daterange'][idx][0])
             por_end = WRCCUtils.date_to_datetime(stn['valid_daterange'][idx][1])
@@ -318,6 +316,7 @@ def station_meta_to_json(by_type, val, el_list=None, time_range=None, constraint
         stn_json['error'] = 'Metadata request failed. Please check your parameters!'
         WRCCUtils.load_data_to_json_file(f_dir + f_name, stn_json)
         return stn_json, f_name
+
     if request is None:
         stn_json['error'] = 'No metadata found.'
         WRCCUtils.load_data_to_json_file(f_dir + f_name, stn_json)
@@ -349,7 +348,8 @@ def station_meta_to_json(by_type, val, el_list=None, time_range=None, constraint
                 continue
             #Check if station is valid, if not, proceed to next station
             flag_invalid_station = station_invalid(el_list, vX_list, time_range, stn, constraints)
-            if flag_invalid_station:continue
+            if flag_invalid_station:
+                continue
         stn_sids = []
         stn_networks = []
         stn_network_codes = []
@@ -387,6 +387,7 @@ def station_meta_to_json(by_type, val, el_list=None, time_range=None, constraint
             name = str(stn['name']).replace("\'"," ").replace('#','') if 'name' in stn.keys() else 'Name not listed'
         except:
             name = 'Name not listed'
+
         uid = str(stn['uid']) if 'uid' in stn.keys() else 'Uid not listed'
         elev = str(stn['elev']) if 'elev' in stn.keys() else 'Elevation not listed'
         state_key = str(stn['state']).lower() if 'state' in stn.keys() else 'state not listed'

@@ -1568,7 +1568,7 @@ AREA_REDUCE_TUPLE = ()
 SINGLE_AREA_TUPLE = ()
 TEMPORAL_SUMMARY_AREA_TUPLE = ()
 STATION_FINDER_AREA_TUPLE = ()
-area_options = ['station_id','station_ids','location','locations',\
+area_options = ['station_id','station_ids','location',\
     'county','county_warning_area','climate_division','basin','state',\
     'bounding_box','shape','shape_file']
 for area in area_options:

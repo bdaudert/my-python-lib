@@ -2473,7 +2473,7 @@ def find_id_and_name(form_name_field, json_file_path):
     name_id_list = i.replace(', ', ',').rsplit(',',1)
     name = None
     if len(name_id_list) >=2:
-        i= str(name_id_list[-1]).replace(' ','')
+        i = str(name_id_list[-1]).replace(' ','')
         '''
         #Special case CWA --> json file list Las Vegas, NV as name
         #but form field is Las Vegas NV
@@ -2486,6 +2486,7 @@ def find_id_and_name(form_name_field, json_file_path):
         '''
         name = name_id_list[0]
         return i, name
+
     if not os.path.isfile(json_file_path) or os.path.getsize(json_file_path) == 0:
         return '', str(form_name_field)
     #Find id in json file
@@ -2512,11 +2513,17 @@ def find_id_and_name(form_name_field, json_file_path):
 
     # If the name can't be found, query ACIS directly
     if not name:
-        params = {'sid':i, 'meta': 'name'}
+        params = {'sids':i, 'meta': 'name'}
         try:
             meta = AcisWS.StnMeta(params)
-            if 'name' in meta.keys():
-                return i, meta['name']
+            if 'meta' not in meta.keys():
+                return i, ''
+            if len(meta['meta']) < 1:
+                return i, ''
+            if 'name' in meta['meta'][0].keys():
+                return i, meta['meta'][0]['name']
+            else:
+                return i, ''
         except:
             return i, ''
     return '', i

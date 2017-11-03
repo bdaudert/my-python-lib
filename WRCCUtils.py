@@ -2470,9 +2470,7 @@ def find_id_and_name(form_name_field, json_file_path):
     so we just pick up the id for data analysis
     '''
     i = str(form_name_field).strip()
-    name_id_list = i.rsplit(',',1)
-    if len(name_id_list) == 1:
-        name_id_list = i.rsplit(', ',1)
+    name_id_list = i.replace(', ', ',').rsplit(',',1)
     name = None
     if len(name_id_list) >=2:
         i= str(name_id_list[-1]).replace(' ','')
@@ -2488,20 +2486,9 @@ def find_id_and_name(form_name_field, json_file_path):
         '''
         name = name_id_list[0]
         return i, name
-    elif len(name_id_list) == 1:
-        name_list= i.split(' ')
-        #check for digits
-        if bool(re.compile('\d').search(i)) and len(name_list) == 1:
-            #User entered a station id
-            pass
-        else:
-            #user entered a name without id
-            name = str(form_name_field)
     if not os.path.isfile(json_file_path) or os.path.getsize(json_file_path) == 0:
         return '', str(form_name_field)
     #Find id in json file
-    print i, name
-    print json_file_path
     json_data = load_json_data_from_file(json_file_path)
     for entry in json_data:
         #check if i is id
@@ -2515,13 +2502,24 @@ def find_id_and_name(form_name_field, json_file_path):
                 else:
                     return i, name
             else:
-                if 'name' in entry.keys() and entry['name']:return i, entry['name']
+                if 'name' in entry.keys() and entry['name']:
+                    return i, entry['name']
                 else:return i,''
                 #return i,''
         #Check if i is name
         if entry['name'].upper() == i.upper():
             return entry['id'], entry['name']
-    return '', str(form_name_field)
+
+    # If the name can't be found, query ACIS directly
+    if not name:
+        params = {'sid':i, 'meta': 'name'}
+        try:
+            meta = AcisWS.StnMeta(params)
+            if 'name' in meta.keys():
+                return i, meta['name']
+        except:
+            return i, ''
+    return '', i
 
 def find_ids_and_names(in_list, json_file_path):
     #Split up in_list into names and ids

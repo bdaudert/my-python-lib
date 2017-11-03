@@ -1526,9 +1526,9 @@ class SODDataJob(object):
                 meta_dict['ids'].append(stn_id)
                 meta_dict['networks'].append(stn_network)
                 meta_dict['names'].append(str(stn['name']).replace("\'"," "))
-                if stn['ll'] and len(stn['ll']) == 2:
+                try:
                     meta_dict['lls'].append(stn['ll'])
-                else:
+                except:
                     meta_dict['lls'].append([-999.99,99.99])
                 if 'valid_daterange' in stn.keys():
                     meta_dict['valid_dateranges'] = stn['valid_daterange']
